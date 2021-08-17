@@ -145,8 +145,7 @@ app.post('/leader/:id/hold/:challenger', (req, res) => {
 });
 
 app.post('/leader/:id/unhold/:challenger', (req, res) => {
-    const placeAtFront = !!req.body.placeAtFront;
-    db.leader.unhold(req.params.id, req.params.challenger, placeAtFront, (error, result) => {
+    db.leader.unhold(req.params.id, req.params.challenger, !!req.body.placeAtFront, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
