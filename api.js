@@ -13,13 +13,35 @@ app.use(bodyParser.json());
  * Util functions *
  ******************/
 function handleDbError(error, res) {
-    if (error === db.resultCode.notFound) {
-        console.log('ID not found');
-        res.status(404).json({ error: 'ID not found' });
-    } else {
-        // Default error case, currently just dbFailure
-        console.log('Unexpected database error');
-        res.status(500).json({ error: 'Unexpected database error' });
+    switch (error) {
+        case db.resultCode.notFound:
+            console.log('ID not found');
+            res.status(404).json({ error: 'ID not found' });
+            break;
+        case db.resultCode.alreadyInQueue:
+            console.log('Challenger already in queue');
+            res.status(400).json({ error: 'Challenger already in queue' });
+            break;
+        case db.resultCode.alreadyWon:
+            console.log('Challenger has already won');
+            res.status(400).json({ error: 'Challenger has already won' });
+            break;
+        case db.resultCode.queueIsFull:
+            console.log('Leader queue is full');
+            res.status(400).json({ error: 'Leader queue is full' });
+            break;
+        case db.resultCode.tooManyChallenges:
+            console.log('Challenger is in too many queues');
+            res.status(400).json({ error: 'Challenger is in too many queues' });
+            break;
+        case db.resultCode.notInQueue:
+            console.log('Challenger is not in queue');
+            res.status(400).json({ error: 'Challenger is not in queue' });
+            break;
+        default:
+            console.log('Unexpected database error');
+            res.status(500).json({ error: 'Unexpected database error' });
+            break;
     }
 }
 
@@ -64,7 +86,7 @@ app.get('/challenger/:id', getChallengerInfo);
 app.post('/challenger/:id', (req, res) => {
     const name = req.body.displayName;
     if (!name) {
-        res.json({ error: 'Missing required parameter: \'displayName\'' });
+        res.status(400).json({ error: 'Missing required parameter: \'displayName\'' });
         return;
     }
 
@@ -93,8 +115,17 @@ app.post('/leader/:id/enqueue/:challenger', (req, res) => {
 });
 
 app.post('/leader/:id/dequeue/:challenger', (req, res) => {
-    const challengerWin = !!req.body.challengerWin;
-    db.leader.dequeue(req.params.id, req.params.challenger, challengerWin, (error, result) => {
+    db.leader.dequeue(req.params.id, req.params.challenger, (error, result) => {
+        if (error) {
+            handleDbError(error, res);
+        } else {
+            getLeaderInfo(req, res);
+        }
+    });
+});
+
+app.post('/leader/:id/report/:challenger', (req, res) => {
+    db.leader.reportResult(req.params.id, req.params.challenger, !!req.body.challengerWin, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {

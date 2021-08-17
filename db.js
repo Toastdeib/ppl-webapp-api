@@ -35,7 +35,12 @@ const db = sql.createPool({
 const resultCode = {
     success: 0,
     dbFailure: 1,
-    notFound: 2
+    notFound: 2,
+    alreadyInQueue: 3,
+    alreadyWon: 4,
+    queueIsFull: 5,
+    tooManyChallenges: 6,
+    notInQueue: 7
 };
 
 
@@ -87,46 +92,35 @@ function getChallengerInfo(id, callback) {
         } else if (rows.length === 0) {
             callback(resultCode.notFound);
         } else {
-            callback(resultCode.success, {
-                displayName: rows[0].display_name,
-                queuesEntered: [
-                    { leaderId: '3159a3e6b9025da1', position: 0 },
-                    { leaderId: 'd33861cc13ade093', position: 3 },
-                    { leaderId: 'f0b55294458f63f9', position: 1 }
-                ],
-                badgesEarned: [
-                    '8edaf38672845ab5',
-                    'ea78dab8a9f0316e'
-                ]
-            });
-        }
-    });
-}
-
-function getBadges(id, callback) {
-    fetch(`SELECT l.id, l.badge_name FROM ${MATCHES_TABLE} AS m INNER JOIN ${LEADERS_TABLE} AS l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status = 3`, [id], (error, rows) => {
-        if (error) {
-            callback(error);
-        } else {
             const result = {
-                badges: []
+                displayName: rows[0].display_name,
+                queuesEntered: [],
+                badgesEarned: []
             };
 
-            rows.forEach(row => {
-                result.badges.push({ leaderId: row.id, badgeName: row.badge_name });
+            // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+            fetch(`SELECT leader_id, COUNT(challenger_id) position FROM ppl_webapp_matches m WHERE status = ? AND EXISTS (SELECT 1 FROM ppl_webapp_matches WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) AND timestamp <= (SELECT timestamp FROM ppl_webapp_matches WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) GROUP BY leader_id`, [matchStatus.inQueue, id, matchStatus.inQueue, id, matchStatus.inQueue], (error, rows) => {
+                if (error) {
+                    callback(error);
+                } else {
+                    for (let i = 0; i < rows.length; i++) {
+                        // Position gets a -1 here because the count includes the challenger themselves and we want it 0-indexed
+                        result.queuesEntered.push({ leaderId: rows[i].leader_id, position: rows[i].position - 1 });
+                    }
+
+                    fetch(`SELECT leader_id FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status = ?`, [id, matchStatus.win], (error, rows) => {
+                        if (error) {
+                            callback(error);
+                        } else {
+                            for (let i = 0; i < rows.length; i++) {
+                                result.badgesEarned.push(rows[i].leader_id);
+                            }
+
+                            callback(resultCode.success, result);
+                        }
+                    });
+                }
             });
-
-            callback(resultCode.success, result);
-        }
-    });
-}
-
-function getChallengerQueues(id, callback) {
-    fetch(`SELECT ...`, [id], (error, rows) => {
-        if (error) {
-            callback(error);
-        } else {
-            // TODO
         }
     });
 }
@@ -151,42 +145,121 @@ function getLeaderInfo(id, callback) {
         } else if (rows.length === 0) {
             callback(resultCode.notFound);
         } else {
-            callback(resultCode.success, { 
+            const result = {
                 leaderName: rows[0].leader_name,
                 badgeName: rows[0].badge_name,
-                queue: [
-                    { challengerId: '9ea7e0b018fd9660', position: 0 },
-                    { challengerid: '6c1be95794a0325a', position: 1 },
-                    { challengerid: 'eef41e425b31ed38', position: 2 }
-                ],
-                onhold: [
-                    'c0e1dac50d375554',
-                    'f772ddb47f828d41'
-                ]
+                queue: [],
+                onHold: []
+            };
+
+            fetch(`SELECT challenger_id, status FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status IN (?, ?) ORDER BY timestamp ASC`, [id, matchStatus.inQueue, matchStatus.onHold], (error, rows) => {
+                if (error) {
+                    callback(error);
+                } else {
+                    let position = 0;
+                    for (let i = 0; i < rows.length; i++) {
+                        if (rows[i].status === matchStatus.inQueue) {
+                            result.queue.push({ challengerId: rows[i].challenger_id, position: position });
+                            position++;
+                        } else {
+                            result.onHold.push(rows[i].challenger_id);
+                        }
+                    }
+
+                    callback(resultCode.success, result);
+                }
             });
         }
     });
 }
 
 function enqueue(id, challengerId, callback) {
-    callback(resultcode.success);
-    /*
-    save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, status, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP())`, [id, challengerId, matchStatus.inQueue], (error, rowCount) => {
-
+    // This is still disgusting and I still hate it, even if it's smaller than the clusterfuck in the bot.
+    // Checks, in order, are:
+    // 1. Challenger isn't already in this leader's queue and hasn't already beaten them (0 matches with status <> 2)
+    // 2. Leader has room in the queue (<5 matches with status in [0, 1])
+    // 3. Challenger isn't in too many queues (<3 matches with status in [0, 1] across all leaders)
+    fetch(`SELECT status FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status <> ?`, [id, challengerId, matchStatus.loss], (error, rows) => {
+        if (error) {
+            callback(error);
+        } else if (rows.find(row => row.status === matchStatus.inQueue || row.status === matchStatus.onHold)) {
+            callback(resultCode.alreadyInQueue);
+        } else if (rows.find(row => row.status === matchStatus.win)) {
+            callback(resultCode.alreadyWon);
+        } else {
+            fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status IN (?, ?)`, [id, matchStatus.inQueue, matchStatus.onHold], (error, rows) => {
+                if (error) {
+                    callback(error);
+                } else if (rows.length >= 5) {
+                    callback(resultCode.queueIsFull);
+                } else {
+                    fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, matchStatus.inQueue, matchStatus.onHold], (error, rows) => {
+                        if (error) {
+                            callback(error);
+                        } else if (rows.length >= 3) {
+                            callback(resultCode.tooManyChallenges);
+                        } else {
+                            save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, status, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP())`, [id, challengerId, matchStatus.inQueue], callback);
+                        }
+                    });
+                }
+            });
+        }
     });
-    */
 }
 
-function dequeue(id, challengerId, challengerWin, callback) {
-    callback(resultcode.success);
+function dequeue(id, challengerId, callback) {
+    save(`DELETE FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status IN (?, ?)`, [id, challengerId, matchStatus.inQueue, matchStatus.onHold], (error, rowCount) => {
+        if (error) {
+            callback(error);
+        } else if (rows.length === 0) {
+            callback(resultCode.notInQueue);
+        } else {
+            callback(resultCode.success);
+        }
+    });
+}
+
+function reportResult(id, challengerId, challengerWin, callback) {
+    const matchResult = challengerWin ? matchStatus.win : matchStatus.loss;
+    save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, id, challengerId, matchStatus.inQueue], (error, rowCount) => {
+        if (error) {
+            callback(error);
+        } else if (rows.length === 0) {
+            callback(resultCode.notInQueue);
+        } else {
+            callback(resultCode.success);
+        }
+    });
 }
 
 function hold(id, challengerId, callback) {
-    callback(resultcode.success);
+    save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchStatus.onHold, id, challengerId, matchStatus.inQueue], (error, rowCount) => {
+        if (error) {
+            callback(error);
+        } else if (rowCount === 0) {
+            callback(resultCode.notInQueue);
+        } else {
+            callback(resultCode.success);
+        }
+    });
 }
 
 function unhold(id, challengerId, placeAtFront, callback) {
-    callback(resultcode.success);
+    let sql = `UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
+    if (!placeAtFront) {
+        sql = `UPDATE ${MATCHES_TABLE} SET status = ?, timestamp = CURRENT_TIMESTAMP() WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
+    }
+
+    save(sql, [matchStatus.inQueue, id, challengerId, matchStatus.onHold], (error, rowCount) => {
+        if (error) {
+            callback(error);
+        } else if (rowCount === 0) {
+            callback(resultCode.notInQueue);
+        } else {
+            callback(resultCode.success);
+        }
+    });
 }
 
 module.exports = {
@@ -198,6 +271,7 @@ module.exports = {
         getInfo: getLeaderInfo,
         enqueue: enqueue,
         dequeue: dequeue,
+        reportResult: reportResult,
         hold: hold,
         unhold: unhold
     },
