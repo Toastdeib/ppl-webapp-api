@@ -212,7 +212,7 @@ function dequeue(id, challengerId, callback) {
     save(`DELETE FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status IN (?, ?)`, [id, challengerId, matchStatus.inQueue, matchStatus.onHold], (error, rowCount) => {
         if (error) {
             callback(error);
-        } else if (rows.length === 0) {
+        } else if (rowCount === 0) {
             callback(resultCode.notInQueue);
         } else {
             callback(resultCode.success);
@@ -225,7 +225,7 @@ function reportResult(id, challengerId, challengerWin, callback) {
     save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, id, challengerId, matchStatus.inQueue], (error, rowCount) => {
         if (error) {
             callback(error);
-        } else if (rows.length === 0) {
+        } else if (rowCount === 0) {
             callback(resultCode.notInQueue);
         } else {
             callback(resultCode.success);
