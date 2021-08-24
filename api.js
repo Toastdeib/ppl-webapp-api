@@ -71,6 +71,8 @@ function getLeaderInfo(req, res) {
                 id: req.params.id,
                 leaderName: result.leaderName,
                 badgeName: result.badgeName,
+                winCount: result.winCount,
+                lossCount: result.lossCount,
                 queue: result.queue,
                 onHold: result.onHold
             });

@@ -148,6 +148,8 @@ function getLeaderInfo(id, callback) {
             const result = {
                 leaderName: rows[0].leader_name,
                 badgeName: rows[0].badge_name,
+                winCount: 0,
+                lossCount: 0,
                 queue: [],
                 onHold: []
             };
@@ -166,7 +168,24 @@ function getLeaderInfo(id, callback) {
                         }
                     }
 
-                    callback(resultCode.success, result);
+                    fetch(`SELECT status, COUNT(challenger_id) count FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status IN (?, ?) GROUP BY status`, [id, matchStatus.loss, matchStatus.win], (error, rows) => {
+                        if (error) {
+                            callback(error);
+                        } else {
+                            // Win/loss is from the challenger perspective, so it's inverted here
+                            const wins = rows.find(row => row.status === matchStatus.loss);
+                            const losses = rows.find(row => row.status === matchStatus.win);
+                            if (wins) {
+                                result.winCount = wins.count;
+                            }
+
+                            if (losses) {
+                                result.lossCount = losses.count;
+                            }
+
+                            callback(resultCode.success, result);
+                        }
+                    });
                 }
             });
         }
