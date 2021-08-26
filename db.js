@@ -99,13 +99,17 @@ function getChallengerInfo(id, callback) {
             };
 
             // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-            fetch(`SELECT leader_id, COUNT(challenger_id) position FROM ppl_webapp_matches m WHERE status = ? AND EXISTS (SELECT 1 FROM ppl_webapp_matches WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) AND timestamp <= (SELECT timestamp FROM ppl_webapp_matches WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) GROUP BY leader_id`, [matchStatus.inQueue, id, matchStatus.inQueue, id, matchStatus.inQueue], (error, rows) => {
+            fetch(`SELECT m.leader_id, l.leader_name, COUNT(m.challenger_id) position FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) AND timestamp <= (SELECT timestamp FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) GROUP BY leader_id`, [matchStatus.inQueue, id, matchStatus.inQueue, id, matchStatus.inQueue], (error, rows) => {
                 if (error) {
                     callback(error);
                 } else {
                     for (let i = 0; i < rows.length; i++) {
                         // Position gets a -1 here because the count includes the challenger themselves and we want it 0-indexed
-                        result.queuesEntered.push({ leaderId: rows[i].leader_id, position: rows[i].position - 1 });
+                        result.queuesEntered.push({
+                            leaderId: rows[i].leader_id,
+                            leaderName: rows[i].leader_name,
+                            position: rows[i].position - 1
+                        });
                     }
 
                     fetch(`SELECT leader_id FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status = ?`, [id, matchStatus.win], (error, rows) => {
@@ -154,14 +158,18 @@ function getLeaderInfo(id, callback) {
                 onHold: []
             };
 
-            fetch(`SELECT challenger_id, status FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status IN (?, ?) ORDER BY timestamp ASC`, [id, matchStatus.inQueue, matchStatus.onHold], (error, rows) => {
+            fetch(`SELECT m.challenger_id, c.display_name, m.status FROM ${MATCHES_TABLE} m INNER JOIN ${CHALLENGERS_TABLE} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.timestamp ASC`, [id, matchStatus.inQueue, matchStatus.onHold], (error, rows) => {
                 if (error) {
                     callback(error);
                 } else {
                     let position = 0;
                     for (let i = 0; i < rows.length; i++) {
                         if (rows[i].status === matchStatus.inQueue) {
-                            result.queue.push({ challengerId: rows[i].challenger_id, position: position });
+                            result.queue.push({
+                                challengerId: rows[i].challenger_id,
+                                displayName: rows[i].display_name,
+                                position: position
+                            });
                             position++;
                         } else {
                             result.onHold.push(rows[i].challenger_id);
