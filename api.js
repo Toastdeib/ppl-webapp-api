@@ -3,11 +3,23 @@ const bodyParser = require('body-parser');
 const app = express();
 const cors = require('cors');
 const fs = require('fs');
+const https = require('https');
 const db = require('./db.js');
 const config = require('./config.js');
 
 app.use(cors({ origin: config.corsOrigin }));
 app.use(bodyParser.json());
+
+// Certificate
+const privateKey = fs.readFileSync(config.certPath + 'privkey.pem', 'utf8');
+const certificate = fs.readFileSync(config.certPath + 'cert.pem', 'utf8');
+const ca = fs.readFileSync(config.certPath + 'chain.pem', 'utf8');
+
+const credentials = {
+key: privateKey,
+    cert: certificate,
+    ca: ca
+};
 
 /******************
  * Util functions *
@@ -156,8 +168,9 @@ app.post('/leader/:id/unhold/:challenger', (req, res) => {
     });
 });
 
-const server = app.listen(config.port, () => {
-    console.log(`API running on port ${server.address().port}`);
+const httpsServer = https.createServer(credentials, app);
+httpsServer.listen(config.port, () => {
+    console.log(`API running on port ${config.port}`);
 });
 
 if (config.debug) {

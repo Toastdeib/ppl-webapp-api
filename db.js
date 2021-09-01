@@ -112,12 +112,16 @@ function getChallengerInfo(id, callback) {
                         });
                     }
 
-                    fetch(`SELECT leader_id FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status = ?`, [id, matchStatus.win], (error, rows) => {
+                    fetch(`SELECT m.leader_id, l.leader_name, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status = ?`, [id, matchStatus.win], (error, rows) => {
                         if (error) {
                             callback(error);
                         } else {
                             for (let i = 0; i < rows.length; i++) {
-                                result.badgesEarned.push(rows[i].leader_id);
+                                result.badgesEarned.push({
+                                    leaderId: rows[i].leader_id,
+                                    leaderName: rows[i].leader_name,
+                                    badgeName: rows[i].badge_name
+                                });
                             }
 
                             callback(resultCode.success, result);
@@ -172,7 +176,10 @@ function getLeaderInfo(id, callback) {
                             });
                             position++;
                         } else {
-                            result.onHold.push(rows[i].challenger_id);
+                            result.onHold.push({
+                                challengerId: rows[i].challenger_id,
+                                displayName: rows[i].display_name
+                            });
                         }
                     }
 
