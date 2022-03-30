@@ -1,12 +1,20 @@
 const sql = require('mysql');
+const crypto = require('crypto');
 const config = require('./config.js');
 
 const TABLE_SUFFIX = '';
+const LOGINS_TABLE = 'ppl_webapp_logins';
 const CHALLENGERS_TABLE = 'ppl_webapp_challengers' + TABLE_SUFFIX;
 const LEADERS_TABLE = 'ppl_webapp_leaders' + TABLE_SUFFIX;
 const MATCHES_TABLE = 'ppl_webapp_matches' + TABLE_SUFFIX;
 
 /* TABLE SCHEMA *
+ * ppl_webapp_logins
+ * - id: VARCHAR(16)
+ * - username: VARCHAR(30)
+ * - password_hash: VARCHAR(99)
+ * - is_leader: BOOLEAN
+ *
  * ppl_webapp_challengers
  * - id: VARCHAR(16)
  * - display_name: VARCHAR(40)
@@ -40,9 +48,12 @@ const resultCode = {
     alreadyWon: 4,
     queueIsFull: 5,
     tooManyChallenges: 6,
-    notInQueue: 7
+    notInQueue: 7,
+    usernameTaken: 8,
+    registrationFailure: 9,
+    badCredentials: 10,
+    invalidToken: 11
 };
-
 
 const leaderType = {
     casual: 0,
@@ -81,6 +92,67 @@ function save(query, params, callback) {
         }
 
         callback(resultCode.success, result.affectedRows);
+    });
+}
+
+// Authentication functions
+function generateHex(length) {
+    return crypto.randomBytes(length).toString('hex');
+}
+
+function hashWithSalt(password, salt) {
+    const hash = crypto.createHash('sha256');
+    hash.update(password);
+    hash.update(salt);
+    return hash.digest('hex');
+}
+
+function register(username, password, callback) {
+    fetch(`SELECT 1 FROM ${LOGINS_TABLE} WHERE username = ?`, [username], (error, rows) => {
+        if (error) {
+            callback(error);
+        } else if (rows.length !== 0) {
+            callback(resultCode.usernameTaken);
+        } else {
+            const salt = generateHex(16);
+            const hash = hashWithSalt(password, salt);
+            const id = generateHex(8);
+            save(`INSERT INTO ${LOGINS_TABLE} (id, username, password_hash, is_leader) VALUES (?, ?, ?, 0)`, [id, username, `${hash}:${salt}`], (error, rowCount) => {
+                if (error) {
+                    callback(error);
+                } else if (rowCount === 0) {
+                    callback(resultCode.registrationFailure);
+                } else {
+                    save(`INSERT INTO ${CHALLENGERS_TABLE} (id, display_name) VALUES (?, ?)`, [id, username], (error, rowCount) => {
+                        if (error) {
+                            callback(error);
+                        } else if (rowCount === 0) {
+                            callback(resultCode.registrationFailure);
+                        } else {
+                            callback(resultCode.success, { id: id, isLeader: false });
+                        }
+                    });
+                }
+            });
+        }
+    });
+}
+
+function login(username, password, callback) {
+    fetch(`SELECT id, password_hash, is_leader FROM ${LOGINS_TABLE} WHERE username = ?`, [username], (error, rows) => {
+        if (error) {
+            callback(error);
+        } else if (rows.length === 0) {
+            callback(resultCode.badCredentials);
+        } else {
+            const parts = rows[0].password_hash.split(':');
+            const hash = hashWithSalt(password, parts[1]);
+            if (hash !== parts[0]) {
+                callback(resultCode.badCredentials);
+            } else {
+                callback(resultCode.success, { id: rows[0].id, isLeader: rows[0].is_leader === 1 });
+            }
+        }
     });
 }
 
@@ -296,6 +368,42 @@ function unhold(id, challengerId, placeAtFront, callback) {
     });
 }
 
+function getLeaderMetrics(callback) {
+    fetch(`SELECT l.id, l.leader_name, m.status FROM ${MATCHES_TABLE} AS m INNER JOIN ${LEADERS_TABLE} AS l ON l.id = m.leader_id WHERE m.status IN (2, 3) AND l.id NOT IN ('e402ab487cf27380', '072d76daa9a85620')`, [], (error, rows) => {
+        if (error) {
+            callback(error);
+        } else {
+            const result = {};
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!result[row.id]) {
+                    result[row.id] = {
+                        name: row.leader_name,
+                        wins: 0,
+                        losses: 0
+                    };
+                }
+
+                if (row.status === matchStatus.loss) {
+                    result[row.id].wins++;
+                } else {
+                    result[row.id].losses++;
+                }
+            }
+
+            callback(resultCode.success, result);
+        }
+    });
+}
+
+function debugSave(sql) {
+    if (!config.debug) {
+        return;
+    }
+
+    save(sql, [], console.log);
+}
+
 module.exports = {
     challenger: {
         getInfo: getChallengerInfo,
@@ -307,9 +415,14 @@ module.exports = {
         dequeue: dequeue,
         reportResult: reportResult,
         hold: hold,
-        unhold: unhold
+        unhold: unhold,
+        metrics: getLeaderMetrics
     },
     resultCode: resultCode,
     leaderType: leaderType,
-    matchStatus: matchStatus
+    matchStatus: matchStatus,
+    generateHex: generateHex,
+    register: register,
+    login: login
+    //debugSave: debugSave
 };
