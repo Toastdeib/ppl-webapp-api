@@ -21,65 +21,83 @@ const credentials = {
     ca: ca
 };
 
-const SESSION_EXPIRATION_MILLIS = 7 * 24 * 60 * 60 * 1000; // 1 week in ms
-const sessionCache = {};
+const SESSION_EXPIRATION_MILLIS = 24 * 60 * 60 * 1000; // 1 day in ms
+const CACHE_BACKUP_INTERVAL_MILLIS = 5 * 60 * 1000; // 5 minutes in ms
+const CACHE_FILE = 'cache.json';
+let sessionCache;
+let idCache;
 
 const AUTH_HEADER = 'Authorization';
 
 /******************
  * Util functions *
  ******************/
+function zeroPad(value, length) {
+    let string = '' + value;
+    while (string.length < length) {
+        string = '0' + string;
+    }
+
+    return string;
+}
+
+function log(msg) {
+    const now = new Date();
+    const timestamp = `[${now.getFullYear()}-${zeroPad(now.getMonth() + 1, 2)}-${zeroPad(now.getDate(), 2)} ${zeroPad(now.getHours(), 2)}:${zeroPad(now.getMinutes(), 2)}:${zeroPad(now.getSeconds(), 2)}]`;
+    console.log(`${timestamp} ${msg}`);
+}
+
 function handleDbError(error, res) {
     switch (error) {
         case db.resultCode.notFound:
-            console.log('ID not found');
+            log('ID not found');
             res.status(404).json({ error: 'ID not found' });
             break;
         case db.resultCode.alreadyInQueue:
-            console.log('Challenger already in queue');
+            log('Challenger already in queue');
             res.status(400).json({ error: 'Challenger already in queue' });
             break;
         case db.resultCode.alreadyWon:
-            console.log('Challenger has already won');
+            log('Challenger has already won');
             res.status(400).json({ error: 'Challenger has already won' });
             break;
         case db.resultCode.queueIsFull:
-            console.log('Leader queue is full');
+            log('Leader queue is full');
             res.status(400).json({ error: 'Leader queue is full' });
             break;
         case db.resultCode.tooManyChallenges:
-            console.log('Challenger is in too many queues');
+            log('Challenger is in too many queues');
             res.status(400).json({ error: 'Challenger is in too many queues' });
             break;
         case db.resultCode.notInQueue:
-            console.log('Challenger is not in queue');
+            log('Challenger is not in queue');
             res.status(400).json({ error: 'Challenger is not in queue' });
             break;
         case db.resultCode.usernameTaken:
-            console.log('Username is already taken');
+            log('Username is already taken');
             res.status(400).json({ error: 'Username is already taken' });
             break;
         case db.resultCode.registrationFailure:
-            console.log('Unknown error during registration');
+            log('Unknown error during registration');
             res.status(400).json({ error: 'Unknown error during registration' });
             break;
         case db.resultCode.badCredentials:
-            console.log('Invalid login credentials');
+            log('Invalid login credentials');
             res.status(400).json({ error: 'Invalid login credentials' });
             break;
         case db.resultCode.invalidToken:
-            console.log('Invalid access token');
+            log('Invalid access token');
             res.status(400).json({ error: 'Invalid access token' });
             break;
         default:
-            console.log('Unexpected database error');
+            log('Unexpected database error');
             res.status(500).json({ error: 'Unexpected database error' });
             break;
     }
 }
 
 function getChallengerInfo(req, res) {
-    console.log(`Returning challenger info for id=${req.params.id}`);
+    log(`Returning challenger info for id=${req.params.id}`);
     db.challenger.getInfo(req.params.id, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -95,13 +113,14 @@ function getChallengerInfo(req, res) {
 }
 
 function getLeaderInfo(req, res) {
-    console.log(`Returning leader info for id=${req.params.id}`);
-    db.leader.getInfo(req.params.id, (error, result) => {
+    log(`Returning leader info for loginId=${req.params.id}, leaderId=${req.leaderId}`);
+    db.leader.getInfo(req.leaderId, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
             res.json({
-                id: req.params.id,
+                loginId: req.params.id,
+                leaderId: req.leaderId,
                 leaderName: result.leaderName,
                 badgeName: result.badgeName,
                 winCount: result.winCount,
@@ -122,15 +141,34 @@ function decodeCredentials(credentials) {
     return Buffer.from(parts[1], 'base64').toString('utf8').split(':');
 }
 
-function createSession(id, isLeader) {
+function createSession(id, isLeader, leaderId) {
     const token = db.generateHex(16);
     sessionCache[token] = {
         id: id,
-        created: new Date().getTime(),
-        isLeader: isLeader
+        lastUsed: new Date().getTime(),
+        isLeader: isLeader,
+        leaderId: leaderId
     };
 
+    saveCache();
     return token;
+}
+
+function clearSession(token, id) {
+    const parts = token.split(' ');
+    if (parts[0] !== 'Bearer') {
+        // Malformed token header
+        return;
+    }
+
+    const session = sessionCache[parts[1]];
+    if (!session) {
+        // No session found, so there's nothing to do
+        return;
+    }
+
+    delete sessionCache[parts[1]];
+    saveCache();
 }
 
 function validateSession(token, id, leaderRequest) {
@@ -152,12 +190,61 @@ function validateSession(token, id, leaderRequest) {
     }
 
     const now = new Date().getTime();
-    if (now - session.created > SESSION_EXPIRATION_MILLIS) { // TODO - Shorten this and do rolling expiration instead?
-        // Session is expired
+    if (now - session.lastUsed > SESSION_EXPIRATION_MILLIS) {
+        // Session is expired, clear it out of the cache
+        delete sessionCache[parts[1]];
+        saveCache();
         return false;
     }
 
-    return true;
+    session.lastUsed = new Date().getTime();
+    return session;
+}
+
+function validateChallengerId(id) {
+    return idCache.challengers.indexOf(id) !== -1;
+}
+
+function validateLeaderId(id) {
+    return idCache.leaders.indexOf(id) !== -1;
+}
+
+function saveCache() {
+    log('Writing session cache to file');
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(sessionCache), 'utf-8');
+}
+
+function initCaches() {
+    try {
+        log('Restoring session cache from file');
+        sessionCache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf-8'));
+    } catch (err) {
+        log('Could not restore session cache, initializing as empty instead');
+    }
+
+    db.getAllIds((error, result) => {
+        if (error) {
+            log('Failed to initialize ID cache');
+            idCache = { challengers: [], leaders: [] };
+        } else {
+            log('Initalizing ID cache');
+            idCache = result;
+        }
+    });
+}
+
+function pruneCache() {
+    log('Bulk pruning expired sessions from cache');
+    const ids = Object.keys(sessionCache);
+    const now = new Date().getTime();
+    for (let i = 0; i < ids.length; i++) {
+        if (now - sessionCache[ids[i]].lastUsed > SESSION_EXPIRATION_MILLIS) {
+            // Session is expired, clear it out of the cache
+            delete sessionCache[ids[i]];
+        }
+    }
+
+    saveCache();
 }
 
 /*********************
@@ -177,13 +264,20 @@ app.post('/register', (req, res) => {
         return;
     }
 
-    console.log('Registering new user');
+    log('Registering new user');
     db.register(parts[0], parts[1], (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
-            const token = createSession(result.id, result.isLeader);
-            res.json({ id: result.id, isLeader: result.isLeader, token: token });
+            const token = createSession(result.id, result.isLeader, result.leaderId);
+            idCache.challengers.push(result.id);
+            res.json({
+                id: result.id,
+                loginId: result.id,
+                leaderId: result.leaderId,
+                isLeader: result.isLeader,
+                token: token
+            });
         }
     });
 });
@@ -202,15 +296,31 @@ app.post('/login', (req, res) => {
         return;
     }
 
-    console.log('Logging in user');
+    log('Logging in user');
     db.login(parts[0], parts[1], (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
-            const token = createSession(result.id, result.isLeader);
-            res.json({ id: result.id, isLeader: result.isLeader, token: token });
+            const token = createSession(result.id, result.isLeader, result.leaderId);
+            res.json({
+                id: result.id,
+                loginId: result.id,
+                leaderId: result.leaderId,
+                isLeader: result.isLeader,
+                token: token
+            });
         }
     });
+});
+
+app.post('/logout/:id', (req, res) => {
+    log(`Logging out userId=${req.params.id}`);
+    const token = req.get(AUTH_HEADER);
+    if (token) {
+        clearSession(token, req.params.id);
+    }
+
+    res.status(200).json({});
 });
 
 /*******************
@@ -219,13 +329,13 @@ app.post('/login', (req, res) => {
 app.use('/challenger/:id', (req, res, next) => {
     const token = req.get(AUTH_HEADER);
     if (!token) {
-        console.log('Missing auth header in challenger endpoint request');
+        log('Missing auth header in challenger endpoint request');
         res.status(403).json({});
         return;
     }
 
     if (!validateSession(token, req.params.id, false)) {
-        console.log('Invalid auth header in challenger endpoint request');
+        log('Invalid auth header in challenger endpoint request');
         res.status(403).json({});
         return;
     }
@@ -242,8 +352,24 @@ app.post('/challenger/:id', (req, res) => {
         return;
     }
 
-    console.log(`Setting display name for id=${req.params.id} to ${name}`);
+    log(`Setting display name for id=${req.params.id} to ${name}`);
     db.challenger.setDisplayName(req.params.id, name, (error, result) => {
+        if (error) {
+            handleDbError(error, res);
+        } else {
+            getChallengerInfo(req, res);
+        }
+    });
+});
+
+app.post('/challenger/:id/enqueue/:leader', (req, res) => {
+    if (!validateLeaderId(req.params.leader)) {
+        res.status(400).json({ error: `Leader ID ${req.params.leader} is invalid` });
+        return;
+    }
+
+    log(`loginId=${req.params.id} joining leaderId=${req.params.leader}'s queue`);
+    db.leader.enqueue(req.params.leader, req.params.id, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -258,25 +384,32 @@ app.post('/challenger/:id', (req, res) => {
 app.use('/leader/:id', (req, res, next) => {
     const token = req.get(AUTH_HEADER);
     if (!token) {
-        console.log('Missing auth header in leader endpoint request');
+        log('Missing auth header in leader endpoint request');
         res.status(403).json({});
         return;
     }
 
-    if (!validateSession(token, req.params.id, true)) {
-        console.log('Invalid auth header in leader endpoint request');
+    const session = validateSession(token, req.params.id, true);
+    if (!session) {
+        log('Invalid auth header in leader endpoint request');
         res.status(403).json({});
         return;
     }
 
+    req.leaderId = session.leaderId;
     next();
 });
 
 app.get('/leader/:id', getLeaderInfo);
 
 app.post('/leader/:id/enqueue/:challenger', (req, res) => {
-    console.log(`leaderId=${req.params.id} adding challengerId=${req.params.challenger} to queue`);
-    db.leader.enqueue(req.params.id, req.params.challenger, (error, result) => {
+    if (!validateChallengerId(req.params.challenger)) {
+        res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
+        return;
+    }
+
+    log(`loginId=${req.params.id}, leaderId=${req.leaderId} adding challengerId=${req.params.challenger} to queue`);
+    db.leader.enqueue(req.leaderId, req.params.challenger, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -286,8 +419,13 @@ app.post('/leader/:id/enqueue/:challenger', (req, res) => {
 });
 
 app.post('/leader/:id/dequeue/:challenger', (req, res) => {
-    console.log(`leaderId=${req.params.id} removing challengerId=${req.params.challenger} from queue`);
-    db.leader.dequeue(req.params.id, req.params.challenger, (error, result) => {
+    if (!validateChallengerId(req.params.challenger)) {
+        res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
+        return;
+    }
+
+    log(`loginId=${req.params.id}, leaderId=${req.leaderId} removing challengerId=${req.params.challenger} from queue`);
+    db.leader.dequeue(req.leaderId, req.params.challenger, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -297,8 +435,13 @@ app.post('/leader/:id/dequeue/:challenger', (req, res) => {
 });
 
 app.post('/leader/:id/report/:challenger', (req, res) => {
-    console.log(`leaderId=${req.params.id} reporting match result ${!!req.body.challengerWin} for challengerId=${req.params.challenger}`);
-    db.leader.reportResult(req.params.id, req.params.challenger, !!req.body.challengerWin, (error, result) => {
+    if (!validateChallengerId(req.params.challenger)) {
+        res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
+        return;
+    }
+
+    log(`loginId=${req.params.id}, leaderId=${req.leaderId} reporting match result ${!!req.body.challengerWin} for challengerId=${req.params.challenger}`);
+    db.leader.reportResult(req.leaderId, req.params.challenger, !!req.body.challengerWin, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -308,8 +451,13 @@ app.post('/leader/:id/report/:challenger', (req, res) => {
 });
 
 app.post('/leader/:id/hold/:challenger', (req, res) => {
-    console.log(`leaderId=${req.params.id} placing challengerId=${req.params.challenger} on hold`);
-    db.leader.hold(req.params.id, req.params.challenger, (error, result) => {
+    if (!validateChallengerId(req.params.challenger)) {
+        res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
+        return;
+    }
+
+    log(`loginId=${req.params.id}, leaderId=${req.leaderId} placing challengerId=${req.params.challenger} on hold`);
+    db.leader.hold(req.leaderId, req.params.challenger, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -319,8 +467,13 @@ app.post('/leader/:id/hold/:challenger', (req, res) => {
 });
 
 app.post('/leader/:id/unhold/:challenger', (req, res) => {
-    console.log(`leaderId=${req.params.id} returning challengerId=${req.params.challenger} from hold`);
-    db.leader.unhold(req.params.id, req.params.challenger, !!req.body.placeAtFront, (error, result) => {
+    if (!validateChallengerId(req.params.challenger)) {
+        res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
+        return;
+    }
+
+    log(`loginId=${req.params.id}, leaderId=${req.leaderId} returning challengerId=${req.params.challenger} from hold`);
+    db.leader.unhold(req.leaderId, req.params.challenger, !!req.body.placeAtFront, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -329,8 +482,19 @@ app.post('/leader/:id/unhold/:challenger', (req, res) => {
     });
 });
 
+app.get('/leader/:id/allchallengers', (req, res) => {
+    log(`loginId=${req.params.id}, leaderId=${req.leaderId} fetching all challengers`);
+    db.leader.getAllChallengers((error, result) => {
+        if (error) {
+            handleDbError(error, res);
+        } else {
+            res.json(result);
+        }
+    });
+});
+
 app.get('/metrics', (req, res) => {
-    console.log('Returning leader metrics');
+    log('Returning leader metrics');
     db.leader.metrics((error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -342,8 +506,12 @@ app.get('/metrics', (req, res) => {
 
 const httpsServer = https.createServer(credentials, app);
 httpsServer.listen(config.port, () => {
-    console.log(`API running on port ${config.port}`);
+    log(`API running on port ${config.port}`);
 });
+
+initCaches();
+
+setInterval(pruneCache, SESSION_EXPIRATION_MILLIS);
 
 if (config.debug) {
     process.stdin.resume();

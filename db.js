@@ -14,6 +14,7 @@ const MATCHES_TABLE = 'ppl_webapp_matches' + TABLE_SUFFIX;
  * - username: VARCHAR(30)
  * - password_hash: VARCHAR(99)
  * - is_leader: BOOLEAN
+ * - leader_id: VARCHAR(8)
  *
  * ppl_webapp_challengers
  * - id: VARCHAR(16)
@@ -69,10 +70,25 @@ const matchStatus = {
     win: 3 // Challenger win
 };
 
+function zeroPad(value, length) {
+    let string = '' + value;
+    while (string.length < length) {
+        string = '0' + string;
+    }
+
+    return string;
+}
+
+function log(msg) {
+    const now = new Date();
+    const timestamp = `[${now.getFullYear()}-${zeroPad(now.getMonth() + 1, 2)}-${zeroPad(now.getDate(), 2)} ${zeroPad(now.getHours(), 2)}:${zeroPad(now.getMinutes(), 2)}:${zeroPad(now.getSeconds(), 2)}]`;
+    console.log(`${timestamp} ${msg}`);
+}
+
 function fetch(query, params, callback) {
     db.query(query, params, (error, result) => {
         if (error) {
-            console.log('Database fetch failed');
+            log('Database fetch failed');
             console.log(error);
             callback(resultCode.dbFailure, []);
             return;
@@ -85,7 +101,7 @@ function fetch(query, params, callback) {
 function save(query, params, callback) {
     db.query(query, params, (error, result) => {
         if (error) {
-            console.log('Error: save failed');
+            log('Error: save failed');
             console.log(error);
             callback(resultCode.dbFailure);
             return;
@@ -117,7 +133,7 @@ function register(username, password, callback) {
             const salt = generateHex(16);
             const hash = hashWithSalt(password, salt);
             const id = generateHex(8);
-            save(`INSERT INTO ${LOGINS_TABLE} (id, username, password_hash, is_leader) VALUES (?, ?, ?, 0)`, [id, username, `${hash}:${salt}`], (error, rowCount) => {
+            save(`INSERT INTO ${LOGINS_TABLE} (id, username, password_hash, is_leader, leader_id) VALUES (?, ?, ?, 0, NULL)`, [id, username, `${hash}:${salt}`], (error, rowCount) => {
                 if (error) {
                     callback(error);
                 } else if (rowCount === 0) {
@@ -129,7 +145,11 @@ function register(username, password, callback) {
                         } else if (rowCount === 0) {
                             callback(resultCode.registrationFailure);
                         } else {
-                            callback(resultCode.success, { id: id, isLeader: false });
+                            callback(resultCode.success, {
+                                id: id,
+                                isLeader: false,
+                                leaderId: null
+                            });
                         }
                     });
                 }
@@ -139,7 +159,7 @@ function register(username, password, callback) {
 }
 
 function login(username, password, callback) {
-    fetch(`SELECT id, password_hash, is_leader FROM ${LOGINS_TABLE} WHERE username = ?`, [username], (error, rows) => {
+    fetch(`SELECT id, password_hash, is_leader, leader_id FROM ${LOGINS_TABLE} WHERE username = ?`, [username], (error, rows) => {
         if (error) {
             callback(error);
         } else if (rows.length === 0) {
@@ -150,8 +170,31 @@ function login(username, password, callback) {
             if (hash !== parts[0]) {
                 callback(resultCode.badCredentials);
             } else {
-                callback(resultCode.success, { id: rows[0].id, isLeader: rows[0].is_leader === 1 });
+                callback(resultCode.success, {
+                    id: rows[0].id,
+                    isLeader: rows[0].is_leader === 1,
+                    leaderId: rows[0].leader_id
+                });
             }
+        }
+    });
+}
+
+function getAllIds(callback) {
+    const result = {};
+    fetch(`SELECT id FROM ${CHALLENGERS_TABLE}`, [], (error, rows) => {
+        if (error) {
+            callback(error);
+        } else {
+            result.challengers = rows.map(row => row.id);
+            fetch(`SELECT id FROM ${LEADERS_TABLE}`, [], (error, rows) => {
+                if (error) {
+                    callback(error);
+                } else {
+                    result.leaders = rows.map(row => row.id);
+                    callback(resultCode.success, result);
+                }
+            });
         }
     });
 }
@@ -368,6 +411,22 @@ function unhold(id, challengerId, placeAtFront, callback) {
     });
 }
 
+function getAllChallengers(callback) {
+    fetch(`SELECT id, display_name FROM ${CHALLENGERS_TABLE}`, [], (error, rows) => {
+        if (error) {
+            callback(error);
+        } else {
+            const result = [];
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                result.push({ id: row.id, name: row.display_name });
+            }
+
+            callback(resultCode.success, result);
+        }
+    });
+}
+
 function getLeaderMetrics(callback) {
     fetch(`SELECT l.id, l.leader_name, m.status FROM ${MATCHES_TABLE} AS m INNER JOIN ${LEADERS_TABLE} AS l ON l.id = m.leader_id WHERE m.status IN (2, 3) AND l.id NOT IN ('e402ab487cf27380', '072d76daa9a85620')`, [], (error, rows) => {
         if (error) {
@@ -401,7 +460,7 @@ function debugSave(sql) {
         return;
     }
 
-    save(sql, [], console.log);
+    save(sql, [], log);
 }
 
 module.exports = {
@@ -416,6 +475,7 @@ module.exports = {
         reportResult: reportResult,
         hold: hold,
         unhold: unhold,
+        getAllChallengers: getAllChallengers,
         metrics: getLeaderMetrics
     },
     resultCode: resultCode,
@@ -423,6 +483,7 @@ module.exports = {
     matchStatus: matchStatus,
     generateHex: generateHex,
     register: register,
-    login: login
+    login: login,
+    getAllIds: getAllIds
     //debugSave: debugSave
 };
