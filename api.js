@@ -28,6 +28,7 @@ let sessionCache;
 let idCache;
 
 const AUTH_HEADER = 'Authorization';
+const PPL_EVENT_HEADER = 'PPL-Event';
 
 /******************
  * Util functions *
@@ -125,6 +126,7 @@ function getLeaderInfo(req, res) {
                 badgeName: result.badgeName,
                 winCount: result.winCount,
                 lossCount: result.lossCount,
+                badgesAwarded: result.badgesAwarded,
                 queue: result.queue,
                 onHold: result.onHold
             });
@@ -252,6 +254,7 @@ function pruneCache() {
  *********************/
 app.post('/register', (req, res) => {
     const credentials = req.get(AUTH_HEADER);
+    const pplEvent = req.get(PPL_EVENT_HEADER);
 
     if (!credentials) {
         res.status(400).json({ error: 'Missing required Authorization header' });
@@ -265,7 +268,7 @@ app.post('/register', (req, res) => {
     }
 
     log('Registering new user');
-    db.register(parts[0], parts[1], (error, result) => {
+    db.register(parts[0], parts[1], pplEvent, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -284,6 +287,7 @@ app.post('/register', (req, res) => {
 
 app.post('/login', (req, res) => {
     const credentials = req.get(AUTH_HEADER);
+    const pplEvent = req.get(PPL_EVENT_HEADER);
 
     if (!credentials) {
         res.status(400).json({ error: 'Missing required Authorization header' });
@@ -297,7 +301,7 @@ app.post('/login', (req, res) => {
     }
 
     log('Logging in user');
-    db.login(parts[0], parts[1], (error, result) => {
+    db.login(parts[0], parts[1], pplEvent, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -321,6 +325,17 @@ app.post('/logout/:id', (req, res) => {
     }
 
     res.status(200).json({});
+});
+
+app.get('/allleaderdata', (req, res) => {
+    log('Fetching all leader data');
+    db.getAllLeaderData((error, result) => {
+        if (error) {
+            handleDbError(error, res);
+        } else {
+            res.json(result);
+        }
+    });
 });
 
 /*******************
@@ -440,8 +455,8 @@ app.post('/leader/:id/report/:challenger', (req, res) => {
         return;
     }
 
-    log(`loginId=${req.params.id}, leaderId=${req.leaderId} reporting match result ${!!req.body.challengerWin} for challengerId=${req.params.challenger}`);
-    db.leader.reportResult(req.leaderId, req.params.challenger, !!req.body.challengerWin, (error, result) => {
+    log(`loginId=${req.params.id}, leaderId=${req.leaderId} reporting match result ${!!req.body.challengerWin}, badge awarded ${!!req.body.badgeAwarded} for challengerId=${req.params.challenger}`);
+    db.leader.reportResult(req.leaderId, req.params.challenger, !!req.body.challengerWin, !!req.body.badgeAwarded, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -483,8 +498,9 @@ app.post('/leader/:id/unhold/:challenger', (req, res) => {
 });
 
 app.get('/leader/:id/allchallengers', (req, res) => {
+    const pplEvent = req.get(PPL_EVENT_HEADER);
     log(`loginId=${req.params.id}, leaderId=${req.leaderId} fetching all challengers`);
-    db.leader.getAllChallengers((error, result) => {
+    db.leader.getAllChallengers(pplEvent, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
