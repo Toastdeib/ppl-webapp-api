@@ -1,5 +1,6 @@
 const sql = require('mysql');
 const crypto = require('crypto');
+const util = require('toast-utils');
 const config = require('./config.js');
 
 const TABLE_SUFFIX = '';
@@ -72,25 +73,10 @@ const matchStatus = {
     gary: 5 // Challenger win but no badge awarded because the challenger was a complete prick
 };
 
-function zeroPad(value, length) {
-    let string = '' + value;
-    while (string.length < length) {
-        string = '0' + string;
-    }
-
-    return string;
-}
-
-function log(msg) {
-    const now = new Date();
-    const timestamp = `[${now.getFullYear()}-${zeroPad(now.getMonth() + 1, 2)}-${zeroPad(now.getDate(), 2)} ${zeroPad(now.getHours(), 2)}:${zeroPad(now.getMinutes(), 2)}:${zeroPad(now.getSeconds(), 2)}]`;
-    console.log(`${timestamp} ${msg}`);
-}
-
 function fetch(query, params, callback) {
     db.query(query, params, (error, result) => {
         if (error) {
-            log('Database fetch failed');
+            util.log('Database fetch failed');
             console.log(error);
             callback(resultCode.dbFailure, []);
             return;
@@ -103,7 +89,7 @@ function fetch(query, params, callback) {
 function save(query, params, callback) {
     db.query(query, params, (error, result) => {
         if (error) {
-            log('Error: save failed');
+            util.log('Error: save failed');
             console.log(error);
             callback(resultCode.dbFailure);
             return;
@@ -230,7 +216,7 @@ function getAllIds(callback) {
 }
 
 function getAllLeaderData(callback) {
-    fetch(`SELECT id, leader_name, badge_name, badge_art, portrait_art FROM ${LEADERS_TABLE}`, [], (error, rows) => {
+    fetch(`SELECT id, leader_name, badge_name, leader_bio, leader_tagline FROM ${LEADERS_TABLE}`, [], (error, rows) => {
         if (error) {
             callback(error);
         } else {
@@ -240,8 +226,8 @@ function getAllLeaderData(callback) {
                 result[row.id] = {
                     name: row.leader_name,
                     badgeName: row.badge_name,
-                    badgeArt: row.badge_art,
-                    portraitArt: row.portrait_art
+                    bio: row.leader_bio,
+                    tagline: row.leader_tagline
                 };
             }
 
