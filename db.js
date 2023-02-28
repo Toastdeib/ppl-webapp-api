@@ -170,7 +170,7 @@ function generateBingoBoard() {
     return shuffled.join(',');
 }
 
-function inflateBingoBoard(flatBoard) {
+function inflateBingoBoard(flatBoard, earnedBadges) {
     const board = [];
     const split = flatBoard.split(',');
     if (split.length !== 25) {
@@ -181,7 +181,10 @@ function inflateBingoBoard(flatBoard) {
     for (let i = 0; i < 5; i++) {
         board.push([]);
         for (let k = 0; k < 5; k++) {
-            board[i].push(split.splice(0, 1)[0]);
+            const id = split.splice(0, 1)[0];
+            const blob = {};
+            blob[id] = id === '' || earnedBadges.indexOf(id) > -1;
+            board[i].push(blob);
         }
     }
 
@@ -332,8 +335,7 @@ function getChallengerInfo(id, callback) {
             const result = {
                 displayName: rows[0].display_name,
                 queuesEntered: [],
-                badgesEarned: [],
-                bingoBoard: inflateBingoBoard(bingoBoard)
+                badgesEarned: []
             };
 
             // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -385,6 +387,28 @@ function setDisplayName(id, name, callback) {
             callback(resultCode.notFound);
         } else {
             callback(resultCode.success);
+        }
+    });
+}
+
+function getBingoBoard(id, callback) {
+    fetch(`SELECT bingo_board FROM ${CHALLENGERS_TABLE} WHERE id = ?`, [id], (error, rows) => {
+        if (error) {
+            callback(error);
+        } else if (rows.length === 0) {
+            callback(resultCode.notFound);
+        } else {
+            const flatBoard = rows[0].bingo_board;
+            fetch(`SELECT leader_id FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [id, matchStatus.win, matchStatus.ash], (error, rows) => {
+                if (error) {
+                    callback(error);
+                } else {
+                    const result = {
+                        bingoBoard: inflateBingoBoard(flatBoard, rows.map(row => row.leader_id))
+                    };
+                    callback(resultCode.success, result);
+                }
+            });
         }
     });
 }
@@ -609,7 +633,8 @@ fetchBingoIds();
 module.exports = {
     challenger: {
         getInfo: getChallengerInfo,
-        setDisplayName: setDisplayName
+        setDisplayName: setDisplayName,
+        getBingoBoard: getBingoBoard
     },
     leader: {
         getInfo: getLeaderInfo,

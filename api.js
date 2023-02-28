@@ -94,7 +94,6 @@ function getChallengerInfo(req, res) {
                 displayName: result.displayName,
                 queuesEntered: result.queuesEntered,
                 badgesEarned: result.badgesEarned,
-                bingoBoard: result.bingoBoard,
                 championDefeated: result.championDefeated
             });
         }
@@ -361,6 +360,17 @@ app.post('/challenger/:id', (req, res) => {
             handleDbError(error, res);
         } else {
             getChallengerInfo(req, res);
+        }
+    });
+});
+
+app.post('/challenger/:id/bingoboard', (req, res) => {
+    util.log(`Returning bingo board for id=${req.params.id}`);
+    db.challenger.getBingoBoard(req.params.id, (error, result) => {
+        if (error) {
+            handleDbError(error, res);
+        } else {
+            res.json(result);
         }
     });
 });
