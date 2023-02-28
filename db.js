@@ -9,6 +9,10 @@ const CHALLENGERS_TABLE = 'ppl_webapp_challengers' + TABLE_SUFFIX;
 const LEADERS_TABLE = 'ppl_webapp_leaders' + TABLE_SUFFIX;
 const MATCHES_TABLE = 'ppl_webapp_matches' + TABLE_SUFFIX;
 
+const BINGO_ID_COUNT = 24;
+
+let leaderIds, eliteIds;
+
 /* TABLE SCHEMA *
  * ppl_webapp_logins
  * - id: VARCHAR(16)
@@ -20,11 +24,15 @@ const MATCHES_TABLE = 'ppl_webapp_matches' + TABLE_SUFFIX;
  * ppl_webapp_challengers
  * - id: VARCHAR(16)
  * - display_name: VARCHAR(40)
+ * - bingo_board: VARCHAR(350)
  *
  * ppl_webapp_leaders
  * - id: VARCHAR(16)
  * - leader_name: VARCHAR(80)
+ * - leader_type: TINYINT
  * - badge_name: VARCHAR(40)
+ * - leader_bio: VARCHAR(800)
+ * - leader_tagline: VARCHAR(100)
  *
  * ppl_webapp_matches
  * - match_id: INT
@@ -116,6 +124,70 @@ function pplEventToBitmask(pplEvent) {
     }
 }
 
+function fetchBingoIds() {
+    fetch(`SELECT id, leader_type FROM ${LEADERS_TABLE} WHERE leader_type <> ?`, [leaderType.champion], (error, rows) => {
+        if (error) {
+            util.log(`Couldn't populate IDs for bingo boards, errorCode=${error}`);
+        } else if (rows.length === 0) {
+            util.log('Couldn\'t populate IDs for bingo boards, no IDs found');
+        } else {
+            leaderIds = [];
+            eliteIds = [];
+            for (let i = 0; i < rows.length; i++) {
+                let row = rows[i];
+                if (row.leader_type === leaderType.elite) {
+                    eliteIds.push(row.id);
+                } else {
+                    leaderIds.push(row.id);
+                }
+            }
+
+            util.log(`Bingo board IDs successfully populated; leader count=${leaderIds.length}, elite count=${eliteIds.length}`);
+        }
+    });
+}
+
+function generateBingoBoard() {
+    const copy = leaderIds.slice();
+    const eliteCopy = eliteIds.slice();
+    while (copy.length < BINGO_ID_COUNT && eliteCopy.length > 0) {
+        const index = Math.floor(Math.random() * eliteCopy.length);
+        copy.push(eliteCopy.splice(index, 1)[0]);
+    }
+
+    if (copy.length < BINGO_ID_COUNT) {
+        util.log('Insufficient IDs for a bingo board');
+        return '';
+    }
+
+    const shuffled = [];
+    while (copy.length > 0) {
+        const index = Math.floor(Math.random() * copy.length);
+        shuffled.push(copy.splice(index, 1)[0]);
+    }
+
+    shuffled.splice(Math.floor(shuffled.length / 2), 0, '');
+    return shuffled.join(',');
+}
+
+function inflateBingoBoard(flatBoard) {
+    const board = [];
+    const split = flatBoard.split(',');
+    if (split.length !== 25) {
+        util.log(`Couldn't inflate bingo board; split array was length ${split.length}`);
+        return board;
+    }
+
+    for (let i = 0; i < 5; i++) {
+        board.push([]);
+        for (let k = 0; k < 5; k++) {
+            board[i].push(split.splice(0, 1)[0]);
+        }
+    }
+
+    return board;
+}
+
 // Authentication functions
 function generateHex(length) {
     return crypto.randomBytes(length).toString('hex');
@@ -145,7 +217,8 @@ function register(username, password, pplEvent, callback) {
                 } else if (rowCount === 0) {
                     callback(resultCode.registrationFailure);
                 } else {
-                    save(`INSERT INTO ${CHALLENGERS_TABLE} (id, display_name) VALUES (?, ?)`, [id, username], (error, rowCount) => {
+                    const bingoBoard = generateBingoBoard();
+                    save(`INSERT INTO ${CHALLENGERS_TABLE} (id, display_name, bingo_board) VALUES (?, ?, ?)`, [id, username, bingoBoard], (error, rowCount) => {
                         if (error) {
                             callback(error);
                         } else if (rowCount === 0) {
@@ -238,14 +311,27 @@ function getAllLeaderData(callback) {
 
 // Challenger functions
 function getChallengerInfo(id, callback) {
-    fetch(`SELECT display_name FROM ${CHALLENGERS_TABLE} WHERE id = ?`, [id], (error, rows) => {
+    fetch(`SELECT display_name, bingo_board FROM ${CHALLENGERS_TABLE} WHERE id = ?`, [id], (error, rows) => {
         if (error) {
             callback(error);
         } else if (rows.length === 0) {
             callback(resultCode.notFound);
         } else {
+            let bingoBoard = rows[0].bingo_board;
+            if (!bingoBoard) {
+                bingoBoard = generateBingoBoard();
+                save(`UPDATE ${CHALLENGERS_TABLE} SET bingo_board = ? WHERE id = ?`, [bingoBoard, id], (error, rowCount) => {
+                    if (error) {
+                        util.log(`Error saving new bingo board for id=${id}`);
+                    } else {
+                        util.log(`Saved new bingo board for id=${id}`);
+                    }
+                });
+            }
+
             const result = {
                 displayName: rows[0].display_name,
+                bingoBoard: inflateBingoBoard(bingoBoard),
                 queuesEntered: [],
                 badgesEarned: []
             };
@@ -512,6 +598,8 @@ function debugSave(sql) {
     save(sql, [], log);
 }
 
+fetchBingoIds();
+
 module.exports = {
     challenger: {
         getInfo: getChallengerInfo,
@@ -534,6 +622,5 @@ module.exports = {
     register: register,
     login: login,
     getAllIds: getAllIds,
-    getAllLeaderData: getAllLeaderData,
-    //debugSave: debugSave
+    getAllLeaderData: getAllLeaderData
 };
