@@ -331,9 +331,9 @@ function getChallengerInfo(id, callback) {
 
             const result = {
                 displayName: rows[0].display_name,
-                bingoBoard: inflateBingoBoard(bingoBoard),
                 queuesEntered: [],
-                badgesEarned: []
+                badgesEarned: [],
+                bingoBoard: inflateBingoBoard(bingoBoard)
             };
 
             // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -350,18 +350,24 @@ function getChallengerInfo(id, callback) {
                         });
                     }
 
-                    fetch(`SELECT m.leader_id, l.leader_name, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, matchStatus.win, matchStatus.ash], (error, rows) => {
+                    fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, matchStatus.win, matchStatus.ash], (error, rows) => {
                         if (error) {
                             callback(error);
                         } else {
+                            let championDefeated = false;
                             for (let i = 0; i < rows.length; i++) {
                                 result.badgesEarned.push({
                                     leaderId: rows[i].leader_id,
                                     leaderName: rows[i].leader_name,
                                     badgeName: rows[i].badge_name
                                 });
+
+                                if (rows[i].leader_type === leaderType.champion) {
+                                    championDefeated = true;
+                                }
                             }
 
+                            result.championDefeated = championDefeated;
                             callback(resultCode.success, result);
                         }
                     });

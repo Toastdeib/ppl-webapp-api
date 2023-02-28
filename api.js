@@ -93,7 +93,9 @@ function getChallengerInfo(req, res) {
                 id: req.params.id,
                 displayName: result.displayName,
                 queuesEntered: result.queuesEntered,
-                badgesEarned: result.badgesEarned
+                badgesEarned: result.badgesEarned,
+                bingoBoard: result.bingoBoard,
+                championDefeated: result.championDefeated
             });
         }
     });
