@@ -11,6 +11,9 @@ const MATCHES_TABLE = 'ppl_webapp_matches' + TABLE_SUFFIX;
 
 const BINGO_ID_COUNT = 24;
 
+// Excluding Sal and Aidan due to overlap (Garganacl and Roaring Moon, respectively)
+const EXCLUDED_BINGO_IDS = ['3ffb37c301b4', 'f27c016d37c9'];
+
 let leaderIds, eliteIds;
 
 /* TABLE SCHEMA *
@@ -65,11 +68,13 @@ const resultCode = {
     invalidToken: 11
 };
 
+// This is a bitmask now - leaders can be a mix of casual/intermediate/veteran
 const leaderType = {
-    casual: 0,
-    veteran: 1,
-    elite: 2,
-    champion: 3
+    casual: 1,
+    intermediate: 2,
+    veteran: 4,
+    elite: 8,
+    champion: 16
 };
 
 const matchStatus = {
@@ -152,7 +157,10 @@ function generateBingoBoard() {
     const eliteCopy = eliteIds.slice();
     while (copy.length < BINGO_ID_COUNT && eliteCopy.length > 0) {
         const index = Math.floor(Math.random() * eliteCopy.length);
-        copy.push(eliteCopy.splice(index, 1)[0]);
+        const id = eliteCopy.splice(index, 1)[0];
+        if (EXCLUDED_BINGO_IDS.indexOf(id) === -1) {
+            copy.push(id);
+        }
     }
 
     if (copy.length < BINGO_ID_COUNT) {
@@ -292,7 +300,7 @@ function getAllIds(callback) {
 }
 
 function getAllLeaderData(callback) {
-    fetch(`SELECT id, leader_name, badge_name, leader_bio, leader_tagline FROM ${LEADERS_TABLE}`, [], (error, rows) => {
+    fetch(`SELECT id, leader_name, leader_type, badge_name, leader_bio, leader_tagline FROM ${LEADERS_TABLE}`, [], (error, rows) => {
         if (error) {
             callback(error);
         } else {
@@ -301,6 +309,7 @@ function getAllLeaderData(callback) {
                 let row = rows[i];
                 result[row.id] = {
                     name: row.leader_name,
+                    leaderType: row.leader_type,
                     badgeName: row.badge_name,
                     bio: row.leader_bio,
                     tagline: row.leader_tagline
@@ -415,7 +424,7 @@ function getBingoBoard(id, callback) {
 
 // Leader functions
 function getLeaderInfo(id, callback) {
-    fetch(`SELECT leader_name, badge_name FROM ${LEADERS_TABLE} WHERE id = ?`, [id], (error, rows) => {
+    fetch(`SELECT leader_name, leader_type, badge_name FROM ${LEADERS_TABLE} WHERE id = ?`, [id], (error, rows) => {
         if (error) {
             callback(error);
         } else if (rows.length === 0) {
@@ -423,6 +432,7 @@ function getLeaderInfo(id, callback) {
         } else {
             const result = {
                 leaderName: rows[0].leader_name,
+                leaderType: rows[0].leader_type,
                 badgeName: rows[0].badge_name,
                 winCount: 0,
                 lossCount: 0,

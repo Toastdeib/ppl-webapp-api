@@ -110,6 +110,7 @@ function getLeaderInfo(req, res) {
                 loginId: req.params.id,
                 leaderId: req.leaderId,
                 leaderName: result.leaderName,
+                leaderType: result.leaderType,
                 badgeName: result.badgeName,
                 winCount: result.winCount,
                 lossCount: result.lossCount,
@@ -364,7 +365,7 @@ app.post('/challenger/:id', (req, res) => {
     });
 });
 
-app.post('/challenger/:id/bingoboard', (req, res) => {
+app.get('/challenger/:id/bingoboard', (req, res) => {
     util.log(`Returning bingo board for id=${req.params.id}`);
     db.challenger.getBingoBoard(req.params.id, (error, result) => {
         if (error) {
