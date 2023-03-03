@@ -7,4 +7,5 @@ module.exports = {
     mysqlUser: '[MYSQL USERNAME GOES HERE]',
     mysqlPassword: '[MYSQL PASSWORD GOES HERE]',
     mysqlDatabase: '[MYSQL DATABASE NAME GOES HERE]',
+    championSurveyUrl: 'localhost'
 }

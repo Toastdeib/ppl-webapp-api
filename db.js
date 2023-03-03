@@ -379,6 +379,10 @@ function getChallengerInfo(id, callback) {
                             }
 
                             result.championDefeated = championDefeated;
+                            if (championDefeated) {
+                                result.championSurveyUrl = config.championSurveyUrl;
+                            }
+
                             callback(resultCode.success, result);
                         }
                     });
@@ -408,7 +412,7 @@ function getBingoBoard(id, callback) {
             callback(resultCode.notFound);
         } else {
             const flatBoard = rows[0].bingo_board;
-            fetch(`SELECT leader_id FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [id, matchStatus.win, matchStatus.ash], (error, rows) => {
+            fetch(`SELECT leader_id FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?, ?)`, [id, matchStatus.loss, matchStatus.win, matchStatus.ash], (error, rows) => {
                 if (error) {
                     callback(error);
                 } else {

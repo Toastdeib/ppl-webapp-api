@@ -89,12 +89,9 @@ function getChallengerInfo(req, res) {
         if (error) {
             handleDbError(error, res);
         } else {
-            res.json({ 
+            res.json({
                 id: req.params.id,
-                displayName: result.displayName,
-                queuesEntered: result.queuesEntered,
-                badgesEarned: result.badgesEarned,
-                championDefeated: result.championDefeated
+                ...result
             });
         }
     });
@@ -109,14 +106,7 @@ function getLeaderInfo(req, res) {
             res.json({
                 loginId: req.params.id,
                 leaderId: req.leaderId,
-                leaderName: result.leaderName,
-                leaderType: result.leaderType,
-                badgeName: result.badgeName,
-                winCount: result.winCount,
-                lossCount: result.lossCount,
-                badgesAwarded: result.badgesAwarded,
-                queue: result.queue,
-                onHold: result.onHold
+                ...result
             });
         }
     });
