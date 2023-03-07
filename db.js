@@ -9,7 +9,11 @@ const CHALLENGERS_TABLE = 'ppl_webapp_challengers' + TABLE_SUFFIX;
 const LEADERS_TABLE = 'ppl_webapp_leaders' + TABLE_SUFFIX;
 const MATCHES_TABLE = 'ppl_webapp_matches' + TABLE_SUFFIX;
 
-const BINGO_ID_COUNT = 24;
+const BINGO_SPACE_COUNT = config.bingoBoardWidth * config.bingoBoardWidth;
+
+// For even-width boards, we don't want a free space since it can't be centered
+const BINGO_ID_COUNT = BINGO_SPACE_COUNT - (config.bingoBoardWidth % 2);
+const INCLUDE_FREE_SPACE = config.bingoBoardWidth % 2 === 1;
 
 // Excluding Sal and Aidan due to overlap (Garganacl and Roaring Moon, respectively)
 const EXCLUDED_BINGO_IDS = ['3ffb37c301b4', 'f27c016d37c9'];
@@ -153,42 +157,56 @@ function fetchBingoIds() {
 }
 
 function generateBingoBoard() {
-    const copy = leaderIds.slice();
+    const ids = [];
+    const leaderCopy = leaderIds.slice();
     const eliteCopy = eliteIds.slice();
-    while (copy.length < BINGO_ID_COUNT && eliteCopy.length > 0) {
-        const index = Math.floor(Math.random() * eliteCopy.length);
-        const id = eliteCopy.splice(index, 1)[0];
+
+    // Populate with random leader IDs first
+    while (ids.length < BINGO_ID_COUNT && leaderCopy.length > 0) {
+        const index = Math.floor(Math.random() * leaderCopy.length);
+        const id = leaderCopy.splice(index, 1)[0];
         if (EXCLUDED_BINGO_IDS.indexOf(id) === -1) {
-            copy.push(id);
+            ids.push(id);
         }
     }
 
-    if (copy.length < BINGO_ID_COUNT) {
+    // And then fill with elite IDs if we don't have enough
+    while (ids.length < BINGO_ID_COUNT && eliteCopy.length > 0) {
+        const index = Math.floor(Math.random() * eliteCopy.length);
+        const id = eliteCopy.splice(index, 1)[0];
+        if (EXCLUDED_BINGO_IDS.indexOf(id) === -1) {
+            ids.push(id);
+        }
+    }
+
+    if (ids.length < BINGO_ID_COUNT) {
         util.log('Insufficient IDs for a bingo board');
         return '';
     }
 
     const shuffled = [];
-    while (copy.length > 0) {
-        const index = Math.floor(Math.random() * copy.length);
-        shuffled.push(copy.splice(index, 1)[0]);
+    while (ids.length > 0) {
+        const index = Math.floor(Math.random() * ids.length);
+        shuffled.push(ids.splice(index, 1)[0]);
     }
 
-    shuffled.splice(Math.floor(shuffled.length / 2), 0, '');
+    if (INCLUDE_FREE_SPACE) {
+        shuffled.splice(Math.floor(shuffled.length / 2), 0, '');
+    }
     return shuffled.join(',');
 }
 
 function inflateBingoBoard(flatBoard, earnedBadges) {
     const board = [];
     const split = flatBoard.split(',');
-    if (split.length !== 25) {
+    if (split.length !== BINGO_SPACE_COUNT) {
         util.log(`Couldn't inflate bingo board; split array was length ${split.length}`);
         return board;
     }
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < config.bingoBoardWidth; i++) {
         board.push([]);
-        for (let k = 0; k < 5; k++) {
+        for (let k = 0; k < config.bingoBoardWidth; k++) {
             const id = split.splice(0, 1)[0];
             const blob = {};
             blob[id] = id === '' || earnedBadges.indexOf(id) > -1;
