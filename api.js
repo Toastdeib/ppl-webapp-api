@@ -22,7 +22,8 @@ const credentials = {
     ca: ca
 };
 
-const SESSION_EXPIRATION_MILLIS = 24 * 60 * 60 * 1000; // 1 day in ms
+const SESSION_EXPIRATION_MILLIS = 2 * 24 * 60 * 60 * 1000; // 2 days in ms
+const PRUNE_INTERVAL_MILLIS = 60 * 60 * 1000; // 1 hour in ms
 const CACHE_BACKUP_INTERVAL_MILLIS = 5 * 60 * 1000; // 5 minutes in ms
 const CACHE_FILE = 'cache.json';
 let sessionCache;
@@ -177,7 +178,7 @@ function validateSession(token, id, leaderRequest) {
         return false;
     }
 
-    session.lastUsed = new Date().getTime();
+    session.lastUsed = now;
     return session;
 }
 
@@ -516,7 +517,7 @@ httpsServer.listen(config.port, () => {
 
 initCaches();
 
-setInterval(pruneCache, SESSION_EXPIRATION_MILLIS);
+setInterval(pruneCache, PRUNE_INTERVAL_MILLIS);
 
 if (config.debug) {
     process.stdin.resume();
