@@ -201,6 +201,7 @@ function initCaches() {
         sessionCache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf-8'));
     } catch (err) {
         util.log('Could not restore session cache, initializing as empty instead');
+        sessionCache = {};
     }
 
     db.getAllIds((error, result) => {
