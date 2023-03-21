@@ -511,6 +511,10 @@ app.get('/metrics', (req, res) => {
     });
 });
 
+app.get('/appsettings', (req, res) => {
+    res.json({ showTrainerCard: new Date() > new Date(config.trainerCardShowDate) });
+});
+
 const httpsServer = https.createServer(credentials, app);
 httpsServer.listen(config.port, () => {
     util.log(`API running on port ${config.port}`);

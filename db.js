@@ -9,6 +9,9 @@ const CHALLENGERS_TABLE = 'ppl_webapp_challengers' + TABLE_SUFFIX;
 const LEADERS_TABLE = 'ppl_webapp_leaders' + TABLE_SUFFIX;
 const MATCHES_TABLE = 'ppl_webapp_matches' + TABLE_SUFFIX;
 
+const MAX_CHALLENGERS_PER_QUEUE = 20;
+const MAX_QUEUES_PER_CHALLENGER = 3;
+
 const BINGO_SPACE_COUNT = config.bingoBoardWidth * config.bingoBoardWidth;
 
 // For even-width boards, we don't want a free space since it can't be centered
@@ -17,6 +20,10 @@ const INCLUDE_FREE_SPACE = config.bingoBoardWidth % 2 === 1;
 
 // Excluding Sal and Aidan due to overlap (Garganacl and Roaring Moon, respectively)
 const EXCLUDED_BINGO_IDS = ['3ffb37c301b4', 'f27c016d37c9'];
+
+// Challenger/leader survey dates
+const SURVEY_START_DATE = new Date(config.surveyStartDate);
+const SURVEY_END_DATE = new Date(SURVEY_START_DATE.getTime() + (config.surveyDurationDays * 24 * 60 * 60 * 1000));
 
 let leaderIds, eliteIds;
 
@@ -39,7 +46,7 @@ let leaderIds, eliteIds;
  * - leader_type: TINYINT
  * - badge_name: VARCHAR(40)
  * - leader_bio: VARCHAR(800)
- * - leader_tagline: VARCHAR(100)
+ * - leader_tagline: VARCHAR(150)
  *
  * ppl_webapp_matches
  * - match_id: INT
@@ -217,6 +224,11 @@ function inflateBingoBoard(flatBoard, earnedBadges) {
     return board;
 }
 
+function shouldIncludeFeedbackSurvey() {
+    const now = new Date();
+    return now > SURVEY_START_DATE && now < SURVEY_END_DATE;
+}
+
 // Authentication functions
 function generateHex(length) {
     return crypto.randomBytes(length).toString('hex');
@@ -383,7 +395,7 @@ function getChallengerInfo(id, callback) {
                         if (error) {
                             callback(error);
                         } else {
-                            let championDefeated = false;
+                            let championDefeated = id === '433c4b55a17da084';//false; // TODO - Revert
                             for (let i = 0; i < rows.length; i++) {
                                 result.badgesEarned.push({
                                     leaderId: rows[i].leader_id,
@@ -399,6 +411,10 @@ function getChallengerInfo(id, callback) {
                             result.championDefeated = championDefeated;
                             if (championDefeated) {
                                 result.championSurveyUrl = config.championSurveyUrl;
+                            }
+
+                            if (shouldIncludeFeedbackSurvey()) {
+                                result.feedbackSurveyUrl = config.challengerSurveyUrl;
                             }
 
                             callback(resultCode.success, result);
@@ -498,6 +514,10 @@ function getLeaderInfo(id, callback) {
                             result.lossCount = losses + gary;
                             result.badgesAwarded = losses + ash;
 
+                            if (shouldIncludeFeedbackSurvey()) {
+                                result.feedbackSurveyUrl = config.leaderSurveyUrl;
+                            }
+
                             callback(resultCode.success, result);
                         }
                     });
@@ -524,13 +544,13 @@ function enqueue(id, challengerId, callback) {
             fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [id, matchStatus.inQueue], (error, rows) => {
                 if (error) {
                     callback(error);
-                } else if (rows.length >= 6) {
+                } else if (rows.length >= MAX_CHALLENGERS_PER_QUEUE) {
                     callback(resultCode.queueIsFull);
                 } else {
                     fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, matchStatus.inQueue, matchStatus.onHold], (error, rows) => {
                         if (error) {
                             callback(error);
-                        } else if (rows.length >= 3) {
+                        } else if (rows.length >= MAX_QUEUES_PER_CHALLENGER) {
                             callback(resultCode.tooManyChallenges);
                         } else {
                             save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, status, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP())`, [id, challengerId, matchStatus.inQueue], callback);

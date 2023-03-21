@@ -8,5 +8,10 @@ module.exports = {
     mysqlPassword: '[MYSQL PASSWORD GOES HERE]',
     mysqlDatabase: '[MYSQL DATABASE NAME GOES HERE]',
     championSurveyUrl: 'localhost',
+    challengerSurveyUrl: 'localhost',
+    leaderSurveyUrl: 'localhost',
+    surveyStartDate: '1970-01-01T00:00:00Z',
+    surveyDurationDays: 14,
+    trainerCardShowDate: '1970-01-01T00:00:00Z',
     bingoBoardWidth: 5
 }
