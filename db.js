@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const util = require('toast-utils');
 const config = require('./config.js');
 
-const TABLE_SUFFIX = '';
+const TABLE_SUFFIX = config.tableSuffix;
 const LOGINS_TABLE = 'ppl_webapp_logins';
 const CHALLENGERS_TABLE = 'ppl_webapp_challengers' + TABLE_SUFFIX;
 const LEADERS_TABLE = 'ppl_webapp_leaders' + TABLE_SUFFIX;
@@ -606,18 +606,28 @@ function hold(id, challengerId, callback) {
 }
 
 function unhold(id, challengerId, placeAtFront, callback) {
-    let sql = `UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
-    if (!placeAtFront) {
-        sql = `UPDATE ${MATCHES_TABLE} SET status = ?, timestamp = CURRENT_TIMESTAMP() WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
-    }
-
-    save(sql, [matchStatus.inQueue, id, challengerId, matchStatus.onHold], (error, rowCount) => {
+    fetch(`SELECT SUBDATE(MIN(timestamp), INTERVAL 1 MINUTE) front_timestamp FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [id, matchStatus.inQueue], (error, rows) => {
         if (error) {
             callback(error);
-        } else if (rowCount === 0) {
-            callback(resultCode.notInQueue);
         } else {
-            callback(resultCode.success);
+            let sql = `UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
+            let params = [matchStatus.inQueue, id, challengerId, matchStatus.onHold];
+            if (!placeAtFront) {
+                sql = `UPDATE ${MATCHES_TABLE} SET status = ?, timestamp = CURRENT_TIMESTAMP() WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
+            } else if (rows[0].front_timestamp) {
+                sql = `UPDATE ${MATCHES_TABLE} SET status = ?, timestamp = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
+                params.splice(1, 0, rows[0].front_timestamp);
+            }
+
+            save(sql, params, (error, rowCount) => {
+                if (error) {
+                    callback(error);
+                } else if (rowCount === 0) {
+                    callback(resultCode.notInQueue);
+                } else {
+                    callback(resultCode.success);
+                }
+            });
         }
     });
 }
