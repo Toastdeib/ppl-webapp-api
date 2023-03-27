@@ -85,7 +85,7 @@ function handleDbError(error, res) {
 }
 
 function getChallengerInfo(req, res) {
-    logger.info(`Returning challenger info for id=${req.params.id}`);
+    logger.info(`Returning challenger info for loginId=${req.params.id}`);
     db.challenger.getInfo(req.params.id, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -209,7 +209,7 @@ function initCaches() {
             logger.debug('Failed to initialize ID cache');
             idCache = { challengers: [], leaders: [] };
         } else {
-            logger.debug('Initalizing ID cache');
+            logger.debug('ID cache initialized');
             idCache = result;
         }
     });
@@ -237,21 +237,23 @@ app.post('/register', (req, res) => {
     const pplEvent = req.get(PPL_EVENT_HEADER);
 
     if (!credentials) {
+        logger.warn('Registration attempt with missing auth header');
         res.status(400).json({ error: 'Missing required Authorization header' });
         return;
     }
 
     const parts = decodeCredentials(credentials);
     if (!parts) {
+        logger.warn('Registration attempt with malformed auth header');
         res.status(400).json({ error: 'Authorization header was malformed' });
         return;
     }
 
-    logger.info('Registering new user');
     db.register(parts[0], parts[1], pplEvent, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
+            logger.info(`Registered loginId=${result.id} with username=${parts[0]}`);
             const token = createSession(result.id, result.isLeader, result.leaderId);
             idCache.challengers.push(result.id);
             res.json({
@@ -270,21 +272,23 @@ app.post('/login', (req, res) => {
     const pplEvent = req.get(PPL_EVENT_HEADER);
 
     if (!credentials) {
+        logger.warn('Login attempt with missing auth header');
         res.status(400).json({ error: 'Missing required Authorization header' });
         return;
     }
 
     const parts = decodeCredentials(credentials);
     if (!parts) {
+        logger.warn('Login attempt with malformed auth header');
         res.status(400).json({ error: 'Authorization header was malformed' });
         return;
     }
 
-    logger.info('Logging in user');
     db.login(parts[0], parts[1], pplEvent, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
+            logger.info(`Logged in loginId=${result.id} with username=${parts[0]}`);
             const token = createSession(result.id, result.isLeader, result.leaderId);
             res.json({
                 id: result.id,
@@ -298,7 +302,7 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/logout/:id', (req, res) => {
-    logger.info(`Logging out userId=${req.params.id}`);
+    logger.info(`Logged out loginId=${req.params.id}`);
     const token = req.get(AUTH_HEADER);
     if (token) {
         clearSession(token, req.params.id);
@@ -324,13 +328,13 @@ app.get('/allleaderdata', (req, res) => {
 app.use('/challenger/:id', (req, res, next) => {
     const token = req.get(AUTH_HEADER);
     if (!token) {
-        logger.error('Missing auth header in challenger endpoint request');
+        logger.warn('Challenger endpoint request with missing auth header');
         res.status(403).json({});
         return;
     }
 
     if (!validateSession(token, req.params.id, false)) {
-        logger.error('Invalid auth header in challenger endpoint request');
+        logger.warn('Challenger endpoint request with invalid auth header');
         res.status(403).json({});
         return;
     }
@@ -347,7 +351,7 @@ app.post('/challenger/:id', (req, res) => {
         return;
     }
 
-    logger.info(`Setting display name for id=${req.params.id} to ${name}`);
+    logger.info(`Setting display name for loginId=${req.params.id} to ${name}`);
     db.challenger.setDisplayName(req.params.id, name, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -358,7 +362,7 @@ app.post('/challenger/:id', (req, res) => {
 });
 
 app.get('/challenger/:id/bingoboard', (req, res) => {
-    logger.info(`Returning bingo board for id=${req.params.id}`);
+    logger.info(`Returning bingo board for loginId=${req.params.id}`);
     db.challenger.getBingoBoard(req.params.id, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -370,6 +374,7 @@ app.get('/challenger/:id/bingoboard', (req, res) => {
 
 app.post('/challenger/:id/enqueue/:leader', (req, res) => {
     if (!validateLeaderId(req.params.leader)) {
+        logger.warn(`loginId=${req.params.id} attempted to join queue for invalid leaderId=${req.params.leader}`);
         res.status(400).json({ error: `Leader ID ${req.params.leader} is invalid` });
         return;
     }
@@ -390,14 +395,14 @@ app.post('/challenger/:id/enqueue/:leader', (req, res) => {
 app.use('/leader/:id', (req, res, next) => {
     const token = req.get(AUTH_HEADER);
     if (!token) {
-        logger.error('Missing auth header in leader endpoint request');
+        logger.error('Leader endpoint request with missing auth header');
         res.status(403).json({});
         return;
     }
 
     const session = validateSession(token, req.params.id, true);
     if (!session) {
-        logger.error('Invalid auth header in leader endpoint request');
+        logger.error('Leader endpoint request with invalid auth header');
         res.status(403).json({});
         return;
     }
@@ -410,6 +415,7 @@ app.get('/leader/:id', getLeaderInfo);
 
 app.post('/leader/:id/enqueue/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
+        logger.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to enqueue invalid challengerId=${req.params.challenger}`);
         res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
         return;
     }
@@ -426,6 +432,7 @@ app.post('/leader/:id/enqueue/:challenger', (req, res) => {
 
 app.post('/leader/:id/dequeue/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
+        logger.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to dequeue invalid challengerId=${req.params.challenger}`);
         res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
         return;
     }
@@ -442,6 +449,7 @@ app.post('/leader/:id/dequeue/:challenger', (req, res) => {
 
 app.post('/leader/:id/report/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
+        logger.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to report a match result for invalid challengerId=${req.params.challenger}`);
         res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
         return;
     }
@@ -458,6 +466,7 @@ app.post('/leader/:id/report/:challenger', (req, res) => {
 
 app.post('/leader/:id/hold/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
+        logger.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to hold invalid challengerId=${req.params.challenger}`);
         res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
         return;
     }
@@ -474,6 +483,7 @@ app.post('/leader/:id/hold/:challenger', (req, res) => {
 
 app.post('/leader/:id/unhold/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
+        logger.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to unhold invalid challengerId=${req.params.challenger}`);
         res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
         return;
     }
@@ -512,6 +522,7 @@ app.get('/metrics', (req, res) => {
 });
 
 app.get('/appsettings', (req, res) => {
+    logger.info('Returning app settings');
     res.json({ showTrainerCard: new Date() > new Date(config.trainerCardShowDate) });
 });
 
