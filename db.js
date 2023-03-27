@@ -1,6 +1,6 @@
 const sql = require('mysql');
 const crypto = require('crypto');
-const util = require('toast-utils');
+const logger = require('./logger.js');
 const config = require('./config.js');
 
 const TABLE_SUFFIX = config.tableSuffix;
@@ -100,7 +100,7 @@ const matchStatus = {
 function fetch(query, params, callback) {
     db.query(query, params, (error, result) => {
         if (error) {
-            util.log('Database fetch failed');
+            logger.error('Database fetch failed');
             console.log(error);
             callback(resultCode.dbFailure, []);
             return;
@@ -113,7 +113,7 @@ function fetch(query, params, callback) {
 function save(query, params, callback) {
     db.query(query, params, (error, result) => {
         if (error) {
-            util.log('Error: save failed');
+            logger.error('Error: save failed');
             console.log(error);
             callback(resultCode.dbFailure);
             return;
@@ -143,9 +143,9 @@ function pplEventToBitmask(pplEvent) {
 function fetchBingoIds() {
     fetch(`SELECT id, leader_type FROM ${LEADERS_TABLE} WHERE leader_type <> ?`, [leaderType.champion], (error, rows) => {
         if (error) {
-            util.log(`Couldn't populate IDs for bingo boards, errorCode=${error}`);
+            logger.error(`Couldn't populate IDs for bingo boards, errorCode=${error}`);
         } else if (rows.length === 0) {
-            util.log('Couldn\'t populate IDs for bingo boards, no IDs found');
+            logger.error('Couldn\'t populate IDs for bingo boards, no IDs found');
         } else {
             leaderIds = [];
             eliteIds = [];
@@ -158,7 +158,7 @@ function fetchBingoIds() {
                 }
             }
 
-            util.log(`Bingo board IDs successfully populated; leader count=${leaderIds.length}, elite count=${eliteIds.length}`);
+            logger.info(`Bingo board IDs successfully populated; leader count=${leaderIds.length}, elite count=${eliteIds.length}`);
         }
     });
 }
@@ -187,7 +187,7 @@ function generateBingoBoard() {
     }
 
     if (ids.length < BINGO_ID_COUNT) {
-        util.log('Insufficient IDs for a bingo board');
+        logger.error('Insufficient IDs for a bingo board');
         return '';
     }
 
@@ -207,7 +207,7 @@ function inflateBingoBoard(flatBoard, earnedBadges) {
     const board = [];
     const split = flatBoard.split(',');
     if (split.length !== BINGO_SPACE_COUNT) {
-        util.log(`Couldn't inflate bingo board; split array was length ${split.length}`);
+        logger.error(`Couldn't inflate bingo board; split array was length ${split.length}`);
         return board;
     }
 
@@ -364,9 +364,9 @@ function getChallengerInfo(id, callback) {
                 bingoBoard = generateBingoBoard();
                 save(`UPDATE ${CHALLENGERS_TABLE} SET bingo_board = ? WHERE id = ?`, [bingoBoard, id], (error, rowCount) => {
                     if (error) {
-                        util.log(`Error saving new bingo board for id=${id}`);
+                        logger.error(`Error saving new bingo board for id=${id}, error=${error}`);
                     } else {
-                        util.log(`Saved new bingo board for id=${id}`);
+                        logger.info(`Saved new bingo board for id=${id}`);
                     }
                 });
             }
