@@ -10,6 +10,7 @@ const config = require('./config.js');
 
 app.use(cors({ origin: config.corsOrigin }));
 app.use(bodyParser.json());
+app.set('view engine', 'pug');
 
 // Certificate
 const privateKey = fs.readFileSync(config.certPath + 'privkey.pem', 'utf8');
@@ -227,6 +228,11 @@ function pruneCache() {
     }
 
     saveCache();
+}
+
+function formatLogLine(line) {
+    const json = JSON.parse(line);
+    return `[${json.timestamp}] ${json.level}: ${json.message}`;
 }
 
 /*********************
@@ -524,6 +530,16 @@ app.get('/metrics', (req, res) => {
 app.get('/appsettings', (req, res) => {
     logger.info('Returning app settings');
     res.json({ showTrainerCard: new Date() > new Date(config.trainerCardShowDate) });
+});
+
+app.get('/logview', (req, res) => {
+    logger.debug('Rendering logs page');
+    const today = new Date();
+    const lines = fs.readFileSync(`./logs/combined-${today.toISOString().substring(0, 10)}.log`, 'utf8').trim().split('\n');
+    res.render('logs', {
+        date: today.toDateString(),
+        lines: lines.map(formatLogLine)
+    });
 });
 
 const httpsServer = https.createServer(credentials, app);

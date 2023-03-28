@@ -1,0 +1,9 @@
+html
+    head
+        title Log Viewer
+        style
+            include logs.css
+    body
+        div.header= 'Logs for ' + date
+        each line in lines
+            div.log= line
