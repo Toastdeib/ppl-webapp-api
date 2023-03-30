@@ -149,8 +149,7 @@ function fetchBingoIds() {
         } else {
             leaderIds = [];
             eliteIds = [];
-            for (let i = 0; i < rows.length; i++) {
-                let row = rows[i];
+            for (row of rows) {
                 if (row.leader_type === leaderType.elite) {
                     eliteIds.push(row.id);
                 } else {
@@ -335,8 +334,7 @@ function getAllLeaderData(callback) {
             callback(error);
         } else {
             const result = {};
-            for (let i = 0; i < rows.length; i++) {
-                let row = rows[i];
+            for (row of rows) {
                 result[row.id] = {
                     name: row.leader_name,
                     leaderType: row.leader_type,
@@ -382,12 +380,12 @@ function getChallengerInfo(id, callback) {
                 if (error) {
                     callback(error);
                 } else {
-                    for (let i = 0; i < rows.length; i++) {
+                    for (row of rows) {
                         // Position gets a -1 here because the count includes the challenger themselves and we want it 0-indexed
                         result.queuesEntered.push({
-                            leaderId: rows[i].leader_id,
-                            leaderName: rows[i].leader_name,
-                            position: rows[i].position - 1
+                            leaderId: row.leader_id,
+                            leaderName: row.leader_name,
+                            position: row.position - 1
                         });
                     }
 
@@ -396,14 +394,14 @@ function getChallengerInfo(id, callback) {
                             callback(error);
                         } else {
                             let championDefeated = id === '433c4b55a17da084';//false; // TODO - Revert
-                            for (let i = 0; i < rows.length; i++) {
+                            for (row of rows) {
                                 result.badgesEarned.push({
-                                    leaderId: rows[i].leader_id,
-                                    leaderName: rows[i].leader_name,
-                                    badgeName: rows[i].badge_name
+                                    leaderId: row.leader_id,
+                                    leaderName: row.leader_name,
+                                    badgeName: row.badge_name
                                 });
 
-                                if (rows[i].leader_type === leaderType.champion) {
+                                if (row.leader_type === leaderType.champion) {
                                     championDefeated = true;
                                 }
                             }
@@ -484,18 +482,18 @@ function getLeaderInfo(id, callback) {
                     callback(error);
                 } else {
                     let position = 0;
-                    for (let i = 0; i < rows.length; i++) {
-                        if (rows[i].status === matchStatus.inQueue) {
+                    for (row of rows) {
+                        if (row.status === matchStatus.inQueue) {
                             result.queue.push({
-                                challengerId: rows[i].challenger_id,
-                                displayName: rows[i].display_name,
+                                challengerId: row.challenger_id,
+                                displayName: row.display_name,
                                 position: position
                             });
                             position++;
                         } else {
                             result.onHold.push({
-                                challengerId: rows[i].challenger_id,
-                                displayName: rows[i].display_name
+                                challengerId: row.challenger_id,
+                                displayName: row.display_name
                             });
                         }
                     }
@@ -639,8 +637,7 @@ function getAllChallengers(pplEvent, callback) {
             callback(error);
         } else {
             const result = [];
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
+            for (row of rows) {
                 result.push({ id: row.id, name: row.display_name });
             }
 
@@ -655,8 +652,7 @@ function getLeaderMetrics(callback) {
             callback(error);
         } else {
             const result = {};
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
+            for (row of rows) {
                 if (!result[row.id]) {
                     result[row.id] = {
                         name: row.leader_name,

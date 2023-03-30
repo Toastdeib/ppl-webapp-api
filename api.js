@@ -24,7 +24,7 @@ const credentials = {
 };
 
 const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
-const SESSION_EXPIRATION_MILLIS = 2 * 24 * 60 * 60 * 1000; // 2 days in ms
+const SESSION_EXPIRATION_MILLIS = 4 * 24 * 60 * 60 * 1000; // 4 days in ms
 const PRUNE_INTERVAL_MILLIS = 24 * 60 * 60 * 1000; // 1 day in ms
 const CACHE_BACKUP_INTERVAL_MILLIS = 5 * 60 * 1000; // 5 minutes in ms
 const CACHE_FILE = 'cache.json';
@@ -228,13 +228,12 @@ function initCaches() {
 
 function pruneCache() {
     logger.api.info('Bulk pruning expired sessions');
-    const ids = Object.keys(sessionCache);
     const now = new Date().getTime();
     let removed = 0;
-    for (let i = 0; i < ids.length; i++) {
-        if (now - sessionCache[ids[i]].lastUsed > SESSION_EXPIRATION_MILLIS) {
+    for (id of Object.keys(sessionCache)) {
+        if (now - sessionCache[id].lastUsed > SESSION_EXPIRATION_MILLIS) {
             // Session is expired, clear it out of the cache
-            delete sessionCache[ids[i]];
+            delete sessionCache[id];
             removed++;
         }
     }
