@@ -100,8 +100,8 @@ const matchStatus = {
 function fetch(query, params, callback) {
     db.query(query, params, (error, result) => {
         if (error) {
-            logger.error('Database read failed');
-            logger.error(error);
+            logger.api.error('Database read failed');
+            logger.api.error(error);
             callback(resultCode.dbFailure, []);
             return;
         }
@@ -113,8 +113,8 @@ function fetch(query, params, callback) {
 function save(query, params, callback) {
     db.query(query, params, (error, result) => {
         if (error) {
-            logger.error('Database write failed');
-            logger.error(error);
+            logger.api.error('Database write failed');
+            logger.api.error(error);
             callback(resultCode.dbFailure);
             return;
         }
@@ -143,9 +143,9 @@ function pplEventToBitmask(pplEvent) {
 function fetchBingoIds() {
     fetch(`SELECT id, leader_type FROM ${LEADERS_TABLE} WHERE leader_type <> ?`, [leaderType.champion], (error, rows) => {
         if (error) {
-            logger.error('Couldn\'t populate IDs for bingo boards due to a DB error');
+            logger.api.error('Couldn\'t populate IDs for bingo boards due to a DB error');
         } else if (rows.length === 0) {
-            logger.error('Couldn\'t populate IDs for bingo boards, no IDs found');
+            logger.api.error('Couldn\'t populate IDs for bingo boards, no IDs found');
         } else {
             leaderIds = [];
             eliteIds = [];
@@ -158,7 +158,7 @@ function fetchBingoIds() {
                 }
             }
 
-            logger.info(`Bingo board IDs successfully populated with ${leaderIds.length} leader(s) and ${eliteIds.length} elite(s)`);
+            logger.api.info(`Bingo board IDs successfully populated with ${leaderIds.length} leader(s) and ${eliteIds.length} elite(s)`);
         }
     });
 }
@@ -187,7 +187,7 @@ function generateBingoBoard() {
     }
 
     if (ids.length < BINGO_ID_COUNT) {
-        logger.warn('Insufficient IDs for a bingo board');
+        logger.api.warn('Insufficient IDs for a bingo board');
         return '';
     }
 
@@ -207,7 +207,7 @@ function inflateBingoBoard(flatBoard, earnedBadges) {
     const board = [];
     const split = flatBoard.split(',');
     if (split.length !== BINGO_SPACE_COUNT) {
-        logger.error(`Couldn't inflate bingo board; split array was length ${split.length}`);
+        logger.api.error(`Couldn't inflate bingo board; split array was length ${split.length}`);
         return board;
     }
 
@@ -364,9 +364,9 @@ function getChallengerInfo(id, callback) {
                 bingoBoard = generateBingoBoard();
                 save(`UPDATE ${CHALLENGERS_TABLE} SET bingo_board = ? WHERE id = ?`, [bingoBoard, id], (error, rowCount) => {
                     if (error) {
-                        logger.error(`Error saving new bingo board for id=${id}`);
+                        logger.api.error(`Error saving new bingo board for id=${id}`);
                     } else {
-                        logger.info(`Saved new bingo board for id=${id}`);
+                        logger.api.info(`Saved new bingo board for id=${id}`);
                     }
                 });
             }

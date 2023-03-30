@@ -6,3 +6,11 @@ div.header {
 div.log {
     font-family: Courier New;
 }
+
+div.link {
+    margin-top: 20px;
+}
+
+.logLink {
+    margin-right: 10px;
+}

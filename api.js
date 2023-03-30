@@ -23,8 +23,9 @@ const credentials = {
     ca: ca
 };
 
+const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
 const SESSION_EXPIRATION_MILLIS = 2 * 24 * 60 * 60 * 1000; // 2 days in ms
-const PRUNE_INTERVAL_MILLIS = 60 * 60 * 1000; // 1 hour in ms
+const PRUNE_INTERVAL_MILLIS = 24 * 60 * 60 * 1000; // 1 day in ms
 const CACHE_BACKUP_INTERVAL_MILLIS = 5 * 60 * 1000; // 5 minutes in ms
 const CACHE_FILE = 'cache.json';
 let sessionCache;
@@ -39,54 +40,54 @@ const PPL_EVENT_HEADER = 'PPL-Event';
 function handleDbError(error, res) {
     switch (error) {
         case db.resultCode.notFound:
-            logger.error('ID not found');
+            logger.api.error('ID not found');
             res.status(404).json({ error: 'ID not found' });
             break;
         case db.resultCode.alreadyInQueue:
-            logger.error('Challenger already in queue');
+            logger.api.error('Challenger already in queue');
             res.status(400).json({ error: 'Challenger already in queue' });
             break;
         case db.resultCode.alreadyWon:
-            logger.error('Challenger has already won');
+            logger.api.error('Challenger has already won');
             res.status(400).json({ error: 'Challenger has already won' });
             break;
         case db.resultCode.queueIsFull:
-            logger.error('Leader queue is full');
+            logger.api.error('Leader queue is full');
             res.status(400).json({ error: 'Leader queue is full' });
             break;
         case db.resultCode.tooManyChallenges:
-            logger.error('Challenger is in too many queues');
+            logger.api.error('Challenger is in too many queues');
             res.status(400).json({ error: 'Challenger is in too many queues' });
             break;
         case db.resultCode.notInQueue:
-            logger.error('Challenger is not in queue');
+            logger.api.error('Challenger is not in queue');
             res.status(400).json({ error: 'Challenger is not in queue' });
             break;
         case db.resultCode.usernameTaken:
-            logger.error('Username is already taken');
+            logger.api.error('Username is already taken');
             res.status(400).json({ error: 'Username is already taken' });
             break;
         case db.resultCode.registrationFailure:
-            logger.error('Unknown error during registration');
+            logger.api.error('Unknown error during registration');
             res.status(400).json({ error: 'Unknown error during registration' });
             break;
         case db.resultCode.badCredentials:
-            logger.error('Invalid login credentials');
+            logger.api.error('Invalid login credentials');
             res.status(400).json({ error: 'Invalid login credentials' });
             break;
         case db.resultCode.invalidToken:
-            logger.error('Invalid access token');
+            logger.api.error('Invalid access token');
             res.status(400).json({ error: 'Invalid access token' });
             break;
         default:
-            logger.error('Unexpected database error');
+            logger.api.error('Unexpected database error');
             res.status(500).json({ error: 'Unexpected database error' });
             break;
     }
 }
 
 function getChallengerInfo(req, res) {
-    logger.info(`Returning challenger info for loginId=${req.params.id}`);
+    logger.api.info(`Returning challenger info for loginId=${req.params.id}`);
     db.challenger.getInfo(req.params.id, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -100,7 +101,7 @@ function getChallengerInfo(req, res) {
 }
 
 function getLeaderInfo(req, res) {
-    logger.info(`Returning leader info for loginId=${req.params.id}, leaderId=${req.leaderId}`);
+    logger.api.info(`Returning leader info for loginId=${req.params.id}, leaderId=${req.leaderId}`);
     db.leader.getInfo(req.leaderId, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -192,32 +193,32 @@ function validateLeaderId(id) {
 }
 
 function saveCache() {
-    logger.debug('Writing session cache to file');
+    logger.api.debug('Writing session cache to file');
     fs.writeFileSync(CACHE_FILE, JSON.stringify(sessionCache), 'utf-8');
 }
 
 function initCaches() {
     try {
-        logger.debug('Restoring session cache from file');
+        logger.api.debug('Restoring session cache from file');
         sessionCache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf-8'));
     } catch (err) {
-        logger.debug('Could not restore session cache, initializing as empty instead');
+        logger.api.debug('Could not restore session cache, initializing as empty instead');
         sessionCache = {};
     }
 
     db.getAllIds((error, result) => {
         if (error) {
-            logger.debug('Failed to initialize ID cache');
+            logger.api.debug('Failed to initialize ID cache');
             idCache = { challengers: [], leaders: [] };
         } else {
-            logger.debug('ID cache initialized');
+            logger.api.debug('ID cache initialized');
             idCache = result;
         }
     });
 }
 
 function pruneCache() {
-    logger.debug('Bulk pruning expired sessions from cache');
+    logger.api.info('Bulk pruning expired sessions from cache');
     const ids = Object.keys(sessionCache);
     const now = new Date().getTime();
     for (let i = 0; i < ids.length; i++) {
@@ -235,6 +236,29 @@ function formatLogLine(line) {
     return `[${json.timestamp}] ${json.level}: ${json.message}`;
 }
 
+function generateLogviewResponse(res, daysAgo) {
+    logger.api.debug('Rendering logs page');
+    const date = new Date();
+    date.setTime(date.getTime() - (daysAgo * ONE_DAY_MILLIS));
+
+    // NOTE: This logic operates on the assumption that there's a file every day from the oldest one up to today
+    const logFileCount = fs.readdirSync('logs').reduce((acc, filename) => { return acc + (filename.startsWith('api-combined') ? 1 : 0) }, 0);
+
+    try {
+        const lines = fs.readFileSync(`./logs/api-combined-${date.toISOString().substring(0, 10)}.log`, 'utf8').trim().split('\n');
+        res.render('logs', {
+            date: date.toDateString(),
+            lines: lines.map(formatLogLine),
+            logFileCount: logFileCount,
+            daysAgo: daysAgo
+        });
+    } catch (e) {
+        res.render('nodata', {
+            date: date.toDateString()
+        });
+    }
+}
+
 /*********************
  * Authentication APIs *
  *********************/
@@ -243,14 +267,14 @@ app.post('/register', (req, res) => {
     const pplEvent = req.get(PPL_EVENT_HEADER);
 
     if (!credentials) {
-        logger.warn('Registration attempt with missing auth header');
+        logger.api.warn('Registration attempt with missing auth header');
         res.status(400).json({ error: 'Missing required Authorization header' });
         return;
     }
 
     const parts = decodeCredentials(credentials);
     if (!parts) {
-        logger.warn('Registration attempt with malformed auth header');
+        logger.api.warn('Registration attempt with malformed auth header');
         res.status(400).json({ error: 'Authorization header was malformed' });
         return;
     }
@@ -259,7 +283,7 @@ app.post('/register', (req, res) => {
         if (error) {
             handleDbError(error, res);
         } else {
-            logger.info(`Registered loginId=${result.id} with username=${parts[0]}`);
+            logger.api.info(`Registered loginId=${result.id} with username=${parts[0]}`);
             const token = createSession(result.id, result.isLeader, result.leaderId);
             idCache.challengers.push(result.id);
             res.json({
@@ -278,14 +302,14 @@ app.post('/login', (req, res) => {
     const pplEvent = req.get(PPL_EVENT_HEADER);
 
     if (!credentials) {
-        logger.warn('Login attempt with missing auth header');
+        logger.api.warn('Login attempt with missing auth header');
         res.status(400).json({ error: 'Missing required Authorization header' });
         return;
     }
 
     const parts = decodeCredentials(credentials);
     if (!parts) {
-        logger.warn('Login attempt with malformed auth header');
+        logger.api.warn('Login attempt with malformed auth header');
         res.status(400).json({ error: 'Authorization header was malformed' });
         return;
     }
@@ -294,7 +318,7 @@ app.post('/login', (req, res) => {
         if (error) {
             handleDbError(error, res);
         } else {
-            logger.info(`Logged in loginId=${result.id} with username=${parts[0]}`);
+            logger.api.info(`Logged in loginId=${result.id} with username=${parts[0]}`);
             const token = createSession(result.id, result.isLeader, result.leaderId);
             res.json({
                 id: result.id,
@@ -308,7 +332,7 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/logout/:id', (req, res) => {
-    logger.info(`Logged out loginId=${req.params.id}`);
+    logger.api.info(`Logged out loginId=${req.params.id}`);
     const token = req.get(AUTH_HEADER);
     if (token) {
         clearSession(token, req.params.id);
@@ -318,7 +342,7 @@ app.post('/logout/:id', (req, res) => {
 });
 
 app.get('/allleaderdata', (req, res) => {
-    logger.info('Fetching all leader data');
+    logger.api.info('Fetching all leader data');
     db.getAllLeaderData((error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -334,13 +358,13 @@ app.get('/allleaderdata', (req, res) => {
 app.use('/challenger/:id', (req, res, next) => {
     const token = req.get(AUTH_HEADER);
     if (!token) {
-        logger.warn('Challenger endpoint request with missing auth header');
+        logger.api.warn('Challenger endpoint request with missing auth header');
         res.status(403).json({});
         return;
     }
 
     if (!validateSession(token, req.params.id, false)) {
-        logger.warn('Challenger endpoint request with invalid auth header');
+        logger.api.warn('Challenger endpoint request with invalid auth header');
         res.status(403).json({});
         return;
     }
@@ -357,7 +381,7 @@ app.post('/challenger/:id', (req, res) => {
         return;
     }
 
-    logger.info(`Setting display name for loginId=${req.params.id} to ${name}`);
+    logger.api.info(`Setting display name for loginId=${req.params.id} to ${name}`);
     db.challenger.setDisplayName(req.params.id, name, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -368,7 +392,7 @@ app.post('/challenger/:id', (req, res) => {
 });
 
 app.get('/challenger/:id/bingoboard', (req, res) => {
-    logger.info(`Returning bingo board for loginId=${req.params.id}`);
+    logger.api.info(`Returning bingo board for loginId=${req.params.id}`);
     db.challenger.getBingoBoard(req.params.id, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -380,12 +404,12 @@ app.get('/challenger/:id/bingoboard', (req, res) => {
 
 app.post('/challenger/:id/enqueue/:leader', (req, res) => {
     if (!validateLeaderId(req.params.leader)) {
-        logger.warn(`loginId=${req.params.id} attempted to join queue for invalid leaderId=${req.params.leader}`);
+        logger.api.warn(`loginId=${req.params.id} attempted to join queue for invalid leaderId=${req.params.leader}`);
         res.status(400).json({ error: `Leader ID ${req.params.leader} is invalid` });
         return;
     }
 
-    logger.info(`loginId=${req.params.id} joining leaderId=${req.params.leader}'s queue`);
+    logger.api.info(`loginId=${req.params.id} joining leaderId=${req.params.leader}'s queue`);
     db.leader.enqueue(req.params.leader, req.params.id, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -401,14 +425,14 @@ app.post('/challenger/:id/enqueue/:leader', (req, res) => {
 app.use('/leader/:id', (req, res, next) => {
     const token = req.get(AUTH_HEADER);
     if (!token) {
-        logger.error('Leader endpoint request with missing auth header');
+        logger.api.error('Leader endpoint request with missing auth header');
         res.status(403).json({});
         return;
     }
 
     const session = validateSession(token, req.params.id, true);
     if (!session) {
-        logger.error('Leader endpoint request with invalid auth header');
+        logger.api.error('Leader endpoint request with invalid auth header');
         res.status(403).json({});
         return;
     }
@@ -421,12 +445,12 @@ app.get('/leader/:id', getLeaderInfo);
 
 app.post('/leader/:id/enqueue/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
-        logger.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to enqueue invalid challengerId=${req.params.challenger}`);
+        logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to enqueue invalid challengerId=${req.params.challenger}`);
         res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
         return;
     }
 
-    logger.info(`loginId=${req.params.id}, leaderId=${req.leaderId} adding challengerId=${req.params.challenger} to queue`);
+    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} adding challengerId=${req.params.challenger} to queue`);
     db.leader.enqueue(req.leaderId, req.params.challenger, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -438,12 +462,12 @@ app.post('/leader/:id/enqueue/:challenger', (req, res) => {
 
 app.post('/leader/:id/dequeue/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
-        logger.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to dequeue invalid challengerId=${req.params.challenger}`);
+        logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to dequeue invalid challengerId=${req.params.challenger}`);
         res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
         return;
     }
 
-    logger.info(`loginId=${req.params.id}, leaderId=${req.leaderId} removing challengerId=${req.params.challenger} from queue`);
+    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} removing challengerId=${req.params.challenger} from queue`);
     db.leader.dequeue(req.leaderId, req.params.challenger, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -455,12 +479,12 @@ app.post('/leader/:id/dequeue/:challenger', (req, res) => {
 
 app.post('/leader/:id/report/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
-        logger.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to report a match result for invalid challengerId=${req.params.challenger}`);
+        logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to report a match result for invalid challengerId=${req.params.challenger}`);
         res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
         return;
     }
 
-    logger.info(`loginId=${req.params.id}, leaderId=${req.leaderId} reporting match result ${!!req.body.challengerWin}, badge awarded ${!!req.body.badgeAwarded} for challengerId=${req.params.challenger}`);
+    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} reporting match result ${!!req.body.challengerWin}, badge awarded ${!!req.body.badgeAwarded} for challengerId=${req.params.challenger}`);
     db.leader.reportResult(req.leaderId, req.params.challenger, !!req.body.challengerWin, !!req.body.badgeAwarded, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -472,12 +496,12 @@ app.post('/leader/:id/report/:challenger', (req, res) => {
 
 app.post('/leader/:id/hold/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
-        logger.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to hold invalid challengerId=${req.params.challenger}`);
+        logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to hold invalid challengerId=${req.params.challenger}`);
         res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
         return;
     }
 
-    logger.info(`loginId=${req.params.id}, leaderId=${req.leaderId} placing challengerId=${req.params.challenger} on hold`);
+    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} placing challengerId=${req.params.challenger} on hold`);
     db.leader.hold(req.leaderId, req.params.challenger, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -489,12 +513,12 @@ app.post('/leader/:id/hold/:challenger', (req, res) => {
 
 app.post('/leader/:id/unhold/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
-        logger.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to unhold invalid challengerId=${req.params.challenger}`);
+        logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to unhold invalid challengerId=${req.params.challenger}`);
         res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
         return;
     }
 
-    logger.info(`loginId=${req.params.id}, leaderId=${req.leaderId} returning challengerId=${req.params.challenger} from hold`);
+    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} returning challengerId=${req.params.challenger} from hold`);
     db.leader.unhold(req.leaderId, req.params.challenger, !!req.body.placeAtFront, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -506,7 +530,7 @@ app.post('/leader/:id/unhold/:challenger', (req, res) => {
 
 app.get('/leader/:id/allchallengers', (req, res) => {
     const pplEvent = req.get(PPL_EVENT_HEADER);
-    logger.info(`loginId=${req.params.id}, leaderId=${req.leaderId} fetching all challengers`);
+    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} fetching all challengers`);
     db.leader.getAllChallengers(pplEvent, (error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -517,7 +541,7 @@ app.get('/leader/:id/allchallengers', (req, res) => {
 });
 
 app.get('/metrics', (req, res) => {
-    logger.info('Returning leader metrics');
+    logger.api.info('Returning leader metrics');
     db.leader.metrics((error, result) => {
         if (error) {
             handleDbError(error, res);
@@ -528,23 +552,21 @@ app.get('/metrics', (req, res) => {
 });
 
 app.get('/appsettings', (req, res) => {
-    logger.info('Returning app settings');
+    logger.api.info('Returning app settings');
     res.json({ showTrainerCard: new Date() > new Date(config.trainerCardShowDate) });
 });
 
 app.get('/logview', (req, res) => {
-    logger.debug('Rendering logs page');
-    const today = new Date();
-    const lines = fs.readFileSync(`./logs/combined-${today.toISOString().substring(0, 10)}.log`, 'utf8').trim().split('\n');
-    res.render('logs', {
-        date: today.toDateString(),
-        lines: lines.map(formatLogLine)
-    });
+    generateLogviewResponse(res, 0);
+});
+app.get('/logview/:daysago', (req, res) => {
+    const daysAgo = Number(req.params.daysago);
+    generateLogviewResponse(res, daysAgo || 0);
 });
 
 const httpsServer = https.createServer(credentials, app);
 httpsServer.listen(config.port, () => {
-    logger.info(`API running on port ${config.port}`);
+    logger.api.info(`API running on port ${config.port}`);
 });
 
 initCaches();

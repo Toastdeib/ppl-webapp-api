@@ -7,3 +7,15 @@ html
         div.header= 'Logs for ' + date
         each line in lines
             div.log= line
+        div.link
+            span.logLink Jump to
+            - for (let i = 1; i < logFileCount; i++)
+                if i != daysAgo
+                    a.logLink(href='/logview/' + i)= i
+                else
+                    span.logLink= i
+            span days ago
+        if daysAgo > 0
+            div.link
+                span.logLink Jump to
+                a.logLink(href='/logview') today
