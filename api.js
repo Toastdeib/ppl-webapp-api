@@ -167,14 +167,23 @@ function validateSession(token, id, leaderRequest) {
         return false;
     }
 
+    if (session.id !== id) {
+        // Incorrect ID in the request for the provided token
+        logger.api.warn(`loginId=${id} attempted to make an API request with a token associated with loginId=${session.id}`);
+        return false;
+    }
+
     if (session.isLeader !== leaderRequest) {
         // Disallow API requests from the wrong user type
+        logger.api.warn(`loginId=${id} attempted to make an API request for the incorrect user type`);
         return false;
     }
 
     const now = new Date().getTime();
-    if (now - session.lastUsed > SESSION_EXPIRATION_MILLIS) {
+    const sessionAge = now - session.lastUsed;
+    if (sessionAge > SESSION_EXPIRATION_MILLIS) {
         // Session is expired, clear it out of the cache
+        logger.api.info(`Session expired for loginId=${id} (expired ${sessionAge - SESSION_EXPIRATION_MILLIS}ms ago), removing from cache`);
         delete sessionCache[parts[1]];
         saveCache();
         return false;
@@ -218,16 +227,19 @@ function initCaches() {
 }
 
 function pruneCache() {
-    logger.api.info('Bulk pruning expired sessions from cache');
+    logger.api.info('Bulk pruning expired sessions');
     const ids = Object.keys(sessionCache);
     const now = new Date().getTime();
+    let removed = 0;
     for (let i = 0; i < ids.length; i++) {
         if (now - sessionCache[ids[i]].lastUsed > SESSION_EXPIRATION_MILLIS) {
             // Session is expired, clear it out of the cache
             delete sessionCache[ids[i]];
+            removed++;
         }
     }
 
+    logger.api.info(`Removed ${removed} expired session${removed === 1? '' : 's'} from the cache`);
     saveCache();
 }
 
@@ -358,13 +370,13 @@ app.get('/allleaderdata', (req, res) => {
 app.use('/challenger/:id', (req, res, next) => {
     const token = req.get(AUTH_HEADER);
     if (!token) {
-        logger.api.warn('Challenger endpoint request with missing auth header');
+        logger.api.warn(`Challenger endpoint request for loginId=${req.params.id} with missing auth header`);
         res.status(403).json({});
         return;
     }
 
     if (!validateSession(token, req.params.id, false)) {
-        logger.api.warn('Challenger endpoint request with invalid auth header');
+        logger.api.warn(`Challenger endpoint request for loginId=${req.params.id} with invalid auth header`);
         res.status(403).json({});
         return;
     }
@@ -425,14 +437,14 @@ app.post('/challenger/:id/enqueue/:leader', (req, res) => {
 app.use('/leader/:id', (req, res, next) => {
     const token = req.get(AUTH_HEADER);
     if (!token) {
-        logger.api.error('Leader endpoint request with missing auth header');
+        logger.api.error(`Leader endpoint request for loginId=${req.params.id} with missing auth header`);
         res.status(403).json({});
         return;
     }
 
     const session = validateSession(token, req.params.id, true);
     if (!session) {
-        logger.api.error('Leader endpoint request with invalid auth header');
+        logger.api.error(`Leader endpoint request for loginId=${req.params.id} with invalid auth header`);
         res.status(403).json({});
         return;
     }
