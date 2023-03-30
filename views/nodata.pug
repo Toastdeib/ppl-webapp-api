@@ -1,0 +1,8 @@
+html
+    head
+        title Log Viewer
+        style
+            include logs.css
+    body
+        div.header= 'No log data available for ' + date
+        div.link: a(href='/logview') View today's logs
