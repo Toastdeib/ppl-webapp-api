@@ -6,7 +6,7 @@ html
     body
         div.header= 'Logs for ' + date
         each line in lines
-            div.log= line
+            div.log(class=line.level)= line.msg
         div.link
             span.logLink Jump to
             - for (let i = 1; i < logFileCount; i++)

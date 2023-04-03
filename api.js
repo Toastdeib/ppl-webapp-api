@@ -244,7 +244,7 @@ function pruneCache() {
 
 function formatLogLine(line) {
     const json = JSON.parse(line);
-    return `[${json.timestamp}] ${json.level}: ${json.message}`;
+    return { msg: `[${json.timestamp}] ${json.level}: ${json.message}`, level: json.level };
 }
 
 function generateLogviewResponse(res, daysAgo) {
