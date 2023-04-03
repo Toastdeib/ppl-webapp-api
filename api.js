@@ -430,6 +430,40 @@ app.post('/challenger/:id/enqueue/:leader', (req, res) => {
     });
 });
 
+app.post('/challenger/:id/dequeue/:leader', (req, res) => {
+    if (!validateLeaderId(req.params.leader)) {
+        logger.api.warn(`loginId=${req.params.id} attempted to leave queue for invalid leaderId=${req.params.leader}`);
+        res.status(400).json({ error: `Leader ID ${req.params.leader} is invalid` });
+        return;
+    }
+
+    logger.api.info(`loginId=${req.params.id} leaving leaderId=${req.params.leader}'s queue`);
+    db.leader.dequeue(req.params.leader, req.params.id, (error, result) => {
+        if (error) {
+            handleDbError(error, res);
+        } else {
+            getChallengerInfo(req, res);
+        }
+    });
+});
+
+app.post('/challenger/:id/hold/:leader', (req, res) => {
+    if (!validateLeaderId(req.params.leader)) {
+        logger.api.warn(`loginId=${req.params.id} attempted to go on hold for invalid leaderId=${req.params.leader}`);
+        res.status(400).json({ error: `Leader ID ${req.params.leader} is invalid` });
+        return;
+    }
+
+    logger.api.info(`loginId=${req.params.id} placing themselves on hold in leaderId=${req.params.leader}'s queue`);
+    db.leader.hold(req.params.leader, req.params.id, (error, result) => {
+        if (error) {
+            handleDbError(error, res);
+        } else {
+            getChallengerInfo(req, res);
+        }
+    });
+});
+
 /***************
  * Leader APIs *
  ***************/
