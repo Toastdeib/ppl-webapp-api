@@ -396,7 +396,7 @@ function getChallengerInfo(id, callback) {
                         if (error) {
                             callback(error);
                         } else {
-                            let championDefeated = id === '433c4b55a17da084';//false; // TODO - Revert
+                            let championDefeated = false;
                             for (row of rows) {
                                 result.badgesEarned.push({
                                     leaderId: row.leader_id,
