@@ -2,6 +2,7 @@ const sql = require('mysql');
 const crypto = require('crypto');
 const logger = require('./logger.js');
 const config = require('./config.js');
+const constants = require('./constants.js');
 
 const TABLE_SUFFIX = config.tableSuffix;
 const LOGINS_TABLE = 'ppl_webapp_logins';
@@ -66,49 +67,16 @@ const db = sql.createPool({
     connectionLimit: 5
 });
 
-const resultCode = {
-    success: 0,
-    dbFailure: 1,
-    notFound: 2,
-    alreadyInQueue: 3,
-    alreadyWon: 4,
-    queueIsFull: 5,
-    tooManyChallenges: 6,
-    notInQueue: 7,
-    usernameTaken: 8,
-    registrationFailure: 9,
-    badCredentials: 10,
-    invalidToken: 11
-};
-
-// This is a bitmask now - leaders can be a mix of casual/intermediate/veteran
-const leaderType = {
-    casual: 1,
-    intermediate: 2,
-    veteran: 4,
-    elite: 8,
-    champion: 16
-};
-
-const matchStatus = {
-    inQueue: 0,
-    onHold: 1,
-    loss: 2, // Challenger loss
-    win: 3, // Challenger win
-    ash: 4, // Challenger loss but badge awarded anyway
-    gary: 5 // Challenger win but no badge awarded because the challenger was a complete prick
-};
-
 function fetch(query, params, callback) {
     db.query(query, params, (error, result) => {
         if (error) {
             logger.api.error('Database read failed');
             logger.api.error(error);
-            callback(resultCode.dbFailure, []);
+            callback(constants.resultCode.dbFailure, []);
             return;
         }
 
-        callback(resultCode.success, result);
+        callback(constants.resultCode.success, result);
     });
 }
 
@@ -117,11 +85,11 @@ function save(query, params, callback) {
         if (error) {
             logger.api.error('Database write failed');
             logger.api.error(error);
-            callback(resultCode.dbFailure);
+            callback(constants.resultCode.dbFailure);
             return;
         }
 
-        callback(resultCode.success, result.affectedRows);
+        callback(constants.resultCode.success, result.affectedRows);
     });
 }
 
@@ -143,7 +111,7 @@ function pplEventToBitmask(pplEvent) {
 }
 
 function fetchBingoIds() {
-    fetch(`SELECT id, leader_type FROM ${LEADERS_TABLE} WHERE leader_type <> ?`, [leaderType.champion], (error, rows) => {
+    fetch(`SELECT id, leader_type FROM ${LEADERS_TABLE} WHERE leader_type <> ?`, [constants.leaderType.champion], (error, rows) => {
         if (error) {
             logger.api.error('Couldn\'t populate IDs for bingo boards due to a DB error');
         } else if (rows.length === 0) {
@@ -152,7 +120,7 @@ function fetchBingoIds() {
             leaderIds = [];
             eliteIds = [];
             for (row of rows) {
-                if (row.leader_type === leaderType.elite) {
+                if (row.leader_type === constants.leaderType.elite) {
                     eliteIds.push(row.id);
                 } else {
                     leaderIds.push(row.id);
@@ -279,7 +247,7 @@ function register(username, password, pplEvent, callback) {
         if (error) {
             callback(error);
         } else if (rows.length !== 0) {
-            callback(resultCode.usernameTaken);
+            callback(constants.resultCode.usernameTaken);
         } else {
             const salt = generateHex(16);
             const hash = hashWithSalt(password, salt);
@@ -289,16 +257,16 @@ function register(username, password, pplEvent, callback) {
                 if (error) {
                     callback(error);
                 } else if (rowCount === 0) {
-                    callback(resultCode.registrationFailure);
+                    callback(constants.resultCode.registrationFailure);
                 } else {
                     const bingoBoard = generateBingoBoard();
                     save(`INSERT INTO ${CHALLENGERS_TABLE} (id, display_name, bingo_board) VALUES (?, ?, ?)`, [id, username, bingoBoard], (error, rowCount) => {
                         if (error) {
                             callback(error);
                         } else if (rowCount === 0) {
-                            callback(resultCode.registrationFailure);
+                            callback(constants.resultCode.registrationFailure);
                         } else {
-                            callback(resultCode.success, {
+                            callback(constants.resultCode.success, {
                                 id: id,
                                 isLeader: false,
                                 leaderId: null
@@ -316,12 +284,12 @@ function login(username, password, pplEvent, callback) {
         if (error) {
             callback(error);
         } else if (rows.length === 0) {
-            callback(resultCode.badCredentials);
+            callback(constants.resultCode.badCredentials);
         } else {
             const parts = rows[0].password_hash.split(':');
             const hash = hashWithSalt(password, parts[1]);
             if (hash !== parts[0]) {
-                callback(resultCode.badCredentials);
+                callback(constants.resultCode.badCredentials);
             } else {
                 const oldMask = rows[0].ppl_events;
                 const eventMask = pplEventToBitmask(pplEvent);
@@ -329,9 +297,9 @@ function login(username, password, pplEvent, callback) {
                     if (error) {
                         callback(error);
                     } else if (rowCount === 0) {
-                        callback(resultCode.badCredentials);
+                        callback(constants.resultCode.badCredentials);
                     } else {
-                        callback(resultCode.success, {
+                        callback(constants.resultCode.success, {
                             id: rows[0].id,
                             isLeader: rows[0].is_leader === 1,
                             leaderId: rows[0].leader_id
@@ -355,7 +323,7 @@ function getAllIds(callback) {
                     callback(error);
                 } else {
                     result.leaders = rows.map(row => row.id);
-                    callback(resultCode.success, result);
+                    callback(constants.resultCode.success, result);
                 }
             });
         }
@@ -378,7 +346,7 @@ function getAllLeaderData(callback) {
                 };
             }
 
-            callback(resultCode.success, result);
+            callback(constants.resultCode.success, result);
         }
     });
 }
@@ -389,7 +357,7 @@ function getChallengerInfo(id, callback) {
         if (error) {
             callback(error);
         } else if (rows.length === 0) {
-            callback(resultCode.notFound);
+            callback(constants.resultCode.notFound);
         } else {
             let bingoBoard = rows[0].bingo_board;
             if (!bingoBoard) {
@@ -410,7 +378,7 @@ function getChallengerInfo(id, callback) {
             };
 
             // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-            fetch(`SELECT m.leader_id, l.leader_name, COUNT(m.challenger_id) position FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) AND timestamp <= (SELECT timestamp FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) GROUP BY leader_id`, [matchStatus.inQueue, id, matchStatus.inQueue, id, matchStatus.inQueue], (error, rows) => {
+            fetch(`SELECT m.leader_id, l.leader_name, COUNT(m.challenger_id) position FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) AND timestamp <= (SELECT timestamp FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) GROUP BY leader_id`, [constants.matchStatus.inQueue, id, constants.matchStatus.inQueue, id, constants.matchStatus.inQueue], (error, rows) => {
                 if (error) {
                     callback(error);
                 } else {
@@ -424,7 +392,7 @@ function getChallengerInfo(id, callback) {
                         });
                     }
 
-                    fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, matchStatus.win, matchStatus.ash], (error, rows) => {
+                    fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, constants.matchStatus.win, constants.matchStatus.ash], (error, rows) => {
                         if (error) {
                             callback(error);
                         } else {
@@ -436,7 +404,7 @@ function getChallengerInfo(id, callback) {
                                     badgeName: row.badge_name
                                 });
 
-                                if (row.leader_type === leaderType.champion) {
+                                if (row.leader_type === constants.leaderType.champion) {
                                     championDefeated = true;
                                 }
                             }
@@ -450,7 +418,7 @@ function getChallengerInfo(id, callback) {
                                 result.feedbackSurveyUrl = config.challengerSurveyUrl;
                             }
 
-                            callback(resultCode.success, result);
+                            callback(constants.resultCode.success, result);
                         }
                     });
                 }
@@ -464,9 +432,9 @@ function setDisplayName(id, name, callback) {
         if (error) {
             callback(error);
         } else if (rowCount === 0) {
-            callback(resultCode.notFound);
+            callback(constants.resultCode.notFound);
         } else {
-            callback(resultCode.success);
+            callback(constants.resultCode.success);
         }
     });
 }
@@ -476,17 +444,17 @@ function getBingoBoard(id, callback) {
         if (error) {
             callback(error);
         } else if (rows.length === 0) {
-            callback(resultCode.notFound);
+            callback(constants.resultCode.notFound);
         } else {
             const flatBoard = rows[0].bingo_board;
-            fetch(`SELECT leader_id FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?, ?)`, [id, matchStatus.loss, matchStatus.win, matchStatus.ash], (error, rows) => {
+            fetch(`SELECT leader_id FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?, ?)`, [id, constants.matchStatus.loss, constants.matchStatus.win, constants.matchStatus.ash], (error, rows) => {
                 if (error) {
                     callback(error);
                 } else {
                     const result = {
                         bingoBoard: inflateBingoBoard(flatBoard, rows.map(row => row.leader_id))
                     };
-                    callback(resultCode.success, result);
+                    callback(constants.resultCode.success, result);
                 }
             });
         }
@@ -499,7 +467,7 @@ function getLeaderInfo(id, callback) {
         if (error) {
             callback(error);
         } else if (rows.length === 0) {
-            callback(resultCode.notFound);
+            callback(constants.resultCode.notFound);
         } else {
             const result = {
                 leaderName: rows[0].leader_name,
@@ -512,13 +480,13 @@ function getLeaderInfo(id, callback) {
                 onHold: []
             };
 
-            fetch(`SELECT m.challenger_id, c.display_name, m.status FROM ${MATCHES_TABLE} m INNER JOIN ${CHALLENGERS_TABLE} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.timestamp ASC`, [id, matchStatus.inQueue, matchStatus.onHold], (error, rows) => {
+            fetch(`SELECT m.challenger_id, c.display_name, m.status FROM ${MATCHES_TABLE} m INNER JOIN ${CHALLENGERS_TABLE} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.timestamp ASC`, [id, constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rows) => {
                 if (error) {
                     callback(error);
                 } else {
                     let position = 0;
                     for (row of rows) {
-                        if (row.status === matchStatus.inQueue) {
+                        if (row.status === constants.matchStatus.inQueue) {
                             result.queue.push({
                                 challengerId: row.challenger_id,
                                 displayName: row.display_name,
@@ -533,15 +501,15 @@ function getLeaderInfo(id, callback) {
                         }
                     }
 
-                    fetch(`SELECT status, COUNT(challenger_id) count FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status NOT IN (?, ?) GROUP BY status`, [id, matchStatus.inQueue, matchStatus.onHold], (error, rows) => {
+                    fetch(`SELECT status, COUNT(challenger_id) count FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status NOT IN (?, ?) GROUP BY status`, [id, constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rows) => {
                         if (error) {
                             callback(error);
                         } else {
                             // Win/loss is from the challenger perspective, so it's inverted here
-                            const wins = (rows.find(row => row.status === matchStatus.loss) || { count: 0 }).count;
-                            const losses = (rows.find(row => row.status === matchStatus.win) || { count: 0 }).count;
-                            const ash = (rows.find(row => row.status === matchStatus.ash) || { count: 0 }).count;
-                            const gary = (rows.find(row => row.status === matchStatus.gary) || { count: 0 }).count;
+                            const wins = (rows.find(row => row.status === constants.matchStatus.loss) || { count: 0 }).count;
+                            const losses = (rows.find(row => row.status === constants.matchStatus.win) || { count: 0 }).count;
+                            const ash = (rows.find(row => row.status === constants.matchStatus.ash) || { count: 0 }).count;
+                            const gary = (rows.find(row => row.status === constants.matchStatus.gary) || { count: 0 }).count;
 
                             result.winCount = wins + ash;
                             result.lossCount = losses + gary;
@@ -551,7 +519,7 @@ function getLeaderInfo(id, callback) {
                                 result.feedbackSurveyUrl = config.leaderSurveyUrl;
                             }
 
-                            callback(resultCode.success, result);
+                            callback(constants.resultCode.success, result);
                         }
                     });
                 }
@@ -566,27 +534,27 @@ function enqueue(id, challengerId, callback) {
     // 1. Challenger isn't already in this leader's queue and hasn't already beaten them (0 matches with status <> 2)
     // 2. Leader has room in the queue (<5 matches with status in [0, 1])
     // 3. Challenger isn't in too many queues (<3 matches with status in [0, 1] across all leaders)
-    fetch(`SELECT status FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status <> ?`, [id, challengerId, matchStatus.loss], (error, rows) => {
+    fetch(`SELECT status FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status <> ?`, [id, challengerId, constants.matchStatus.loss], (error, rows) => {
         if (error) {
             callback(error);
-        } else if (rows.find(row => row.status === matchStatus.inQueue || row.status === matchStatus.onHold)) {
-            callback(resultCode.alreadyInQueue);
-        } else if (rows.find(row => row.status === matchStatus.win)) {
-            callback(resultCode.alreadyWon);
+        } else if (rows.find(row => row.status === constants.matchStatus.inQueue || row.status === constants.matchStatus.onHold)) {
+            callback(constants.resultCode.alreadyInQueue);
+        } else if (rows.find(row => row.status === constants.matchStatus.win)) {
+            callback(constants.resultCode.alreadyWon);
         } else {
-            fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [id, matchStatus.inQueue], (error, rows) => {
+            fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [id, constants.matchStatus.inQueue], (error, rows) => {
                 if (error) {
                     callback(error);
                 } else if (rows.length >= MAX_CHALLENGERS_PER_QUEUE) {
-                    callback(resultCode.queueIsFull);
+                    callback(constants.resultCode.queueIsFull);
                 } else {
-                    fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, matchStatus.inQueue, matchStatus.onHold], (error, rows) => {
+                    fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rows) => {
                         if (error) {
                             callback(error);
                         } else if (rows.length >= MAX_QUEUES_PER_CHALLENGER) {
-                            callback(resultCode.tooManyChallenges);
+                            callback(constants.resultCode.tooManyChallenges);
                         } else {
-                            save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, status, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP())`, [id, challengerId, matchStatus.inQueue], callback);
+                            save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, status, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP())`, [id, challengerId, constants.matchStatus.inQueue], callback);
                         }
                     });
                 }
@@ -596,14 +564,14 @@ function enqueue(id, challengerId, callback) {
 }
 
 function dequeue(id, challengerId, callback) {
-    save(`DELETE FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status IN (?, ?)`, [id, challengerId, matchStatus.inQueue, matchStatus.onHold], (error, rowCount) => {
+    save(`DELETE FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status IN (?, ?)`, [id, challengerId, constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rowCount) => {
         if (error) {
             callback(error);
         } else if (rowCount === 0) {
-            callback(resultCode.notInQueue);
+            callback(constants.resultCode.notInQueue);
         } else {
             clearLinkCode(id, challengerId);
-            callback(resultCode.success);
+            callback(constants.resultCode.success);
         }
     });
 }
@@ -611,42 +579,42 @@ function dequeue(id, challengerId, callback) {
 function reportResult(id, challengerId, challengerWin, badgeAwarded, callback) {
     let matchResult;
     if (challengerWin) {
-        matchResult = badgeAwarded ? matchStatus.win : matchStatus.gary;
+        matchResult = badgeAwarded ? constants.matchStatus.win : constants.matchStatus.gary;
     } else {
-        matchResult = badgeAwarded ? matchStatus.ash : matchStatus.loss;
+        matchResult = badgeAwarded ? constants.matchStatus.ash : constants.matchStatus.loss;
     }
 
-    save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, id, challengerId, matchStatus.inQueue], (error, rowCount) => {
+    save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, id, challengerId, constants.matchStatus.inQueue], (error, rowCount) => {
         if (error) {
             callback(error);
         } else if (rowCount === 0) {
-            callback(resultCode.notInQueue);
+            callback(constants.resultCode.notInQueue);
         } else {
             clearLinkCode(id, challengerId);
-            callback(resultCode.success);
+            callback(constants.resultCode.success);
         }
     });
 }
 
 function hold(id, challengerId, callback) {
-    save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchStatus.onHold, id, challengerId, matchStatus.inQueue], (error, rowCount) => {
+    save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [constants.matchStatus.onHold, id, challengerId, constants.matchStatus.inQueue], (error, rowCount) => {
         if (error) {
             callback(error);
         } else if (rowCount === 0) {
-            callback(resultCode.notInQueue);
+            callback(constants.resultCode.notInQueue);
         } else {
-            callback(resultCode.success);
+            callback(constants.resultCode.success);
         }
     });
 }
 
 function unhold(id, challengerId, placeAtFront, callback) {
-    fetch(`SELECT SUBDATE(MIN(timestamp), INTERVAL 1 MINUTE) front_timestamp FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [id, matchStatus.inQueue], (error, rows) => {
+    fetch(`SELECT SUBDATE(MIN(timestamp), INTERVAL 1 MINUTE) front_timestamp FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [id, constants.matchStatus.inQueue], (error, rows) => {
         if (error) {
             callback(error);
         } else {
             let sql = `UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
-            let params = [matchStatus.inQueue, id, challengerId, matchStatus.onHold];
+            let params = [constants.matchStatus.inQueue, id, challengerId, constants.matchStatus.onHold];
             if (!placeAtFront) {
                 sql = `UPDATE ${MATCHES_TABLE} SET status = ?, timestamp = CURRENT_TIMESTAMP() WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
             } else if (rows[0].front_timestamp) {
@@ -658,9 +626,9 @@ function unhold(id, challengerId, placeAtFront, callback) {
                 if (error) {
                     callback(error);
                 } else if (rowCount === 0) {
-                    callback(resultCode.notInQueue);
+                    callback(constants.resultCode.notInQueue);
                 } else {
-                    callback(resultCode.success);
+                    callback(constants.resultCode.success);
                 }
             });
         }
@@ -678,13 +646,13 @@ function getAllChallengers(pplEvent, callback) {
                 result.push({ id: row.id, name: row.display_name });
             }
 
-            callback(resultCode.success, result);
+            callback(constants.resultCode.success, result);
         }
     });
 }
 
 function getLeaderMetrics(callback) {
-    fetch(`SELECT l.id, l.leader_name, m.status FROM ${MATCHES_TABLE} AS m INNER JOIN ${LEADERS_TABLE} AS l ON l.id = m.leader_id WHERE m.status NOT IN (?, ?)`, [matchStatus.inQueue, matchStatus.onHold], (error, rows) => {
+    fetch(`SELECT l.id, l.leader_name, m.status FROM ${MATCHES_TABLE} AS m INNER JOIN ${LEADERS_TABLE} AS l ON l.id = m.leader_id WHERE m.status NOT IN (?, ?)`, [constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rows) => {
         if (error) {
             callback(error);
         } else {
@@ -699,18 +667,18 @@ function getLeaderMetrics(callback) {
                     };
                 }
 
-                if (row.status === matchStatus.loss || row.status === matchStatus.ash) {
+                if (row.status === constants.matchStatus.loss || row.status === constants.matchStatus.ash) {
                     result[row.id].wins++;
                 } else {
                     result[row.id].losses++;
                 }
 
-                if (row.status === matchStatus.win || row.status === matchStatus.ash) {
+                if (row.status === constants.matchStatus.win || row.status === constants.matchStatus.ash) {
                     result[row.id].badgesAwarded++;
                 }
             }
 
-            callback(resultCode.success, result);
+            callback(constants.resultCode.success, result);
         }
     });
 }
@@ -741,9 +709,6 @@ module.exports = {
         getAllChallengers: getAllChallengers,
         metrics: getLeaderMetrics
     },
-    resultCode: resultCode,
-    leaderType: leaderType,
-    matchStatus: matchStatus,
     generateHex: generateHex,
     register: register,
     login: login,

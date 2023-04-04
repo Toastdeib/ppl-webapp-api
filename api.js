@@ -7,6 +7,7 @@ const https = require('https');
 const logger = require('./logger.js');
 const db = require('./db.js');
 const config = require('./config.js');
+const constants = require('./constants.js');
 
 app.use(cors({ origin: config.corsOrigin }));
 app.use(bodyParser.json());
@@ -39,43 +40,43 @@ const PPL_EVENT_HEADER = 'PPL-Event';
  ******************/
 function handleDbError(error, res) {
     switch (error) {
-        case db.resultCode.notFound:
+        case constants.resultCode.notFound:
             logger.api.error('ID not found');
             res.status(404).json({ error: 'ID not found' });
             break;
-        case db.resultCode.alreadyInQueue:
+        case constants.resultCode.alreadyInQueue:
             logger.api.error('Challenger already in queue');
             res.status(400).json({ error: 'Challenger already in queue' });
             break;
-        case db.resultCode.alreadyWon:
+        case constants.resultCode.alreadyWon:
             logger.api.error('Challenger has already won');
             res.status(400).json({ error: 'Challenger has already won' });
             break;
-        case db.resultCode.queueIsFull:
+        case constants.resultCode.queueIsFull:
             logger.api.error('Leader queue is full');
             res.status(400).json({ error: 'Leader queue is full' });
             break;
-        case db.resultCode.tooManyChallenges:
+        case constants.resultCode.tooManyChallenges:
             logger.api.error('Challenger is in too many queues');
             res.status(400).json({ error: 'Challenger is in too many queues' });
             break;
-        case db.resultCode.notInQueue:
+        case constants.resultCode.notInQueue:
             logger.api.error('Challenger is not in queue');
             res.status(400).json({ error: 'Challenger is not in queue' });
             break;
-        case db.resultCode.usernameTaken:
+        case constants.resultCode.usernameTaken:
             logger.api.error('Username is already taken');
             res.status(400).json({ error: 'Username is already taken' });
             break;
-        case db.resultCode.registrationFailure:
+        case constants.resultCode.registrationFailure:
             logger.api.error('Unknown error during registration');
             res.status(400).json({ error: 'Unknown error during registration' });
             break;
-        case db.resultCode.badCredentials:
+        case constants.resultCode.badCredentials:
             logger.api.error('Invalid login credentials');
             res.status(400).json({ error: 'Invalid login credentials' });
             break;
-        case db.resultCode.invalidToken:
+        case constants.resultCode.invalidToken:
             logger.api.error('Invalid access token');
             res.status(400).json({ error: 'Invalid access token' });
             break;
