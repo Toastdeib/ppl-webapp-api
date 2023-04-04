@@ -27,6 +27,8 @@ const SURVEY_END_DATE = new Date(SURVEY_START_DATE.getTime() + (config.surveyDur
 
 let leaderIds, eliteIds;
 
+const linkCodeCache = {};
+
 /* TABLE SCHEMA *
  * ppl_webapp_logins
  * - id: VARCHAR(16)
@@ -228,6 +230,38 @@ function shouldIncludeFeedbackSurvey() {
     return now > SURVEY_START_DATE && now < SURVEY_END_DATE;
 }
 
+function zeroPad(value, length) {
+    let result = `${value}`;
+    while (result.length < length) {
+        result = `0${result}`;
+    }
+
+    return result;
+}
+
+function createLinkCodeKey(leaderId, challengerId) {
+    return `${leaderId}:${challengerId}`;
+}
+
+function getLinkCode(leaderId, challengerId) {
+    const key = createLinkCodeKey(leaderId, challengerId);
+    if (linkCodeCache[key]) {
+        // This matchup already has a code, so just use that
+        return linkCodeCache[key];
+    }
+
+    // New matchup, create a new code and store it
+    const firstHalf = Math.floor(Math.random() * 10000);
+    const secondHalf = Math.floor(Math.random() * 10000);
+    const code = `${zeroPad(firstHalf, 4)} ${zeroPad(secondHalf, 4)}`;
+    linkCodeCache[key] = code;
+    return code;
+}
+
+function clearLinkCode(leaderId, challengerId) {
+    delete linkCodeCache[createLinkCodeKey(leaderId, challengerId)];
+}
+
 // Authentication functions
 function generateHex(length) {
     return crypto.randomBytes(length).toString('hex');
@@ -385,7 +419,8 @@ function getChallengerInfo(id, callback) {
                         result.queuesEntered.push({
                             leaderId: row.leader_id,
                             leaderName: row.leader_name,
-                            position: row.position - 1
+                            position: row.position - 1,
+                            linkCode: getLinkCode(row.leader_id, id)
                         });
                     }
 
@@ -487,9 +522,9 @@ function getLeaderInfo(id, callback) {
                             result.queue.push({
                                 challengerId: row.challenger_id,
                                 displayName: row.display_name,
-                                position: position
+                                position: position++,
+                                linkCode: getLinkCode(id, row.challenger_id)
                             });
-                            position++;
                         } else {
                             result.onHold.push({
                                 challengerId: row.challenger_id,
@@ -567,6 +602,7 @@ function dequeue(id, challengerId, callback) {
         } else if (rowCount === 0) {
             callback(resultCode.notInQueue);
         } else {
+            clearLinkCode(id, challengerId);
             callback(resultCode.success);
         }
     });
@@ -586,6 +622,7 @@ function reportResult(id, challengerId, challengerWin, badgeAwarded, callback) {
         } else if (rowCount === 0) {
             callback(resultCode.notInQueue);
         } else {
+            clearLinkCode(id, challengerId);
             callback(resultCode.success);
         }
     });

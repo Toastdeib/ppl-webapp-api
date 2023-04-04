@@ -226,7 +226,7 @@ function initCaches() {
     });
 }
 
-function pruneCache() {
+function pruneSessionCache() {
     logger.api.info('Bulk pruning expired sessions');
     const now = new Date().getTime();
     let removed = 0;
@@ -616,7 +616,7 @@ httpsServer.listen(config.port, () => {
 
 initCaches();
 
-setInterval(pruneCache, PRUNE_INTERVAL_MILLIS);
+setInterval(pruneSessionCache, PRUNE_INTERVAL_MILLIS);
 
 if (config.debug) {
     process.stdin.resume();
