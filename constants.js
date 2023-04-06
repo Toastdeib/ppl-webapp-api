@@ -36,5 +36,10 @@ module.exports = {
         win: 3,  // Challenger win
         ash: 4,  // Challenger loss but badge awarded
         gary: 5  // Challenger win but no badge awarded because the challenger was a complete prick
+    },
+    queueStatus: {
+        // Perhaps overkill, but hey
+        closed: 0,
+        open: 1
     }
 };

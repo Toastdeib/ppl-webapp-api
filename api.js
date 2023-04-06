@@ -489,6 +489,28 @@ app.use('/leader/:id', (req, res, next) => {
 
 app.get('/leader/:id', getLeaderInfo);
 
+app.post('/leader/:id/openqueue', (req, res) => {
+    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} opening queue`);
+    db.leader.updateQueueStatus(true, req.leaderId, (error, result) => {
+        if (error) {
+            handleDbError(error, res);
+        } else {
+            getLeaderInfo(req, res);
+        }
+    });
+});
+
+app.post('/leader/:id/closequeue', (req, res) => {
+    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} closing queue`);
+    db.leader.updateQueueStatus(false, req.leaderId, (error, result) => {
+        if (error) {
+            handleDbError(error, res);
+        } else {
+            getLeaderInfo(req, res);
+        }
+    });
+});
+
 app.post('/leader/:id/enqueue/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to enqueue invalid challengerId=${req.params.challenger}`);

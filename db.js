@@ -528,6 +528,18 @@ function getLeaderInfo(id, callback) {
     });
 }
 
+function updateQueueStatus(open, id, callback) {
+    save(`UPDATE ${LEADERS_TABLE} SET queue_open = ? WHERE id = ?`, [open ? constants.queueStatus.open : constants.queueStatus.closed, id], (error, rowCount) => {
+        if (error) {
+            callback(error);
+        } else if (rowCount === 0) {
+            callback(constants.resultCode.notFound);
+        } else {
+            callback(constants.resultCode.success, {});
+        }
+    });
+}
+
 function enqueue(id, challengerId, callback) {
     // This is still disgusting and I still hate it, even if it's smaller than the clusterfuck in the bot.
     // Checks, in order, are:
@@ -701,6 +713,7 @@ module.exports = {
     },
     leader: {
         getInfo: getLeaderInfo,
+        updateQueueStatus: updateQueueStatus,
         enqueue: enqueue,
         dequeue: dequeue,
         reportResult: reportResult,
