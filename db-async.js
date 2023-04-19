@@ -5,7 +5,7 @@ const config = require('./config.js');
 const constants = require('./constants.js');
 
 const TABLE_SUFFIX = process.env.TABLE_SUFFIX || config.tableSuffix;
-const LOGINS_TABLE = 'ppl_webapp_logins';
+const LOGINS_TABLE = 'ppl_webapp_logins' + TABLE_SUFFIX;
 const CHALLENGERS_TABLE = 'ppl_webapp_challengers' + TABLE_SUFFIX;
 const LEADERS_TABLE = 'ppl_webapp_leaders' + TABLE_SUFFIX;
 const MATCHES_TABLE = 'ppl_webapp_matches' + TABLE_SUFFIX;
@@ -305,14 +305,15 @@ async function login(username, password, pplEvent, callback) {
         return;
     }
 
-    const parts = rows[0].password_hash.split(':');
+    const row = result.rows[0];
+    const parts = row.password_hash.split(':');
     const hash = hashWithSalt(password, parts[1]);
     if (hash !== parts[0]) {
         callback(constants.resultCode.badCredentials);
         return;
     }
 
-    const oldMask = rows[0].ppl_events;
+    const oldMask = row.ppl_events;
     const eventMask = pplEventToBitmask(pplEvent);
     result = await save(`UPDATE ${LOGINS_TABLE} SET ppl_events = ? WHERE username = ?`, [oldMask | eventMask, username]);
     if (result.resultCode) {
@@ -326,9 +327,9 @@ async function login(username, password, pplEvent, callback) {
     }
 
     callback(constants.resultCode.success, {
-        id: rows[0].id,
-        isLeader: rows[0].is_leader === 1,
-        leaderId: rows[0].leader_id
+        id: row.id,
+        isLeader: row.is_leader === 1,
+        leaderId: row.leader_id
     });
 }
 
@@ -385,7 +386,7 @@ async function getChallengerInfo(id, callback) {
         return;
     }
 
-    const row = result.rows[0];
+    let row = result.rows[0];
     let bingoBoard = row.bingo_board;
     if (!bingoBoard) {
         bingoBoard = generateBingoBoard();
@@ -759,18 +760,19 @@ async function getLeaderMetrics(callback) {
     callback(constants.resultCode.success, retval);
 }
 
-async function debugSave(sql) {
+async function debugSave(query, params, callback) {
     if (!config.debug) {
+        callback(0);
         return;
     }
 
-    const result = await save(sql, []);
+    const result = await save(query, params);
     if (result.resultCode) {
-        logger.api.debug('Unexpected db error in debugSave');
+        callback(0);
         return;
     }
 
-    logger.api.debug(`Successful debugSave, rows updated: ${rowCount}`);
+    callback(result.rowCount);
 }
 
 fetchBingoIds();
@@ -797,5 +799,11 @@ module.exports = {
     login: login,
     getAllIds: getAllIds,
     getAllLeaderData: getAllLeaderData,
-    debugSave: debugSave
+    debugSave: debugSave,
+    tables: {
+        logins: LOGINS_TABLE,
+        challengers: CHALLENGERS_TABLE,
+        leaders: LEADERS_TABLE,
+        matches: MATCHES_TABLE
+    }
 };

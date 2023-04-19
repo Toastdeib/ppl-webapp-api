@@ -5,7 +5,7 @@ const config = require('./config.js');
 const constants = require('./constants.js');
 
 const TABLE_SUFFIX = process.env.TABLE_SUFFIX || config.tableSuffix;
-const LOGINS_TABLE = 'ppl_webapp_logins';
+const LOGINS_TABLE = 'ppl_webapp_logins' + TABLE_SUFFIX;
 const CHALLENGERS_TABLE = 'ppl_webapp_challengers' + TABLE_SUFFIX;
 const LEADERS_TABLE = 'ppl_webapp_leaders' + TABLE_SUFFIX;
 const MATCHES_TABLE = 'ppl_webapp_matches' + TABLE_SUFFIX;
@@ -696,16 +696,17 @@ function getLeaderMetrics(callback) {
     });
 }
 
-function debugSave(sql) {
+function debugSave(sql, params, callback) {
     if (!config.debug) {
+        callback(0);
         return;
     }
 
-    save(sql, [], (error, rowCount) => {
+    save(sql, params, (error, rowCount) => {
         if (error) {
-            logger.api.debug('Unexpected db error in debugSave');
+            callback(0);
         } else {
-            logger.api.debug(`Successful debugSave, rows updated: ${rowCount}`);
+            callback(rowCount);
         }
     });
 }
@@ -734,5 +735,11 @@ module.exports = {
     login: login,
     getAllIds: getAllIds,
     getAllLeaderData: getAllLeaderData,
-    debugSave: debugSave
+    debugSave: debugSave,
+    tables: {
+        logins: LOGINS_TABLE,
+        challengers: CHALLENGERS_TABLE,
+        leaders: LEADERS_TABLE,
+        matches: MATCHES_TABLE
+    }
 };
