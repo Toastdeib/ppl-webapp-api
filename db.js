@@ -4,7 +4,7 @@ const logger = require('./logger.js');
 const config = require('./config.js');
 const constants = require('./constants.js');
 
-const TABLE_SUFFIX = config.tableSuffix;
+const TABLE_SUFFIX = process.env.TABLE_SUFFIX || config.tableSuffix;
 const LOGINS_TABLE = 'ppl_webapp_logins';
 const CHALLENGERS_TABLE = 'ppl_webapp_challengers' + TABLE_SUFFIX;
 const LEADERS_TABLE = 'ppl_webapp_leaders' + TABLE_SUFFIX;
@@ -480,7 +480,7 @@ function getLeaderInfo(id, callback) {
                 onHold: []
             };
 
-            fetch(`SELECT m.challenger_id, c.display_name, m.status FROM ${MATCHES_TABLE} m INNER JOIN ${CHALLENGERS_TABLE} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.timestamp ASC`, [id, constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rows) => {
+            fetch(`SELECT m.challenger_id, c.display_name, m.status, m.battle_difficulty FROM ${MATCHES_TABLE} m INNER JOIN ${CHALLENGERS_TABLE} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.timestamp ASC`, [id, constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rows) => {
                 if (error) {
                     callback(error);
                 } else {
@@ -491,7 +491,8 @@ function getLeaderInfo(id, callback) {
                                 challengerId: row.challenger_id,
                                 displayName: row.display_name,
                                 position: position++,
-                                linkCode: getLinkCode(id, row.challenger_id)
+                                linkCode: getLinkCode(id, row.challenger_id),
+                                difficulty: row.battle_difficulty
                             });
                         } else {
                             result.onHold.push({
@@ -700,7 +701,13 @@ function debugSave(sql) {
         return;
     }
 
-    save(sql, [], log);
+    save(sql, [], (error, rowCount) => {
+        if (error) {
+            logger.api.debug('Unexpected db error in debugSave');
+        } else {
+            logger.api.debug(`Successful debugSave, rows updated: ${rowCount}`);
+        }
+    });
 }
 
 fetchBingoIds();
@@ -726,5 +733,6 @@ module.exports = {
     register: register,
     login: login,
     getAllIds: getAllIds,
-    getAllLeaderData: getAllLeaderData
+    getAllLeaderData: getAllLeaderData,
+    debugSave: debugSave
 };
