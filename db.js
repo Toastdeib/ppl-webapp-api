@@ -545,13 +545,13 @@ function updateQueueStatus(open, id, callback) {
     });
 }
 
-function enqueue(id, challengerId, callback) {
+function enqueue(leaderId, challengerId, callback) {
     // This is still disgusting and I still hate it, even if it's smaller than the clusterfuck in the bot.
     // Checks, in order, are:
     // 1. Challenger isn't already in this leader's queue and hasn't already beaten them (0 matches with status <> 2)
     // 2. Leader has room in the queue (<5 matches with status in [0, 1])
     // 3. Challenger isn't in too many queues (<3 matches with status in [0, 1] across all leaders)
-    fetch(`SELECT status FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status <> ?`, [id, challengerId, constants.matchStatus.loss], (error, rows) => {
+    fetch(`SELECT status FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status <> ?`, [leaderId, challengerId, constants.matchStatus.loss], (error, rows) => {
         if (error) {
             callback(error);
         } else if (rows.find(row => row.status === constants.matchStatus.inQueue || row.status === constants.matchStatus.onHold)) {
@@ -559,7 +559,7 @@ function enqueue(id, challengerId, callback) {
         } else if (rows.find(row => row.status === constants.matchStatus.win)) {
             callback(constants.resultCode.alreadyWon);
         } else {
-            fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [id, constants.matchStatus.inQueue], (error, rows) => {
+            fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [leaderId, constants.matchStatus.inQueue], (error, rows) => {
                 if (error) {
                     callback(error);
                 } else if (rows.length >= MAX_CHALLENGERS_PER_QUEUE) {
@@ -571,7 +571,7 @@ function enqueue(id, challengerId, callback) {
                         } else if (rows.length >= MAX_QUEUES_PER_CHALLENGER) {
                             callback(constants.resultCode.tooManyChallenges);
                         } else {
-                            save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, status, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP())`, [id, challengerId, constants.matchStatus.inQueue], callback);
+                            save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, status, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP())`, [leaderId, challengerId, constants.matchStatus.inQueue], callback);
                         }
                     });
                 }
@@ -580,20 +580,20 @@ function enqueue(id, challengerId, callback) {
     });
 }
 
-function dequeue(id, challengerId, callback) {
-    save(`DELETE FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status IN (?, ?)`, [id, challengerId, constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rowCount) => {
+function dequeue(leaderId, challengerId, callback) {
+    save(`DELETE FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status IN (?, ?)`, [leaderId, challengerId, constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rowCount) => {
         if (error) {
             callback(error);
         } else if (rowCount === 0) {
             callback(constants.resultCode.notInQueue);
         } else {
-            clearLinkCode(id, challengerId);
+            clearLinkCode(leaderId, challengerId);
             callback(constants.resultCode.success);
         }
     });
 }
 
-function reportResult(id, challengerId, challengerWin, badgeAwarded, callback) {
+function reportResult(leaderId, challengerId, challengerWin, badgeAwarded, callback) {
     let matchResult;
     if (challengerWin) {
         matchResult = badgeAwarded ? constants.matchStatus.win : constants.matchStatus.gary;
@@ -601,20 +601,20 @@ function reportResult(id, challengerId, challengerWin, badgeAwarded, callback) {
         matchResult = badgeAwarded ? constants.matchStatus.ash : constants.matchStatus.loss;
     }
 
-    save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, id, challengerId, constants.matchStatus.inQueue], (error, rowCount) => {
+    save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, leaderId, challengerId, constants.matchStatus.inQueue], (error, rowCount) => {
         if (error) {
             callback(error);
         } else if (rowCount === 0) {
             callback(constants.resultCode.notInQueue);
         } else {
-            clearLinkCode(id, challengerId);
+            clearLinkCode(leaderId, challengerId);
             callback(constants.resultCode.success);
         }
     });
 }
 
-function hold(id, challengerId, callback) {
-    save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [constants.matchStatus.onHold, id, challengerId, constants.matchStatus.inQueue], (error, rowCount) => {
+function hold(leaderId, challengerId, callback) {
+    save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [constants.matchStatus.onHold, leaderId, challengerId, constants.matchStatus.inQueue], (error, rowCount) => {
         if (error) {
             callback(error);
         } else if (rowCount === 0) {
@@ -625,13 +625,13 @@ function hold(id, challengerId, callback) {
     });
 }
 
-function unhold(id, challengerId, placeAtFront, callback) {
-    fetch(`SELECT SUBDATE(MIN(timestamp), INTERVAL 1 MINUTE) front_timestamp FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [id, constants.matchStatus.inQueue], (error, rows) => {
+function unhold(leaderId, challengerId, placeAtFront, callback) {
+    fetch(`SELECT SUBDATE(MIN(timestamp), INTERVAL 1 MINUTE) front_timestamp FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [leaderId, constants.matchStatus.inQueue], (error, rows) => {
         if (error) {
             callback(error);
         } else {
             let sql = `UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
-            let params = [constants.matchStatus.inQueue, id, challengerId, constants.matchStatus.onHold];
+            let params = [constants.matchStatus.inQueue, leaderId, challengerId, constants.matchStatus.onHold];
             if (!placeAtFront) {
                 sql = `UPDATE ${MATCHES_TABLE} SET status = ?, timestamp = CURRENT_TIMESTAMP() WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
             } else if (rows[0].front_timestamp) {
