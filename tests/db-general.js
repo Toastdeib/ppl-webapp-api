@@ -117,7 +117,7 @@ function getAllIds1() {
 
 function registerWithTakenUsername() {
     test.name(4, 'Register with a taken username');
-    db.register(takenUsername, password, 'east', (error, result) => {
+    db.auth.register(takenUsername, password, 'east', (error, result) => {
         if (error === constants.resultCode.usernameTaken) {
             test.pass('registration failed with usernameTaken result code');
             successCount++;
@@ -135,7 +135,7 @@ function registerWithTakenUsername() {
 
 function registerWithNewUsername() {
     test.name(5, 'Register with a new username');
-    db.register(newUsername, password, 'east', (error, result) => {
+    db.auth.register(newUsername, password, 'east', (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
             failureCount++;
@@ -151,7 +151,7 @@ function registerWithNewUsername() {
 
 function loginWithGoodCredentials() {
     test.name(6, 'Login with valid credentials');
-    db.login(newUsername, password, 'east', (error, result) => {
+    db.auth.login(newUsername, password, 'east', (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
             failureCount++;
@@ -169,7 +169,7 @@ function loginWithGoodCredentials() {
 
 function loginWithBadCredentials() {
     test.name(7, 'Login with invalid credentials');
-    db.login(newUsername, badPassword, 'east', (error, result) => {
+    db.auth.login(newUsername, badPassword, 'east', (error, result) => {
         if (error === constants.resultCode.badCredentials) {
             test.pass('login failed with badCredentials result code');
             successCount++;
@@ -244,7 +244,7 @@ function getAllIds2() {
 
 function loginForWest() {
     test.name(11, 'Login for west');
-    db.login(newUsername, password, 'west', (error, result) => {
+    db.auth.login(newUsername, password, 'west', (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
             failureCount++;

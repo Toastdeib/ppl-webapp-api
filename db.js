@@ -724,17 +724,21 @@ module.exports = {
     leader: {
         getInfo: getLeaderInfo,
         updateQueueStatus: updateQueueStatus,
-        enqueue: enqueue,
-        dequeue: dequeue,
         reportResult: reportResult,
-        hold: hold,
-        unhold: unhold,
         getAllChallengers: getAllChallengers,
         metrics: getLeaderMetrics
     },
+    queue: {
+        enqueue: enqueue,
+        dequeue: dequeue,
+        hold: hold,
+        unhold: unhold,
+    },
+    auth: {
+        register: register,
+        login: login,
+    },
     generateHex: generateHex,
-    register: register,
-    login: login,
     getAllIds: getAllIds,
     getAllLeaderData: getAllLeaderData,
     debugSave: debugSave,

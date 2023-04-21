@@ -291,7 +291,7 @@ app.post('/register', (req, res) => {
         return;
     }
 
-    db.register(parts[0], parts[1], pplEvent, (error, result) => {
+    db.auth.register(parts[0], parts[1], pplEvent, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -326,7 +326,7 @@ app.post('/login', (req, res) => {
         return;
     }
 
-    db.login(parts[0], parts[1], pplEvent, (error, result) => {
+    db.auth.login(parts[0], parts[1], pplEvent, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -422,7 +422,7 @@ app.post('/challenger/:id/enqueue/:leader', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id} joining leaderId=${req.params.leader}'s queue`);
-    db.leader.enqueue(req.params.leader, req.params.id, (error, result) => {
+    db.queue.enqueue(req.params.leader, req.params.id, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -439,7 +439,7 @@ app.post('/challenger/:id/dequeue/:leader', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id} leaving leaderId=${req.params.leader}'s queue`);
-    db.leader.dequeue(req.params.leader, req.params.id, (error, result) => {
+    db.queue.dequeue(req.params.leader, req.params.id, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -456,7 +456,7 @@ app.post('/challenger/:id/hold/:leader', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id} placing themselves on hold in leaderId=${req.params.leader}'s queue`);
-    db.leader.hold(req.params.leader, req.params.id, (error, result) => {
+    db.queue.hold(req.params.leader, req.params.id, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -519,7 +519,7 @@ app.post('/leader/:id/enqueue/:challenger', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} adding challengerId=${req.params.challenger} to queue`);
-    db.leader.enqueue(req.leaderId, req.params.challenger, (error, result) => {
+    db.queue.enqueue(req.leaderId, req.params.challenger, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -536,7 +536,7 @@ app.post('/leader/:id/dequeue/:challenger', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} removing challengerId=${req.params.challenger} from queue`);
-    db.leader.dequeue(req.leaderId, req.params.challenger, (error, result) => {
+    db.queue.dequeue(req.leaderId, req.params.challenger, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -570,7 +570,7 @@ app.post('/leader/:id/hold/:challenger', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} placing challengerId=${req.params.challenger} on hold`);
-    db.leader.hold(req.leaderId, req.params.challenger, (error, result) => {
+    db.queue.hold(req.leaderId, req.params.challenger, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -587,7 +587,7 @@ app.post('/leader/:id/unhold/:challenger', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} returning challengerId=${req.params.challenger} from hold`);
-    db.leader.unhold(req.leaderId, req.params.challenger, !!req.body.placeAtFront, (error, result) => {
+    db.queue.unhold(req.leaderId, req.params.challenger, !!req.body.placeAtFront, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
