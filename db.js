@@ -103,16 +103,13 @@ function pplEventToBitmask(pplEvent) {
         return 0;
     }
 
-    switch (pplEvent.toLowerCase()) {
-        case 'east':
-            return 1;
-        case 'west':
-            return 2;
-        case 'aus':
-            return 4;
-        default:
-            return 0;
+    pplEvent = pplEvent.toLowerCase();
+    if (!constants.pplEvent[pplEvent]) {
+        logger.api.warn(`Unexpected PPL event header value: ${pplEvent}`);
+        return 0;
     }
+
+    return constants.pplEvent[pplEvent];
 }
 
 function fetchBingoIds(callback) {

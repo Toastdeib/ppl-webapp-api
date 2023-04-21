@@ -41,5 +41,12 @@ module.exports = {
         // Perhaps overkill, but hey
         closed: 0,
         open: 1
+    },
+    pplEvent: {
+        // Bitmask; some users go to multiple PAXes
+        east: 1,
+        west: 2,
+        aus: 4,
+        online: 8
     }
 };
