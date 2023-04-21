@@ -288,14 +288,14 @@ function cleanup() {
                 process.exit();
             }
 
-            test.debug('Cleaned up login row');
+            test.debug('Deleted login row');
             db.debugSave(`DELETE FROM ${db.tables.challengers} WHERE id = ?`, [id], (rowCount) => {
                 if (rowCount === 0) {
                     test.debug('Cleanup failed to find a challenger row to delete, please validate the db manually');
                     process.exit();
                 }
 
-                test.debug('Cleaned up challenger row');
+                test.debug('Deleted challenger row');
                 process.exit();
             });
         });
