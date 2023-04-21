@@ -467,14 +467,3 @@ db.dbReady.then(() => {
     start = new Date();
     verifyBaseline();
 });
-
-
-/** NOTES **
- Cases to cover:
-
- Data to clean up:
-    - Revert display name
-    - Delete new leader win
-    - Revert elite win (reset to status=0)
-    - Delete champ win
-*/
