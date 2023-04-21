@@ -35,6 +35,7 @@ const linkCodeCache = {};
  * - id: VARCHAR(16)
  * - username: VARCHAR(30)
  * - password_hash: VARCHAR(99)
+ * - ppl_events: TINYINT(4)
  * - is_leader: BOOLEAN
  * - leader_id: VARCHAR(8)
  *
@@ -46,16 +47,20 @@ const linkCodeCache = {};
  * ppl_webapp_leaders
  * - id: VARCHAR(16)
  * - leader_name: VARCHAR(80)
- * - leader_type: TINYINT
+ * - leader_type: TINYINT(4)
  * - badge_name: VARCHAR(40)
  * - leader_bio: VARCHAR(800)
  * - leader_tagline: VARCHAR(150)
+ * - queue_open: BOOLEAN
+ * - badge_art: MEDIUMTEXT (defunct)
+ * - profile_art: MEDIUMTEXT (defunct)
  *
  * ppl_webapp_matches
  * - match_id: INT
  * - leader_id: VARCHAR(16)
  * - challenger_id: VARCHAR(16)
- * - status: TINYINT
+ * - battle_difficulty: TINYINT(4)
+ * - status: TINYINT(3)
  * - timestamp: TIMESTAMP
  */
 
@@ -112,15 +117,17 @@ function pplEventToBitmask(pplEvent) {
     }
 }
 
-async function fetchBingoIds() {
+async function fetchBingoIds(callback) {
     const result = await fetch(`SELECT id, leader_type FROM ${LEADERS_TABLE} WHERE leader_type <> ?`, [constants.leaderType.champion]);
     if (result.resultCode) {
         logger.api.error('Couldn\'t populate IDs for bingo boards due to a DB error');
+        callback();
         return;
     }
 
     if (result.rows.length === 0) {
         logger.api.error('Couldn\'t populate IDs for bingo boards, no IDs found');
+        callback();
         return;
     }
 
@@ -135,6 +142,7 @@ async function fetchBingoIds() {
     }
 
     logger.api.info(`Bingo board IDs successfully populated with ${leaderIds.length} leader(s) and ${eliteIds.length} elite(s)`);
+    callback();
 }
 
 function generateBingoBoard() {
@@ -775,8 +783,6 @@ async function debugSave(query, params, callback) {
     callback(result.rowCount);
 }
 
-fetchBingoIds();
-
 module.exports = {
     challenger: {
         getInfo: getChallengerInfo,
@@ -805,5 +811,10 @@ module.exports = {
         challengers: CHALLENGERS_TABLE,
         leaders: LEADERS_TABLE,
         matches: MATCHES_TABLE
-    }
+    },
+    dbReady: new Promise((resolve, reject) => {
+        fetchBingoIds(() => {
+            resolve();
+        });
+    })
 };
