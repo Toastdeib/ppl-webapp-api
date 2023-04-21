@@ -9,7 +9,7 @@
 -------------------------------------------------------------------
 
 -- ppl_webapp_logins_test
-TRUNCATE TABLE ppl_webapp_logins_test;
+DELETE FROM ppl_webapp_logins_test;
 -- Challengers
 INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('efaa0cdd1cbd165b', 'testchallenger1', 'dummyvalue', 3, 0, NULL);
 INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('1d568d90c11c67aa', 'testchallenger2', 'dummyvalue', 3, 0, NULL);
@@ -48,7 +48,7 @@ INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_
 INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('594b65bb56185881', 'testchamp', 'dummyvalue', 1, 1, '5f22dc234543');
 
 -- ppl_webapp_challengers_test
-TRUNCATE TABLE ppl_webapp_challengers_test;
+DELETE FROM ppl_webapp_challengers_test;
 INSERT INTO ppl_webapp_challengers_test (id, display_name, bingo_board) VALUES ('efaa0cdd1cbd165b', 'testchallenger1', '');
 INSERT INTO ppl_webapp_challengers_test (id, display_name, bingo_board) VALUES ('1d568d90c11c67aa', 'testchallenger2', '');
 INSERT INTO ppl_webapp_challengers_test (id, display_name, bingo_board) VALUES ('1577c386680d9554', 'testchallenger3', '');
@@ -56,7 +56,7 @@ INSERT INTO ppl_webapp_challengers_test (id, display_name, bingo_board) VALUES (
 INSERT INTO ppl_webapp_challengers_test (id, display_name, bingo_board) VALUES ('8b7a46b38cf6321f', 'testchallenger5', '');
 
 -- ppl_webapp_leaders_test
-TRUNCATE TABLE ppl_webapp_leaders_test;
+DELETE FROM ppl_webapp_leaders_test;
 -- Leaders
 INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('6a9406eedec6', 'Test Leader, the Testable', 7, 'Test Badge', 'Test post, please ignore.', 'Also test post, also please ignore.', 0);
 INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('7729e38c3f7d', '', 1, '', '', '', 0);
@@ -89,22 +89,23 @@ INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, l
 INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('5f22dc234543', '', 16, '', '', '', 1);
 
 -- ppl_webapp_matches_test
-TRUNCATE TABLE ppl_webapp_matches_test;
+DELETE FROM ppl_webapp_matches_test;
 -- Test challenger records
 INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('6a9406eedec6', 'efaa0cdd1cbd165b', 2, 3, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('7729e38c3f7d', 'efaa0cdd1cbd165b', 1, 3, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('bcc6f08242fb', 'efaa0cdd1cbd165b', 2, 3, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('7e8ab2c43c76', 'efaa0cdd1cbd165b', 4, 4, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('1ed127c44156', 'efaa0cdd1cbd165b', 4, 3, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('74fe35c10ba6', 'efaa0cdd1cbd165b', 1, 3, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('68e65518c4d6', 'efaa0cdd1cbd165b', 4, 3, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('d08cde9beddd', 'efaa0cdd1cbd165b', 4, 3, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('b6857070a317', 'efaa0cdd1cbd165b', 8, 3, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('1194829fc135', 'efaa0cdd1cbd165b', 8, 4, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('be90adcbbe2f', 'efaa0cdd1cbd165b', 8, 3, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('d0cceeaf006a', 'efaa0cdd1cbd165b', 4, 0, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('bc95c2fc3f1a', 'efaa0cdd1cbd165b', 8, 0, CURRENT_TIMESTAMP());
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('7729e38c3f7d', 'efaa0cdd1cbd165b', 1, 3, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 1 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('bcc6f08242fb', 'efaa0cdd1cbd165b', 2, 3, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 2 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('7e8ab2c43c76', 'efaa0cdd1cbd165b', 4, 4, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 3 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('1ed127c44156', 'efaa0cdd1cbd165b', 4, 3, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 4 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('74fe35c10ba6', 'efaa0cdd1cbd165b', 1, 3, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 5 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('68e65518c4d6', 'efaa0cdd1cbd165b', 4, 3, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 6 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('d08cde9beddd', 'efaa0cdd1cbd165b', 4, 3, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 7 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('b6857070a317', 'efaa0cdd1cbd165b', 8, 3, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 8 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('1194829fc135', 'efaa0cdd1cbd165b', 8, 4, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 9 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('be90adcbbe2f', 'efaa0cdd1cbd165b', 8, 3, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 10 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('d0cceeaf006a', '1d568d90c11c67aa', 4, 0, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 11 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('d0cceeaf006a', 'efaa0cdd1cbd165b', 4, 0, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 12 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('bc95c2fc3f1a', 'efaa0cdd1cbd165b', 8, 0, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 13 SECOND));
 -- Test leader records
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('6a9406eedec6', '1d568d90c11c67aa', 4, 2, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('6a9406eedec6', '1d568d90c11c67aa', 4, 4, CURRENT_TIMESTAMP());
-INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('6a9406eedec6', '1577c386680d9554', 1, 5, CURRENT_TIMESTAMP());
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('6a9406eedec6', '1d568d90c11c67aa', 4, 2, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 14 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('6a9406eedec6', '1d568d90c11c67aa', 4, 4, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 15 SECOND));
+INSERT INTO ppl_webapp_matches_test (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES ('6a9406eedec6', '1577c386680d9554', 1, 5, ADDDATE(CURRENT_TIMESTAMP(), INTERVAL 16 SECOND));

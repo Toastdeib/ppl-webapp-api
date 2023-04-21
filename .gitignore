@@ -3,3 +3,4 @@
 config.js
 cache.json
 *.swp
+**/tests/db-test.js
