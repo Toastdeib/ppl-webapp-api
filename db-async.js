@@ -38,6 +38,8 @@ const linkCodeCache = {};
  * - ppl_events: TINYINT(4)
  * - is_leader: BOOLEAN
  * - leader_id: VARCHAR(8)
+ * - registered_date: TIMESTAMP
+ * - last_used_date: TIMESTAMP
  *
  * ppl_webapp_challengers
  * - id: VARCHAR(16)
@@ -323,7 +325,7 @@ async function login(username, password, pplEvent, callback) {
 
     const oldMask = row.ppl_events;
     const eventMask = pplEventToBitmask(pplEvent);
-    result = await save(`UPDATE ${LOGINS_TABLE} SET ppl_events = ? WHERE username = ?`, [oldMask | eventMask, username]);
+    result = await save(`UPDATE ${LOGINS_TABLE} SET ppl_events = ?, last_used_date = CURRENT_TIMESTAMP() WHERE username = ?`, [oldMask | eventMask, username]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
