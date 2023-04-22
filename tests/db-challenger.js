@@ -29,7 +29,7 @@ const challengerId = 'efaa0cdd1cbd165b';
 const newName = 'testchallenger123';
 const baseline = {
     displayName: 'testchallenger1',
-    queuesEntered: { 'bc95c2fc3f1a': 0, 'd0cceeaf006a': 0 }, // TODO - change the second 0 to a 1 after fixing the db structure and rebuilding it again
+    queuesEntered: { 'bc95c2fc3f1a': 0, 'd0cceeaf006a': 1 },
     badgesEarned: [ '6a9406eedec6', '7729e38c3f7d', 'bcc6f08242fb', '7e8ab2c43c76', '1ed127c44156', '74fe35c10ba6', '68e65518c4d6', 'd08cde9beddd', 'b6857070a317', '1194829fc135', 'be90adcbbe2f' ],
     championDefeated: false
 }
@@ -45,7 +45,7 @@ const leaderIds = {
 };
 const leaderQueue = {
     count: 3,
-    position: 0 // TODO - Make this 2 after the next db rebuild
+    position: 2
 };
 const champQueue = {
     count: 2,
@@ -154,13 +154,11 @@ function getBingoBoard() {
             successCount++;
         }
 
-        //joinClosedQueue(); // TODO - Readd this to the chain once the functionality is implemented
-        joinJoinedQueue();
+        joinClosedQueue();
     });
 }
 
 function joinClosedQueue() {
-    // TODO - This test will be broken until we actually implement queue open/close logic
     test.name(4, 'Attempt to join a closed leader queue');
     db.queue.enqueue(leaderIds.closed, challengerId, (error, result) => {
         if (error === constants.resultCode.queueIsClosed) {
@@ -267,13 +265,11 @@ function joinFullQueue() {
             failureCount++;
         }
 
-        //joinRestrictedQueue(); // TODO - Readd this to the chain once the functionality is implemented
-        recordLeaderWin();
+        joinRestrictedQueue();
     });
 }
 
 function joinRestrictedQueue() {
-    // TODO - This test will be broken until we implement the logic
     test.name(10, 'Attempt to join the champ queue without enough emblems');
     db.queue.enqueue(leaderIds.champ, challengerId, (error, result) => {
         if (error === constants.resultCode.notEnoughBadges) {

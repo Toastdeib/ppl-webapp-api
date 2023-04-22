@@ -204,13 +204,13 @@ function validateLeaderId(id) {
 
 function saveCache() {
     logger.api.debug('Writing session cache to file');
-    fs.writeFileSync(CACHE_FILE, JSON.stringify(sessionCache), 'utf-8');
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(sessionCache), 'utf8');
 }
 
 function initCaches() {
     try {
         logger.api.debug('Restoring session cache from file');
-        sessionCache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf-8'));
+        sessionCache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
     } catch (err) {
         logger.api.debug('Could not restore session cache, initializing as empty instead');
         sessionCache = {};

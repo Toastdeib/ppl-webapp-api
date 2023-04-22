@@ -583,10 +583,41 @@ async function updateQueueStatus(open, id, callback) {
 async function enqueue(leaderId, challengerId, callback) {
     // This is still disgusting and I still hate it, even if it's smaller than the clusterfuck in the bot.
     // Checks, in order, are:
-    // 1. Challenger isn't already in this leader's queue and hasn't already beaten them (0 matches with status <> 2)
-    // 2. Leader has room in the queue (<5 matches with status in [0, 1])
-    // 3. Challenger isn't in too many queues (<3 matches with status in [0, 1] across all leaders)
-    let result = await fetch(`SELECT status FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status <> ?`, [leaderId, challengerId, constants.matchStatus.loss]);
+    // 1. Leader's queue is open
+    // 2. Challenger has enough badges/emblems to challenge
+    // 3. Challenger isn't already in this leader's queue and hasn't already beaten them (0 matches with status <> 2)
+    // 4. Leader has room in the queue (<20 matches with status in [0, 1])
+    // 5. Challenger isn't in too many queues (<3 matches with status in [0, 1] across all leaders)
+    let result = await fetch(`SELECT leader_type, queue_open FROM ${LEADERS_TABLE} WHERE id = ?`, [leaderId]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rows.length === 0) {
+        callback(constants.resultCode.notFound);
+        return;
+    }
+
+    if (result.rows[0].queue_open === 0) {
+        callback(constants.resultCode.queueIsClosed);
+        return;
+    }
+
+    const leaderType = result.rows[0].leader_type;
+    if (leaderType & (constants.leaderType.elite | constants.leaderType.champion)) {
+        // Elite or champ; pull badges and validate
+        result = await fetch(`SELECT battle_difficulty FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, constants.matchStatus.win, constants.matchStatus.ash]);
+        const badgeCount = result.rows.filter(row => !(row.battle_difficulty & (constants.leaderType.elite | constants.leaderType.champion))).length;
+        const emblemCount = result.rows.filter(row => row.battle_difficulty & constants.leaderType.elite).length;
+        if ((leaderType & constants.leaderType.elite && badgeCount < 8) || (leaderType & constants.leaderType.champion && emblemCount < 4)) {
+            // TODO - The 8 and 4 here should probably be moved to the config file
+            callback(constants.resultCode.notEnoughBadges);
+            return;
+        }
+    }
+
+    result = await fetch(`SELECT status FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status <> ?`, [leaderId, challengerId, constants.matchStatus.loss]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
