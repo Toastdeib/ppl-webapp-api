@@ -48,10 +48,13 @@ const linkCodeCache = {};
  * - id: VARCHAR(16)
  * - leader_name: VARCHAR(80)
  * - leader_type: TINYINT(4)
+ * - battle_format: TINYINT(4)
  * - badge_name: VARCHAR(40)
  * - leader_bio: VARCHAR(800)
  * - leader_tagline: VARCHAR(150)
  * - queue_open: BOOLEAN
+ * - queue_open_text: VARCHAR(150)
+ * - queue_close_text: VARCHAR(150)
  * - badge_art: MEDIUMTEXT (defunct)
  * - profile_art: MEDIUMTEXT (defunct)
  *
@@ -358,7 +361,7 @@ async function getAllIds(callback) {
 }
 
 async function getAllLeaderData(callback) {
-    const result = await fetch(`SELECT id, leader_name, leader_type, badge_name, leader_bio, leader_tagline FROM ${LEADERS_TABLE}`, []);
+    const result = await fetch(`SELECT id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline FROM ${LEADERS_TABLE}`, []);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -369,6 +372,7 @@ async function getAllLeaderData(callback) {
         retval[row.id] = {
             name: row.leader_name,
             leaderType: row.leader_type,
+            battleFormat: row.battle_format,
             badgeName: row.badge_name,
             bio: row.leader_bio,
             tagline: row.leader_tagline
