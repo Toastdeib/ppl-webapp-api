@@ -441,7 +441,7 @@ function cleanup() {
                 process.exit();
             }
 
-            test.debug('Elite match result reverted');
+            test.debug('Reverted elite match result');
             db.debugSave(`DELETE FROM ${db.tables.matches} WHERE challenger_id = ? AND leader_id IN (?, ?)`, [challengerId, leaderIds.open, leaderIds.champ], (rowCount) => {
                 if (rowCount !== 2) {
                     test.debug('Cleanup failed to delete the correct number of match results, please validate the db manually');
