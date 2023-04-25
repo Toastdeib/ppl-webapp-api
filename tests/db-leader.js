@@ -67,9 +67,6 @@ const queueStats = {
     }
 }
 
-let successCount = 0;
-let failureCount = 0;
-
 /******************
  * TEST FUNCTIONS *
  ******************/
@@ -133,10 +130,10 @@ function verifyBaseline() {
         }
 
         if (baselineValid) {
-            test.pass('baseline is valid');
+            test.debug('Baseline is valid, beginning test run');
             addToClosedQueue();
         } else {
-            test.fail('one or more baseline checks were incorrect, aborting test run, please verify db integrity and try again');
+            test.debug('One or more baseline checks were incorrect, aborting test run, please verify db integrity and try again');
             process.exit();
         }
     });
@@ -147,13 +144,10 @@ function addToClosedQueue() {
     db.queue.enqueue(leaderId, challengerIds.add, (error, result) => {
         if (error === constants.resultCode.queueIsClosed) {
             test.pass('failed to add with result code queueIsClosed');
-            successCount++;
         } else if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.fail('successfully added to a closed queue');
-            failureCount++;
         }
 
         openQueue();
@@ -165,10 +159,8 @@ function openQueue() {
     db.leader.updateQueueStatus(leaderId, true, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('successfully opened the queue');
-            successCount++;
         }
 
         verifyQueueStatus1();
@@ -180,13 +172,10 @@ function verifyQueueStatus1() {
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.queueOpen === false) {
             test.fail('queue is still flagged as closed');
-            failureCount++;
         } else {
             test.pass('queue is flagged as open');
-            successCount++;
         }
 
         addExistingChallenger();
@@ -198,13 +187,10 @@ function addExistingChallenger() {
     db.queue.enqueue(leaderId, challengerIds.hold, (error, result) => {
         if (error === constants.resultCode.alreadyInQueue) {
             test.pass('failed to add with result code alreadyInQueue');
-            successCount++;
         } else if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.fail('successfully added a repeat challenger to the queue');
-            failureCount++;
         }
 
         addNewChallenger();
@@ -217,10 +203,8 @@ function addNewChallenger() {
     db.queue.enqueue(leaderId, challengerIds.add, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('successfully added a new challenger to the queue');
-            successCount++;
         }
 
         verifyQueue1();
@@ -232,18 +216,14 @@ function verifyQueue1() {
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.queue.length !== queueStats.add.length) {
             test.fail(`queue count=${result.queue.length}, expected=${queueStats.add.length}`);
-            failureCount++;
         } else {
             const match = result.queue.find(item => item.challengerId === challengerIds.add);
             if (match.position !== queueStats.add.position) {
                 test.fail(`new challenger queue position=${match.position}, expected=${queueStats.add.position}`);
-                failureCount++;
             } else {
                 test.pass('queue count and position of the new challenger were correct');
-                successCount++;
             }
         }
 
@@ -256,10 +236,8 @@ function holdChallenger1() {
     db.queue.hold(leaderId, challengerIds.hold, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('successfully placed a challenger on hold');
-            successCount++;
         }
 
         verifyQueue2();
@@ -271,13 +249,10 @@ function verifyQueue2() {
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.queue.length !== queueStats.hold.length) {
             test.fail(`queue count=${result.queue.length}, expected=${queueStats.hold.length}`);
-            failureCount++;
         } else {
             test.pass('queue count was correct');
-            successCount++;
         }
 
         unholdChallenger1();
@@ -289,10 +264,8 @@ function unholdChallenger1() {
     db.queue.unhold(leaderId, challengerIds.hold, false, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('successfully returned a challenger from hold');
-            successCount++;
         }
 
         verifyQueue3();
@@ -304,18 +277,14 @@ function verifyQueue3() {
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.queue.length !== queueStats.unholdBack.length) {
             test.fail(`queue count=${result.queue.length}, expected=${queueStats.unholdBack.length}`);
-            failureCount++;
         } else {
             const match = result.queue.find(item => item.challengerId === challengerIds.hold);
             if (match.position !== queueStats.unholdBack.position) {
                 test.fail(`unheld challenger queue position=${match.position}, expected=${queueStats.unholdBack.position}`);
-                failureCount++;
             } else {
                 test.pass('queue count and position of the unheld challenger were correct');
-                successCount++;
             }
         }
 
@@ -328,10 +297,8 @@ function holdChallenger2() {
     db.queue.hold(leaderId, challengerIds.hold, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('successfully placed a challenger on hold');
-            successCount++;
         }
 
         verifyQueue4();
@@ -343,13 +310,10 @@ function verifyQueue4() {
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.queue.length !== queueStats.hold.length) {
             test.fail(`queue count=${result.queue.length}, expected=${queueStats.hold.length}`);
-            failureCount++;
         } else {
             test.pass('queue count was correct');
-            successCount++;
         }
 
         unholdChallenger2();
@@ -361,10 +325,8 @@ function unholdChallenger2() {
     db.queue.unhold(leaderId, challengerIds.hold, true, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('successfully returned a challenger from hold');
-            successCount++;
         }
 
         verifyQueue5();
@@ -376,18 +338,14 @@ function verifyQueue5() {
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.queue.length !== queueStats.unholdFront.length) {
             test.fail(`queue count=${result.queue.length}, expected=${queueStats.unholdFront.length}`);
-            failureCount++;
         } else {
             const match = result.queue.find(item => item.challengerId === challengerIds.hold);
             if (match.position !== queueStats.unholdFront.position) {
                 test.fail(`unheld challenger queue position=${match.position}, expected=${queueStats.unholdFront.position}`);
-                failureCount++;
             } else {
                 test.pass('queue count and position of the unheld challenger were correct');
-                successCount++;
             }
         }
 
@@ -400,10 +358,8 @@ function dequeueChallenger() {
     db.queue.dequeue(leaderId, challengerIds.add, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('successfully removed a challenger from the queue');
-            successCount++;
         }
 
         verifyQueue6();
@@ -415,13 +371,10 @@ function verifyQueue6() {
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.queue.length !== queueStats.remove.length) {
             test.fail(`queue count=${result.queue.length}, expected=${queueStats.remove.length}`);
-            failureCount++;
         } else {
             test.pass('queue count was correct');
-            successCount++;
         }
 
         reportWin();
@@ -433,10 +386,8 @@ function reportWin() {
     db.leader.reportResult(leaderId, challengerIds.hold, true, true, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('match result reported successfully');
-            successCount++;
         }
 
         verifyQueue7();
@@ -448,13 +399,10 @@ function verifyQueue7() {
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.queue.length !== queueStats.win.length) {
             test.fail(`queue count=${result.queue.length}, expected=${queueStats.win.length}`);
-            failureCount++;
         } else {
             test.pass('queue count was correct');
-            successCount++;
         }
 
         badDequeue();
@@ -466,13 +414,10 @@ function badDequeue() {
     db.queue.dequeue(leaderId, challengerIds.add, (error, result) => {
         if (error === constants.resultCode.notInQueue) {
             test.pass('failed to remove with result code notInQueue');
-            successCount++;
         } else if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.fail('successfully removed a challenger from the queue');
-            failureCount++;
         }
 
         badHold();
@@ -484,13 +429,10 @@ function badHold() {
     db.queue.hold(leaderId, challengerIds.add, (error, result) => {
         if (error === constants.resultCode.notInQueue) {
             test.pass('failed to hold with result code notInQueue');
-            successCount++;
         } else if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.fail('successfully placed a challenger on hold');
-            failureCount++;
         }
 
         badUnhold();
@@ -502,13 +444,10 @@ function badUnhold() {
     db.queue.unhold(leaderId, challengerIds.add, true, (error, result) => {
         if (error === constants.resultCode.notInQueue) {
             test.pass('failed to unhold with result code notInQueue');
-            successCount++;
         } else if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.fail('successfully returned a challenger from hold');
-            failureCount++;
         }
 
         closeQueue();
@@ -520,10 +459,8 @@ function closeQueue() {
     db.leader.updateQueueStatus(leaderId, false, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('successfully closed the queue');
-            successCount++;
         }
 
         verifyQueueStatus2();
@@ -535,13 +472,10 @@ function verifyQueueStatus2() {
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.queueOpen === true) {
             test.fail('queue is still flagged as open');
-            failureCount++;
         } else {
             test.pass('queue is flagged as closed');
-            successCount++;
         }
 
         addWithoutEnoughBadges();
@@ -553,13 +487,10 @@ function addWithoutEnoughBadges() {
     db.queue.enqueue(eliteId, challengerIds.add, (error, result) => {
         if (error === constants.resultCode.notEnoughBadges) {
             test.pass('failed to add with result code notEnoughBadges');
-            successCount++;
         } else if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.fail('successfully added to an elite queue');
-            failureCount++;
         }
 
         addWithEnoughBadges();
@@ -571,10 +502,8 @@ function addWithEnoughBadges() {
     db.queue.enqueue(eliteId, challengerIds.elite, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('successfully added a new challenger to the queue');
-            successCount++;
         }
 
         cleanup();
@@ -582,7 +511,7 @@ function addWithEnoughBadges() {
 }
 
 function cleanup() {
-    test.complete(new Date() - start, successCount, failureCount);
+    test.finish();
     test.debug('Cleaning up db modifications');
     db.debugSave(`UPDATE ${db.tables.matches} SET status = ? WHERE challenger_id = ? AND leader_id = ?`, [constants.matchStatus.inQueue, challengerIds.hold, leaderId], (rowCount) => {
         if (rowCount === 0) {
@@ -606,8 +535,7 @@ function cleanup() {
 /******************
  * TEST EXECUTION *
  ******************/
-let start;
 db.dbReady.then(() => {
-    start = new Date();
+    test.start();
     verifyBaseline();
 });

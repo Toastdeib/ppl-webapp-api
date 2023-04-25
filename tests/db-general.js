@@ -52,8 +52,6 @@ const password = 'password1';
 const badPassword = 'password2';
 
 let id;
-let successCount = 0;
-let failureCount = 0;
 
 /******************
  * TEST FUNCTIONS *
@@ -63,13 +61,10 @@ function getAllChallengersEast1() {
     db.leader.getAllChallengers('east', (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.length !== idCounts.east.first) {
             test.fail(`expected ${idCounts.east.first} IDs, found ${result.length}`);
-            failureCount++;
         } else {
             test.pass('challenger count for east was correct');
-            successCount++;
         }
 
         getAllChallengersWest1();
@@ -81,13 +76,10 @@ function getAllChallengersWest1() {
     db.leader.getAllChallengers('west', (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.length !== idCounts.west.first) {
             test.fail(`expected ${idCounts.west.first} IDs, found ${result.length}`);
-            failureCount++;
         } else {
             test.pass('challenger count for west was correct');
-            successCount++;
         }
 
         getAllIds1();
@@ -99,16 +91,12 @@ function getAllIds1() {
     db.getAllIds((error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.challengers.length !== idCounts.all.challengers.first) {
             test.fail(`expected ${idCounts.all.challengers.first} challenger IDs, found ${result.challengers.length}`);
-            failureCount++;
         } else if (result.leaders.length !== idCounts.all.leaders.first) {
             test.fail(`expected ${idCounts.all.leaders.first} leader IDs, found ${result.leaders.length}`);
-            failureCount++;
         } else {
             test.pass('ID counts were correct');
-            successCount++;
         }
 
         registerWithTakenUsername();
@@ -120,13 +108,10 @@ function registerWithTakenUsername() {
     db.auth.register(takenUsername, password, 'east', (error, result) => {
         if (error === constants.resultCode.usernameTaken) {
             test.pass('registration failed with usernameTaken result code');
-            successCount++;
         } else if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.fail('registration was successful');
-            failureCount++;
         }
 
         registerWithNewUsername();
@@ -138,10 +123,8 @@ function registerWithNewUsername() {
     db.auth.register(newUsername, password, 'east', (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('registration was successful');
-            successCount++;
             id = result.id;
         }
 
@@ -154,13 +137,10 @@ function loginWithGoodCredentials() {
     db.auth.login(newUsername, password, 'east', (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.id !== id) {
             test.fail(`id mismatch, actual=${result.id}, expected=${id}`);
-            failureCount++;
         } else {
             test.pass('login was successful');
-            successCount++;
         }
 
         loginWithBadCredentials();
@@ -172,13 +152,10 @@ function loginWithBadCredentials() {
     db.auth.login(newUsername, badPassword, 'east', (error, result) => {
         if (error === constants.resultCode.badCredentials) {
             test.pass('login failed with badCredentials result code');
-            successCount++;
         } else if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.fail('login was successful');
-            failureCount++;
         }
 
         getAllChallengersEast2();
@@ -190,13 +167,10 @@ function getAllChallengersEast2() {
     db.leader.getAllChallengers('east', (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.length !== idCounts.east.second) {
             test.fail(`expected ${idCounts.east.second} IDs, found ${result.length}`);
-            failureCount++;
         } else {
             test.pass('challenger count for east was correct');
-            successCount++;
         }
 
         getAllChallengersWest2();
@@ -208,13 +182,10 @@ function getAllChallengersWest2() {
     db.leader.getAllChallengers('west', (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.length !== idCounts.west.second) {
             test.fail(`expected ${idCounts.west.second} IDs, found ${result.length}`);
-            failureCount++;
         } else {
             test.pass('challenger count for west was correct');
-            successCount++;
         }
 
         getAllIds2();
@@ -226,16 +197,12 @@ function getAllIds2() {
     db.getAllIds((error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.challengers.length !== idCounts.all.challengers.second) {
             test.fail(`expected ${idCounts.all.challengers.second} challenger IDs, found ${result.challengers.length}`);
-            failureCount++;
         } else if (result.leaders.length !== idCounts.all.leaders.second) {
             test.fail(`expected ${idCounts.all.leaders.second} leader IDs, found ${result.leaders.length}`);
-            failureCount++;
         } else {
             test.pass('ID counts were correct');
-            successCount++;
         }
 
         loginForWest();
@@ -247,13 +214,10 @@ function loginForWest() {
     db.auth.login(newUsername, password, 'west', (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.id !== id) {
             test.fail(`id mismatch, actual=${result.id}, expected=${id}`);
-            failureCount++;
         } else {
             test.pass('login was successful');
-            successCount++;
         }
 
         getAllChallengersWest3();
@@ -265,13 +229,10 @@ function getAllChallengersWest3() {
     db.leader.getAllChallengers('west', (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.length !== idCounts.west.third) {
             test.fail(`expected ${idCounts.west.third} IDs, found ${result.length}`);
-            failureCount++;
         } else {
             test.pass('challenger count for west was correct');
-            successCount++;
         }
 
         cleanup();
@@ -279,7 +240,7 @@ function getAllChallengersWest3() {
 }
 
 function cleanup() {
-    test.complete(new Date() - start, successCount, failureCount);
+    test.finish();
     if (id) {
         test.debug('Cleaning up db modifications');
         db.debugSave(`DELETE FROM ${db.tables.logins} WHERE id = ?`, [id], (rowCount) => {
@@ -308,9 +269,8 @@ function cleanup() {
 /******************
  * TEST EXECUTION *
  ******************/
-let start;
 db.dbReady.then(() => {
-    start = new Date();
+    test.start();
     getAllChallengersEast1();
 });
 

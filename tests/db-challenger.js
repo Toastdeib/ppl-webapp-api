@@ -52,9 +52,6 @@ const champQueue = {
     position: 0
 };
 
-let successCount = 0;
-let failureCount = 0;
-
 /******************
  * TEST FUNCTIONS *
  ******************/
@@ -98,10 +95,10 @@ function verifyBaseline() {
         }
 
         if (baselineValid) {
-            test.pass('baseline is valid');
+            test.debug('Baseline is valid, beginning test run');
             setDisplayName();
         } else {
-            test.fail('one or more baseline checks were incorrect, aborting test run, please verify db integrity and try again');
+            test.debug('One or more baseline checks were incorrect, aborting test run, please verify db integrity and try again');
             process.exit();
         }
     });
@@ -112,10 +109,8 @@ function setDisplayName() {
     db.challenger.setDisplayName(challengerId, newName, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('display name updated without error');
-            successCount++;
         }
 
         verifyDisplayName();
@@ -127,13 +122,10 @@ function verifyDisplayName() {
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.displayName !== newName) {
             test.fail(`displayName=${result.displayName}, expected=${newName}`);
-            failureCount++;
         } else {
             test.pass('updated display name was correct');
-            successCount++;
         }
 
         getBingoBoard();
@@ -145,13 +137,10 @@ function getBingoBoard() {
     db.challenger.getBingoBoard(challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.bingoBoard.length === 0) {
             test.fail(`empty board was returned`);
-            failureCount++;
         } else {
             test.pass('bingo board inflated successfully');
-            successCount++;
         }
 
         joinClosedQueue();
@@ -163,13 +152,10 @@ function joinClosedQueue() {
     db.queue.enqueue(leaderIds.closed, challengerId, (error, result) => {
         if (error === constants.resultCode.queueIsClosed) {
             test.pass('failed to join with result code queueIsClosed');
-            successCount++;
         } else if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.fail('successfully joined a closed queue');
-            failureCount++;
         }
 
         joinJoinedQueue();
@@ -181,13 +167,10 @@ function joinJoinedQueue() {
     db.queue.enqueue(leaderIds.joined, challengerId, (error, result) => {
         if (error === constants.resultCode.alreadyInQueue) {
             test.pass('failed to join with result code alreadyInQueue');
-            successCount++;
         } else if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.fail('successfully joined a queue the challenger is already in');
-            failureCount++;
         }
 
         joinDefeatedQueue();
@@ -199,13 +182,10 @@ function joinDefeatedQueue() {
     db.queue.enqueue(leaderIds.defeated, challengerId, (error, result) => {
         if (error === constants.resultCode.alreadyWon) {
             test.pass('failed to join with result code alreadyWon');
-            successCount++;
         } else if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.fail('successfully joined a defeated leader\'s queue');
-            failureCount++;
         }
 
         joinOpenQueue();
@@ -217,10 +197,8 @@ function joinOpenQueue() {
     db.queue.enqueue(leaderIds.open, challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('successfully joined an open queue');
-            successCount++;
         }
 
         verifyNewQueue1();
@@ -232,18 +210,14 @@ function verifyNewQueue1() {
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.queuesEntered.length !== leaderQueue.count) {
             test.fail(`queue count=${result.queuesEntered.length}, expected=${leaderQueue.count}`);
-            failureCount++;
         } else {
             const queue = result.queuesEntered.find(item => item.leaderId === leaderIds.open);
             if (queue.position !== leaderQueue.position) {
                 test.fail(`queue position=${queue.position}, expected=${leaderQueue.position}`);
-                failureCount++;
             } else {
                 test.pass('queue count and position were correct');
-                successCount++;
             }
         }
 
@@ -256,13 +230,10 @@ function joinFullQueue() {
     db.queue.enqueue(leaderIds.full, challengerId, (error, result) => {
         if (error === constants.resultCode.tooManyChallenges) {
             test.pass('failed to join with result code tooManyChallenges');
-            successCount++;
         } else if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.fail('successfully joined a queue while already in the maximum allowed number');
-            failureCount++;
         }
 
         joinRestrictedQueue();
@@ -274,13 +245,10 @@ function joinRestrictedQueue() {
     db.queue.enqueue(leaderIds.champ, challengerId, (error, result) => {
         if (error === constants.resultCode.notEnoughBadges) {
             test.pass('failed to join with result code notEnoughBadges');
-            successCount++;
         } else if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.fail('successfully joined the champ queue without enough emblems');
-            failureCount++;
         }
 
         recordLeaderWin();
@@ -292,10 +260,8 @@ function recordLeaderWin() {
     db.leader.reportResult(leaderIds.open, challengerId, true, true, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('match result recorded successfully');
-            successCount++;
         }
 
         verifyBadgeCount1();
@@ -307,13 +273,10 @@ function verifyBadgeCount1() {
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.badgesEarned.length !== baseline.badgesEarned.length + 1) {
             test.fail(`badge count=${result.badgesEarned.length}, expected ${baseline.badgesEarned.length + 1}`);
-            failureCount++;
         } else {
             test.pass('badge count was correct');
-            successCount++;
         }
 
         recordEliteWin();
@@ -325,10 +288,8 @@ function recordEliteWin() {
     db.leader.reportResult(leaderIds.elite, challengerId, true, true, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('match result recorded successfully');
-            successCount++;
         }
 
         verifyBadgeCount2();
@@ -340,13 +301,10 @@ function verifyBadgeCount2() {
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.badgesEarned.length !== baseline.badgesEarned.length + 2) {
             test.fail(`badge count=${result.badgesEarned.length}, expected ${baseline.badgesEarned.length + 2}`);
-            failureCount++;
         } else {
             test.pass('badge count was correct');
-            successCount++;
         }
 
         joinChampQueue();
@@ -358,10 +316,8 @@ function joinChampQueue() {
     db.queue.enqueue(leaderIds.champ, challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('successfully joined the champ queue');
-            successCount++;
         }
 
         verifyNewQueue2();
@@ -373,18 +329,14 @@ function verifyNewQueue2() {
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (result.queuesEntered.length !== champQueue.count) {
             test.fail(`queue count=${result.queuesEntered.length}, expected=${champQueue.count}`);
-            failureCount++;
         } else {
             const queue = result.queuesEntered.find(item => item.leaderId === leaderIds.champ);
             if (queue.position !== champQueue.position) {
                 test.fail(`queue position=${queue.position}, expected=${champQueue.position}`);
-                failureCount++;
             } else {
                 test.pass('queue count and position were correct');
-                successCount++;
             }
         }
 
@@ -397,10 +349,8 @@ function recordChampWin() {
     db.leader.reportResult(leaderIds.champ, challengerId, true, true, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else {
             test.pass('match result recorded successfully');
-            successCount++;
         }
 
         verifyChampFlag();
@@ -412,13 +362,10 @@ function verifyChampFlag() {
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
-            failureCount++;
         } else if (!result.championDefeated) {
             test.fail('championDefeated flag was false');
-            failureCount++;
         } else {
             test.pass('championDefeated flag was true');
-            successCount++;
         }
 
         cleanup();
@@ -426,7 +373,7 @@ function verifyChampFlag() {
 }
 
 function cleanup() {
-    test.complete(new Date() - start, successCount, failureCount);
+    test.finish();
     test.debug('Cleaning up db modifiations');
     db.debugSave(`UPDATE ${db.tables.challengers} SET display_name = ? WHERE id = ?`, [baseline.displayName, challengerId], (rowCount) => {
         if (rowCount === 0) {
@@ -458,8 +405,7 @@ function cleanup() {
 /******************
  * TEST EXECUTION *
  ******************/
-let start;
 db.dbReady.then(() => {
-    start = new Date();
+    test.start();
     verifyBaseline();
 });
