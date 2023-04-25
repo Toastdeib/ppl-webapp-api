@@ -27,18 +27,18 @@ const test = require('./test-logger.js');
  ****************/
 const idCounts = {
     east: {
-        first: 5,
-        second: 6
+        first: 7,
+        second: 8
     },
     west: {
-        first: 5,
-        second: 5,
-        third: 6
+        first: 7,
+        second: 7,
+        third: 8
     },
     all: {
         challengers: {
-            first: 5,
-            second: 6
+            first: 7,
+            second: 8
         },
         leaders: {
             first: 27,
