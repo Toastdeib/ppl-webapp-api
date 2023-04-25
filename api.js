@@ -491,7 +491,7 @@ app.get('/leader/:id', getLeaderInfo);
 
 app.post('/leader/:id/openqueue', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} opening queue`);
-    db.leader.updateQueueStatus(true, req.leaderId, (error, result) => {
+    db.leader.updateQueueStatus(req.leaderId, true, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -502,7 +502,7 @@ app.post('/leader/:id/openqueue', (req, res) => {
 
 app.post('/leader/:id/closequeue', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} closing queue`);
-    db.leader.updateQueueStatus(false, req.leaderId, (error, result) => {
+    db.leader.updateQueueStatus(req.leaderId, false, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {

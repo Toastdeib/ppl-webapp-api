@@ -502,7 +502,7 @@ async function getBingoBoard(id, callback) {
 
 // Leader functions
 async function getLeaderInfo(id, callback) {
-    let result = await fetch(`SELECT leader_name, leader_type, badge_name FROM ${LEADERS_TABLE} WHERE id = ?`, [id]);
+    let result = await fetch(`SELECT leader_name, leader_type, badge_name, queue_open FROM ${LEADERS_TABLE} WHERE id = ?`, [id]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -517,6 +517,7 @@ async function getLeaderInfo(id, callback) {
         leaderName: result.rows[0].leader_name,
         leaderType: result.rows[0].leader_type,
         badgeName: result.rows[0].badge_name,
+        queueOpen: result.rows[0].queue_open === 1,
         winCount: 0,
         lossCount: 0,
         badgesAwarded: 0,
@@ -571,7 +572,7 @@ async function getLeaderInfo(id, callback) {
     callback(constants.resultCode.success, retval);
 }
 
-async function updateQueueStatus(open, id, callback) {
+async function updateQueueStatus(id, open, callback) {
     const result = await save(`UPDATE ${LEADERS_TABLE} SET queue_open = ? WHERE id = ?`, [open ? constants.queueStatus.open : constants.queueStatus.closed, id]);
     if (result.resultCode) {
         callback(result.resultCode);
