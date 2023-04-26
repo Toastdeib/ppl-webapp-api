@@ -416,20 +416,28 @@ async function getChallengerInfo(id, callback) {
     };
 
     // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    result = await fetch(`SELECT m.leader_id, l.leader_name, COUNT(m.challenger_id) position FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) AND timestamp <= (SELECT timestamp FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) GROUP BY leader_id`, [constants.matchStatus.inQueue, id, constants.matchStatus.inQueue, id, constants.matchStatus.inQueue]);
+    result = await fetch(`SELECT m.leader_id, l.leader_name, m.challenger_id, m.battle_difficulty FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) AND timestamp <= (SELECT timestamp FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?)`, [constants.matchStatus.inQueue, id, constants.matchStatus.inQueue, id, constants.matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
     for (row of result.rows) {
-        // Position gets a -1 here because the count includes the challenger themselves and we want it 0-indexed
-        retval.queuesEntered.push({
-            leaderId: row.leader_id,
-            leaderName: row.leader_name,
-            position: row.position - 1,
-            linkCode: getLinkCode(row.leader_id, id)
-        });
+        const match = retval.queuesEntered.find(item => item.leaderId === row.leader_id);
+        if (!match) {
+            retval.queuesEntered.push({
+                leaderId: row.leader_id,
+                leaderName: row.leader_name,
+                position: 0, // Start this at 0, increment if we have additional rows for the leader ID
+                linkCode: getLinkCode(row.leader_id, id),
+                difficulty: row.battle_difficulty // Default to the new row, clobber it if we get another one
+            });
+        } else {
+            match.position++;
+            if (row.challenger_id === id) {
+                match.difficulty = row.battle_difficulty;
+            }
+        }
     }
 
     result = await fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, constants.matchStatus.win, constants.matchStatus.ash]);
