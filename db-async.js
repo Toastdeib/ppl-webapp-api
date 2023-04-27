@@ -384,6 +384,29 @@ async function getAllLeaderData(callback) {
     callback(constants.resultCode.success, retval);
 }
 
+async function getBadges(id, callback) {
+    const result = await fetch(`SELECT m.leader_id, l.leader_name, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, constants.matchStatus.win, constants.matchStatus.ash]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    const retval = {
+        challengerId: id,
+        badgesEarned: []
+    };
+
+    for (row of result.rows) {
+        retval.badgesEarned.push({
+            leaderId: row.leader_id,
+            leaderName: row.leader_name,
+            badgeName: row.badge_name
+        });
+    }
+
+    callback(constants.resultCode.success, retval);
+}
+
 // Challenger functions
 async function getChallengerInfo(id, callback) {
     let result = await fetch(`SELECT display_name, bingo_board FROM ${CHALLENGERS_TABLE} WHERE id = ?`, [id]);
@@ -852,6 +875,7 @@ module.exports = {
     generateHex: generateHex,
     getAllIds: getAllIds,
     getAllLeaderData: getAllLeaderData,
+    getBadges: getBadges,
     debugSave: debugSave,
     tables: {
         logins: LOGINS_TABLE,

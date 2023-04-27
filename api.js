@@ -624,9 +624,21 @@ app.get('/appsettings', (req, res) => {
     res.json({ showTrainerCard: new Date() > new Date(config.trainerCardShowDate) });
 });
 
+app.get('/badges/:id', (req, res) => {
+    logger.api.info(`Returning simple badge list for loginId=${req.params.id}`);
+    db.getBadges(req.params.id, (error, result) => {
+        if (error) {
+            handleDbError(error, res);
+        } else {
+            res.json(result);
+        }
+    });
+});
+
 app.get('/logview', (req, res) => {
     generateLogviewResponse(res, 0);
 });
+
 app.get('/logview/:daysago', (req, res) => {
     const daysAgo = Number(req.params.daysago);
     generateLogviewResponse(res, daysAgo || 0);
