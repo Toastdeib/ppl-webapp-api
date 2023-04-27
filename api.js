@@ -421,8 +421,16 @@ app.post('/challenger/:id/enqueue/:leader', (req, res) => {
         return;
     }
 
+    const difficulty = Number(req.body.battleDifficulty);
+    if (!difficulty) {
+        // Missing or invalid parameter
+        logger.api.warn(`loginId=${req.params.id} attempted to join queue with invalid battleDifficulty=${req.body.battleDifficulty}`);
+        res.status(400).json({ error: `Battle difficulty ${req.body.battleDifficulty} is invalid` });
+        return;
+    }
+
     logger.api.info(`loginId=${req.params.id} joining leaderId=${req.params.leader}'s queue`);
-    db.queue.enqueue(req.params.leader, req.params.id, (error, result) => {
+    db.queue.enqueue(req.params.leader, req.params.id, difficulty, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {
@@ -518,8 +526,16 @@ app.post('/leader/:id/enqueue/:challenger', (req, res) => {
         return;
     }
 
+    const difficulty = Number(req.body.battleDifficulty);
+    if (!difficulty) {
+        // Missing or invalid parameter
+        logger.api.warn(`loginId=${req.params.id} attempted to join queue with invalid battleDifficulty=${req.body.battleDifficulty}`);
+        res.status(400).json({ error: `Battle difficulty ${req.body.battleDifficulty} is invalid` });
+        return;
+    }
+
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} adding challengerId=${req.params.challenger} to queue`);
-    db.queue.enqueue(req.leaderId, req.params.challenger, (error, result) => {
+    db.queue.enqueue(req.leaderId, req.params.challenger, difficulty, (error, result) => {
         if (error) {
             handleDbError(error, res);
         } else {

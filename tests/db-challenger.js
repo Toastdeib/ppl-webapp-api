@@ -149,7 +149,7 @@ function getBingoBoard() {
 
 function joinClosedQueue() {
     test.name(4, 'Attempt to join a closed leader queue');
-    db.queue.enqueue(leaderIds.closed, challengerId, (error, result) => {
+    db.queue.enqueue(leaderIds.closed, challengerId, constants.leaderType.veteran, (error, result) => {
         if (error === constants.resultCode.queueIsClosed) {
             test.pass('failed to join with result code queueIsClosed');
         } else if (error) {
@@ -164,7 +164,7 @@ function joinClosedQueue() {
 
 function joinJoinedQueue() {
     test.name(5, 'Attempt to join a queue the challenger is already in');
-    db.queue.enqueue(leaderIds.joined, challengerId, (error, result) => {
+    db.queue.enqueue(leaderIds.joined, challengerId, constants.leaderType.veteran, (error, result) => {
         if (error === constants.resultCode.alreadyInQueue) {
             test.pass('failed to join with result code alreadyInQueue');
         } else if (error) {
@@ -179,7 +179,7 @@ function joinJoinedQueue() {
 
 function joinDefeatedQueue() {
     test.name(6, 'Attempt to join the queue for a previously defeated leader');
-    db.queue.enqueue(leaderIds.defeated, challengerId, (error, result) => {
+    db.queue.enqueue(leaderIds.defeated, challengerId, constants.leaderType.veteran, (error, result) => {
         if (error === constants.resultCode.alreadyWon) {
             test.pass('failed to join with result code alreadyWon');
         } else if (error) {
@@ -188,13 +188,28 @@ function joinDefeatedQueue() {
             test.fail('successfully joined a defeated leader\'s queue');
         }
 
+        joinUnsupportedQueue();
+    });
+}
+
+function joinUnsupportedQueue() {
+    test.name(7, 'Attempt to join a queue with an unsupported battle difficulty');
+    db.queue.enqueue(leaderIds.open, challengerId, constants.leaderType.veteran, (error, result) => {
+        if (error === constants.resultCode.unsupportedDifficulty) {
+            test.pass('failed to join with result code unsupportedDifficulty');
+        } else if (error) {
+            test.fail(`error=${error}`);
+        } else {
+            test.fail('successfully joined a queue with an unsupported battle difficulty');
+        }
+
         joinOpenQueue();
     });
 }
 
 function joinOpenQueue() {
-    test.name(7, 'Attempt to join an open leader queue');
-    db.queue.enqueue(leaderIds.open, challengerId, (error, result) => {
+    test.name(8, 'Attempt to join an open leader queue');
+    db.queue.enqueue(leaderIds.open, challengerId, constants.leaderType.casual, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
         } else {
@@ -206,7 +221,7 @@ function joinOpenQueue() {
 }
 
 function verifyNewQueue1() {
-    test.name(8, 'Verify queue count and position in the new queue');
+    test.name(9, 'Verify queue count and position in the new queue');
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
@@ -226,8 +241,8 @@ function verifyNewQueue1() {
 }
 
 function joinFullQueue() {
-    test.name(9, 'Attempt to join the queue while in the maximum allowed number');
-    db.queue.enqueue(leaderIds.full, challengerId, (error, result) => {
+    test.name(10, 'Attempt to join the queue while in the maximum allowed number');
+    db.queue.enqueue(leaderIds.full, challengerId, constants.leaderType.casual, (error, result) => {
         if (error === constants.resultCode.tooManyChallenges) {
             test.pass('failed to join with result code tooManyChallenges');
         } else if (error) {
@@ -241,8 +256,8 @@ function joinFullQueue() {
 }
 
 function joinRestrictedQueue() {
-    test.name(10, 'Attempt to join the champ queue without enough emblems');
-    db.queue.enqueue(leaderIds.champ, challengerId, (error, result) => {
+    test.name(11, 'Attempt to join the champ queue without enough emblems');
+    db.queue.enqueue(leaderIds.champ, challengerId, constants.leaderType.champion, (error, result) => {
         if (error === constants.resultCode.notEnoughBadges) {
             test.pass('failed to join with result code notEnoughBadges');
         } else if (error) {
@@ -256,7 +271,7 @@ function joinRestrictedQueue() {
 }
 
 function recordLeaderWin() {
-    test.name(11, 'Record a win against a leader');
+    test.name(12, 'Record a win against a leader');
     db.leader.reportResult(leaderIds.open, challengerId, true, true, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
@@ -269,7 +284,7 @@ function recordLeaderWin() {
 }
 
 function verifyBadgeCount1() {
-    test.name(12, 'Verify badge count after defeating a leader');
+    test.name(13, 'Verify badge count after defeating a leader');
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
@@ -284,7 +299,7 @@ function verifyBadgeCount1() {
 }
 
 function recordEliteWin() {
-    test.name(13, 'Record a win against an elite');
+    test.name(14, 'Record a win against an elite');
     db.leader.reportResult(leaderIds.elite, challengerId, true, true, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
@@ -297,7 +312,7 @@ function recordEliteWin() {
 }
 
 function verifyBadgeCount2() {
-    test.name(14, 'Verify badge count after defeating an elite');
+    test.name(15, 'Verify badge count after defeating an elite');
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
@@ -312,8 +327,8 @@ function verifyBadgeCount2() {
 }
 
 function joinChampQueue() {
-    test.name(15, 'Attempt to join the champ queue');
-    db.queue.enqueue(leaderIds.champ, challengerId, (error, result) => {
+    test.name(16, 'Attempt to join the champ queue');
+    db.queue.enqueue(leaderIds.champ, challengerId, constants.leaderType.champion, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
         } else {
@@ -325,7 +340,7 @@ function joinChampQueue() {
 }
 
 function verifyNewQueue2() {
-    test.name(16, 'Verify queue count and position in the new queue');
+    test.name(17, 'Verify queue count and position in the new queue');
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
@@ -345,7 +360,7 @@ function verifyNewQueue2() {
 }
 
 function recordChampWin() {
-    test.name(17, 'Record a win against the champ');
+    test.name(18, 'Record a win against the champ');
     db.leader.reportResult(leaderIds.champ, challengerId, true, true, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
@@ -358,7 +373,7 @@ function recordChampWin() {
 }
 
 function verifyChampFlag() {
-    test.name(18, 'Verify the championDefeated flag');
+    test.name(19, 'Verify the championDefeated flag');
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);

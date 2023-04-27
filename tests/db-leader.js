@@ -141,7 +141,7 @@ function verifyBaseline() {
 
 function addToClosedQueue() {
     test.name(1, 'Attempt to add a challenger to a closed queue');
-    db.queue.enqueue(leaderId, challengerIds.add, (error, result) => {
+    db.queue.enqueue(leaderId, challengerIds.add, constants.leaderType.casual, (error, result) => {
         if (error === constants.resultCode.queueIsClosed) {
             test.pass('failed to add with result code queueIsClosed');
         } else if (error) {
@@ -184,7 +184,7 @@ function verifyQueueStatus1() {
 
 function addExistingChallenger() {
     test.name(4, 'Attempt to add a challenger who is already in queue');
-    db.queue.enqueue(leaderId, challengerIds.hold, (error, result) => {
+    db.queue.enqueue(leaderId, challengerIds.hold, constants.leaderType.casual, (error, result) => {
         if (error === constants.resultCode.alreadyInQueue) {
             test.pass('failed to add with result code alreadyInQueue');
         } else if (error) {
@@ -200,7 +200,7 @@ function addExistingChallenger() {
 
 function addNewChallenger() {
     test.name(5, 'Add a new challenger to the queue');
-    db.queue.enqueue(leaderId, challengerIds.add, (error, result) => {
+    db.queue.enqueue(leaderId, challengerIds.add, constants.leaderType.casual, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
         } else {
@@ -484,7 +484,7 @@ function verifyQueueStatus2() {
 
 function addWithoutEnoughBadges() {
     test.name(24, 'Attempt to add a challenger with fewer than 8 badges to an elite queue');
-    db.queue.enqueue(eliteId, challengerIds.add, (error, result) => {
+    db.queue.enqueue(eliteId, challengerIds.add, constants.leaderType.elite, (error, result) => {
         if (error === constants.resultCode.notEnoughBadges) {
             test.pass('failed to add with result code notEnoughBadges');
         } else if (error) {
@@ -499,7 +499,7 @@ function addWithoutEnoughBadges() {
 
 function addWithEnoughBadges() {
     test.name(25, 'Add a challenger to an elite queue');
-    db.queue.enqueue(eliteId, challengerIds.elite, (error, result) => {
+    db.queue.enqueue(eliteId, challengerIds.elite, constants.leaderType.elite, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
         } else {

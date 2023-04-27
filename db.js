@@ -618,14 +618,15 @@ async function updateQueueStatus(id, open, callback) {
     callback(constants.resultCode.success, {});
 }
 
-async function enqueue(leaderId, challengerId, callback) {
-    // This is still disgusting and I still hate it, even if it's smaller than the clusterfuck in the bot.
+async function enqueue(leaderId, challengerId, difficulty, callback) {
+    // This is still disgusting and I still hate it, and now it's even worse than the clusterfuck in the bot.
     // Checks, in order, are:
     // 1. Leader's queue is open
-    // 2. Challenger has enough badges/emblems to challenge
-    // 3. Challenger isn't already in this leader's queue and hasn't already beaten them (0 matches with status <> 2)
-    // 4. Leader has room in the queue (<20 matches with status in [0, 1])
-    // 5. Challenger isn't in too many queues (<3 matches with status in [0, 1] across all leaders)
+    // 2. Leader supports the requested battle difficulty
+    // 3. Challenger has enough badges/emblems to challenge
+    // 4. Challenger isn't already in this leader's queue and hasn't already beaten them (0 matches with status <> 2)
+    // 5. Leader has room in the queue (<20 matches with status in [0, 1])
+    // 6. Challenger isn't in too many queues (<3 matches with status in [0, 1] across all leaders)
     let result = await fetch(`SELECT leader_type, queue_open FROM ${LEADERS_TABLE} WHERE id = ?`, [leaderId]);
     if (result.resultCode) {
         callback(result.resultCode);
@@ -643,6 +644,11 @@ async function enqueue(leaderId, challengerId, callback) {
     }
 
     const leaderType = result.rows[0].leader_type;
+    if (!(leaderType & difficulty)) {
+        callback(constants.resultCode.unsupportedDifficulty);
+        return;
+    }
+
     if (leaderType & (constants.leaderType.elite | constants.leaderType.champion)) {
         // Elite or champ; pull badges and validate
         result = await fetch(`SELECT battle_difficulty FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, constants.matchStatus.win, constants.matchStatus.ash]);
@@ -692,7 +698,7 @@ async function enqueue(leaderId, challengerId, callback) {
         return;
     }
 
-    result = await save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, status, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP())`, [leaderId, challengerId, constants.matchStatus.inQueue]);
+    result = await save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP())`, [leaderId, challengerId, difficulty, constants.matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;

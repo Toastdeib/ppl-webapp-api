@@ -13,7 +13,8 @@ module.exports = {
         badCredentials: 10,
         invalidToken: 11,
         queueIsClosed: 12,
-        notEnoughBadges: 13
+        notEnoughBadges: 13,
+        unsupportedDifficulty: 14
     },
     leaderType: {
         // Bitmask; regular leaders can have teams for multiple difficulty tiers
