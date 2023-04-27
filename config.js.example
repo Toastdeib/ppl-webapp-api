@@ -1,4 +1,5 @@
 module.exports = {
+    // API config
     debug: true,
     port: 12345,
     certPath: '/cert/path/goes/here/',
@@ -7,6 +8,8 @@ module.exports = {
     mysqlUser: '[MYSQL USERNAME GOES HERE]',
     mysqlPassword: '[MYSQL PASSWORD GOES HERE]',
     mysqlDatabase: '[MYSQL DATABASE NAME GOES HERE]',
+    tableSuffix: '',
+    // Event config
     championSurveyUrl: 'localhost',
     challengerSurveyUrl: 'localhost',
     leaderSurveyUrl: 'localhost',
@@ -14,5 +17,6 @@ module.exports = {
     surveyDurationDays: 14,
     trainerCardShowDate: '1970-01-01T00:00:00Z',
     bingoBoardWidth: 5,
-    tableSuffix: ''
+    requiredBadges: 8,
+    requiredEmblems: 4
 }

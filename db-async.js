@@ -648,8 +648,7 @@ async function enqueue(leaderId, challengerId, callback) {
         result = await fetch(`SELECT battle_difficulty FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, constants.matchStatus.win, constants.matchStatus.ash]);
         const badgeCount = result.rows.filter(row => !(row.battle_difficulty & (constants.leaderType.elite | constants.leaderType.champion))).length;
         const emblemCount = result.rows.filter(row => row.battle_difficulty & constants.leaderType.elite).length;
-        if ((leaderType & constants.leaderType.elite && badgeCount < 8) || (leaderType & constants.leaderType.champion && emblemCount < 4)) {
-            // TODO - The 8 and 4 here should probably be moved to the config file
+        if ((leaderType & constants.leaderType.elite && badgeCount < config.requiredBadges) || (leaderType & constants.leaderType.champion && emblemCount < config.requiredEmblems)) {
             callback(constants.resultCode.notEnoughBadges);
             return;
         }
