@@ -42,47 +42,59 @@ function handleDbError(error, res) {
     switch (error) {
         case constants.resultCode.notFound:
             logger.api.error('ID not found');
-            res.status(404).json({ error: 'ID not found' });
+            res.status(404).json({ error: 'One or more IDs in the request path couldn\'t be found.', code: error });
             break;
         case constants.resultCode.alreadyInQueue:
             logger.api.error('Challenger already in queue');
-            res.status(400).json({ error: 'Challenger already in queue' });
+            res.status(400).json({ error: 'A challenger can\'t be in the same queue twice.', code: error });
             break;
         case constants.resultCode.alreadyWon:
             logger.api.error('Challenger has already won');
-            res.status(400).json({ error: 'Challenger has already won' });
+            res.status(400).json({ error: 'Official rematches are only allowed when a badge hasn\'t been awarded yet.', code: error });
             break;
         case constants.resultCode.queueIsFull:
             logger.api.error('Leader queue is full');
-            res.status(400).json({ error: 'Leader queue is full' });
+            res.status(400).json({ error: 'That queue is currently full, please try again later.', code: error });
             break;
         case constants.resultCode.tooManyChallenges:
             logger.api.error('Challenger is in too many queues');
-            res.status(400).json({ error: 'Challenger is in too many queues' });
+            res.status(400).json({ error: 'Challengers can\'t be in more than three queues at a time.', code: error });
             break;
         case constants.resultCode.notInQueue:
             logger.api.error('Challenger is not in queue');
-            res.status(400).json({ error: 'Challenger is not in queue' });
+            res.status(400).json({ error: 'That challenger isn\'t in your queue.', code: error });
             break;
         case constants.resultCode.usernameTaken:
             logger.api.error('Username is already taken');
-            res.status(400).json({ error: 'Username is already taken' });
+            res.status(400).json({ error: 'That username is already in use.', code: error });
             break;
         case constants.resultCode.registrationFailure:
             logger.api.error('Unknown error during registration');
-            res.status(400).json({ error: 'Unknown error during registration' });
+            res.status(500).json({ error: 'An unknown error occurred during registration.', code: error });
             break;
         case constants.resultCode.badCredentials:
             logger.api.error('Invalid login credentials');
-            res.status(400).json({ error: 'Invalid login credentials' });
+            res.status(401).json({ error: 'Invalid login credentials, please try again.', code: error });
             break;
         case constants.resultCode.invalidToken:
             logger.api.error('Invalid access token');
-            res.status(400).json({ error: 'Invalid access token' });
+            res.status(401).json({ error: 'Your access token is invalid, please try logging out and back in.', code: error });
+            break;
+        case constants.resultCode.queueIsClosed:
+            logger.api.error('Leader queue is closed');
+            res.status(400).json({ error: 'That leader\'s queue is currently closed.', code: error });
+            break;
+        case constants.resultCode.notEnoughBadges:
+            logger.api.error('Not enough badges to join the queue');
+            res.status(400).json({ error: 'Challengers need at least eight badges to battle elites and at least four emblems to battle the champ.', code: error });
+            break;
+        case constants.resultCode.unsupportedDifficulty:
+            logger.api.error('Unsupported battle difficulty');
+            res.status(400).json({ error: 'That battle difficulty isn\'t supported.', code: error });
             break;
         default:
             logger.api.error('Unexpected database error');
-            res.status(500).json({ error: 'Unexpected database error' });
+            res.status(500).json({ error: 'An unexpected database error occurred, please try again.', code: error });
             break;
     }
 }
