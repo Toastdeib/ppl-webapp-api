@@ -18,7 +18,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
     process.exit();
 }
 
-const db = require('../db-async.js');
+const db = require('../db.js');
 const constants = require('../constants.js');
 const test = require('./test-logger.js');
 

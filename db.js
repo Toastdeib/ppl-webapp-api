@@ -38,6 +38,8 @@ const linkCodeCache = {};
  * - ppl_events: TINYINT(4)
  * - is_leader: BOOLEAN
  * - leader_id: VARCHAR(8)
+ * - registered_date: TIMESTAMP
+ * - last_used_date: TIMESTAMP
  *
  * ppl_webapp_challengers
  * - id: VARCHAR(16)
@@ -48,10 +50,13 @@ const linkCodeCache = {};
  * - id: VARCHAR(16)
  * - leader_name: VARCHAR(80)
  * - leader_type: TINYINT(4)
+ * - battle_format: TINYINT(4)
  * - badge_name: VARCHAR(40)
  * - leader_bio: VARCHAR(800)
  * - leader_tagline: VARCHAR(150)
  * - queue_open: BOOLEAN
+ * - queue_open_text: VARCHAR(150)
+ * - queue_close_text: VARCHAR(150)
  * - badge_art: MEDIUMTEXT (defunct)
  * - profile_art: MEDIUMTEXT (defunct)
  *
@@ -72,29 +77,31 @@ const db = sql.createPool({
     connectionLimit: 5
 });
 
-function fetch(query, params, callback) {
-    db.query(query, params, (error, result) => {
-        if (error) {
-            logger.api.error('Database read failed');
-            logger.api.error(error);
-            callback(constants.resultCode.dbFailure, []);
-            return;
-        }
-
-        callback(constants.resultCode.success, result);
+function fetch(query, params) {
+    return new Promise((resolve) => {
+        db.query(query, params, (error, result) => {
+            if (error) {
+                logger.api.error('Database read failed');
+                logger.api.error(error);
+                resolve({ status: constants.resultCode.dbFailure, rows: [] });
+            } else {
+                resolve({ status: constants.resultCode.success, rows: result });
+            }
+        });
     });
 }
 
-function save(query, params, callback) {
-    db.query(query, params, (error, result) => {
-        if (error) {
-            logger.api.error('Database write failed');
-            logger.api.error(error);
-            callback(constants.resultCode.dbFailure);
-            return;
-        }
-
-        callback(constants.resultCode.success, result.affectedRows);
+function save(query, params) {
+    return new Promise((resolve) => {
+        db.query(query, params, (error, result) => {
+            if (error) {
+                logger.api.error('Database write failed');
+                logger.api.error(error);
+                resolve({ status: constants.resultCode.dbFailure, rowCount: [] });
+            } else {
+                resolve({ status: constants.resultCode.success, rowCount: result.affectedRows });
+            }
+        });
     });
 }
 
@@ -112,28 +119,32 @@ function pplEventToBitmask(pplEvent) {
     return constants.pplEvent[pplEvent];
 }
 
-function fetchBingoIds(callback) {
-    fetch(`SELECT id, leader_type FROM ${LEADERS_TABLE} WHERE leader_type <> ?`, [constants.leaderType.champion], (error, rows) => {
-        if (error) {
-            logger.api.error('Couldn\'t populate IDs for bingo boards due to a DB error');
-        } else if (rows.length === 0) {
-            logger.api.error('Couldn\'t populate IDs for bingo boards, no IDs found');
-        } else {
-            leaderIds = [];
-            eliteIds = [];
-            for (row of rows) {
-                if (row.leader_type === constants.leaderType.elite) {
-                    eliteIds.push(row.id);
-                } else {
-                    leaderIds.push(row.id);
-                }
-            }
-
-            logger.api.info(`Bingo board IDs successfully populated with ${leaderIds.length} leader(s) and ${eliteIds.length} elite(s)`);
-        }
-
+async function fetchBingoIds(callback) {
+    const result = await fetch(`SELECT id, leader_type FROM ${LEADERS_TABLE} WHERE leader_type <> ?`, [constants.leaderType.champion]);
+    if (result.resultCode) {
+        logger.api.error('Couldn\'t populate IDs for bingo boards due to a DB error');
         callback();
-    });
+        return;
+    }
+
+    if (result.rows.length === 0) {
+        logger.api.error('Couldn\'t populate IDs for bingo boards, no IDs found');
+        callback();
+        return;
+    }
+
+    leaderIds = [];
+    eliteIds = [];
+    for (row of result.rows) {
+        if (row.leader_type === constants.leaderType.elite) {
+            eliteIds.push(row.id);
+        } else {
+            leaderIds.push(row.id);
+        }
+    }
+
+    logger.api.info(`Bingo board IDs successfully populated with ${leaderIds.length} leader(s) and ${eliteIds.length} elite(s)`);
+    callback();
 }
 
 function generateBingoBoard() {
@@ -246,354 +257,467 @@ function hashWithSalt(password, salt) {
     return hash.digest('hex');
 }
 
-function register(username, password, pplEvent, callback) {
-    fetch(`SELECT 1 FROM ${LOGINS_TABLE} WHERE username = ?`, [username], (error, rows) => {
-        if (error) {
-            callback(error);
-        } else if (rows.length !== 0) {
-            callback(constants.resultCode.usernameTaken);
-        } else {
-            const salt = generateHex(16);
-            const hash = hashWithSalt(password, salt);
-            const id = generateHex(8);
-            const eventMask = pplEventToBitmask(pplEvent);
-            save(`INSERT INTO ${LOGINS_TABLE} (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES (?, ?, ?, ?, 0, NULL)`, [id, username, `${hash}:${salt}`, eventMask], (error, rowCount) => {
-                if (error) {
-                    callback(error);
-                } else if (rowCount === 0) {
-                    callback(constants.resultCode.registrationFailure);
-                } else {
-                    const bingoBoard = generateBingoBoard();
-                    save(`INSERT INTO ${CHALLENGERS_TABLE} (id, display_name, bingo_board) VALUES (?, ?, ?)`, [id, username, bingoBoard], (error, rowCount) => {
-                        if (error) {
-                            callback(error);
-                        } else if (rowCount === 0) {
-                            callback(constants.resultCode.registrationFailure);
-                        } else {
-                            callback(constants.resultCode.success, {
-                                id: id,
-                                isLeader: false,
-                                leaderId: null
-                            });
-                        }
-                    });
-                }
-            });
-        }
+async function register(username, password, pplEvent, callback) {
+    let result = await fetch(`SELECT 1 FROM ${LOGINS_TABLE} WHERE username = ?`, [username]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rows.length !== 0) {
+        callback(constants.resultCode.usernameTaken);
+        return;
+    }
+
+    const salt = generateHex(16);
+    const hash = hashWithSalt(password, salt);
+    const id = generateHex(8);
+    const eventMask = pplEventToBitmask(pplEvent);
+    result = await save(`INSERT INTO ${LOGINS_TABLE} (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES (?, ?, ?, ?, 0, NULL)`, [id, username, `${hash}:${salt}`, eventMask]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rowCount === 0) {
+        callback(constants.resultCode.registrationFailure);
+        return;
+    }
+
+    const bingoBoard = generateBingoBoard();
+    result = await save(`INSERT INTO ${CHALLENGERS_TABLE} (id, display_name, bingo_board) VALUES (?, ?, ?)`, [id, username, bingoBoard]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rowCount === 0) {
+        callback(constants.resultCode.registrationFailure);
+        return;
+    }
+
+    callback(constants.resultCode.success, {
+        id: id,
+        isLeader: false,
+        leaderId: null
     });
 }
 
-function login(username, password, pplEvent, callback) {
-    fetch(`SELECT id, password_hash, ppl_events, is_leader, leader_id FROM ${LOGINS_TABLE} WHERE username = ?`, [username], (error, rows) => {
-        if (error) {
-            callback(error);
-        } else if (rows.length === 0) {
-            callback(constants.resultCode.badCredentials);
-        } else {
-            const parts = rows[0].password_hash.split(':');
-            const hash = hashWithSalt(password, parts[1]);
-            if (hash !== parts[0]) {
-                callback(constants.resultCode.badCredentials);
-            } else {
-                const oldMask = rows[0].ppl_events;
-                const eventMask = pplEventToBitmask(pplEvent);
-                save(`UPDATE ${LOGINS_TABLE} SET ppl_events = ? WHERE username = ?`, [oldMask | eventMask, username], (error, rowCount) => {
-                    if (error) {
-                        callback(error);
-                    } else if (rowCount === 0) {
-                        callback(constants.resultCode.badCredentials);
-                    } else {
-                        callback(constants.resultCode.success, {
-                            id: rows[0].id,
-                            isLeader: rows[0].is_leader === 1,
-                            leaderId: rows[0].leader_id
-                        });
-                    }
-                });
-            }
-        }
+async function login(username, password, pplEvent, callback) {
+    let result = await fetch(`SELECT id, password_hash, ppl_events, is_leader, leader_id FROM ${LOGINS_TABLE} WHERE username = ?`, [username]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rows.length === 0) {
+        callback(constants.resultCode.badCredentials);
+        return;
+    }
+
+    const row = result.rows[0];
+    const parts = row.password_hash.split(':');
+    const hash = hashWithSalt(password, parts[1]);
+    if (hash !== parts[0]) {
+        callback(constants.resultCode.badCredentials);
+        return;
+    }
+
+    const oldMask = row.ppl_events;
+    const eventMask = pplEventToBitmask(pplEvent);
+    result = await save(`UPDATE ${LOGINS_TABLE} SET ppl_events = ?, last_used_date = CURRENT_TIMESTAMP() WHERE username = ?`, [oldMask | eventMask, username]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rowCount === 0) {
+        callback(constants.resultCode.badCredentials);
+        return;
+    }
+
+    callback(constants.resultCode.success, {
+        id: row.id,
+        isLeader: row.is_leader === 1,
+        leaderId: row.leader_id
     });
 }
 
-function getAllIds(callback) {
-    const result = {};
-    fetch(`SELECT id FROM ${CHALLENGERS_TABLE}`, [], (error, rows) => {
-        if (error) {
-            callback(error);
-        } else {
-            result.challengers = rows.map(row => row.id);
-            fetch(`SELECT id FROM ${LEADERS_TABLE}`, [], (error, rows) => {
-                if (error) {
-                    callback(error);
-                } else {
-                    result.leaders = rows.map(row => row.id);
-                    callback(constants.resultCode.success, result);
-                }
-            });
-        }
-    });
+async function getAllIds(callback) {
+    const retval = {};
+    let result = await fetch(`SELECT id FROM ${CHALLENGERS_TABLE}`, []);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    retval.challengers = result.rows.map(row => row.id);
+    result = await fetch(`SELECT id FROM ${LEADERS_TABLE}`, []);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    retval.leaders = result.rows.map(row => row.id);
+    callback(constants.resultCode.success, retval);
 }
 
-function getAllLeaderData(callback) {
-    fetch(`SELECT id, leader_name, leader_type, badge_name, leader_bio, leader_tagline FROM ${LEADERS_TABLE}`, [], (error, rows) => {
-        if (error) {
-            callback(error);
-        } else {
-            const result = {};
-            for (row of rows) {
-                result[row.id] = {
-                    name: row.leader_name,
-                    leaderType: row.leader_type,
-                    badgeName: row.badge_name,
-                    bio: row.leader_bio,
-                    tagline: row.leader_tagline
-                };
-            }
+async function getAllLeaderData(callback) {
+    const result = await fetch(`SELECT id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline FROM ${LEADERS_TABLE}`, []);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
 
-            callback(constants.resultCode.success, result);
-        }
-    });
+    const retval = {};
+    for (row of result.rows) {
+        retval[row.id] = {
+            name: row.leader_name,
+            leaderType: row.leader_type,
+            battleFormat: row.battle_format,
+            badgeName: row.badge_name,
+            bio: row.leader_bio,
+            tagline: row.leader_tagline
+        };
+    }
+
+    callback(constants.resultCode.success, retval);
+}
+
+async function getBadges(id, callback) {
+    const result = await fetch(`SELECT m.leader_id, l.leader_name, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, constants.matchStatus.win, constants.matchStatus.ash]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    const retval = {
+        challengerId: id,
+        badgesEarned: []
+    };
+
+    for (row of result.rows) {
+        retval.badgesEarned.push({
+            leaderId: row.leader_id,
+            leaderName: row.leader_name,
+            badgeName: row.badge_name
+        });
+    }
+
+    callback(constants.resultCode.success, retval);
 }
 
 // Challenger functions
-function getChallengerInfo(id, callback) {
-    fetch(`SELECT display_name, bingo_board FROM ${CHALLENGERS_TABLE} WHERE id = ?`, [id], (error, rows) => {
-        if (error) {
-            callback(error);
-        } else if (rows.length === 0) {
-            callback(constants.resultCode.notFound);
+async function getChallengerInfo(id, callback) {
+    let result = await fetch(`SELECT display_name, bingo_board FROM ${CHALLENGERS_TABLE} WHERE id = ?`, [id]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rows.length === 0) {
+        callback(constants.resultCode.notFound);
+        return;
+    }
+
+    let row = result.rows[0];
+    let bingoBoard = row.bingo_board;
+    if (!bingoBoard) {
+        bingoBoard = generateBingoBoard();
+        result = await save(`UPDATE ${CHALLENGERS_TABLE} SET bingo_board = ? WHERE id = ?`, [bingoBoard, id]);
+        if (result.resultCode) {
+            logger.api.error(`Error saving new bingo board for id=${id}`);
         } else {
-            let bingoBoard = rows[0].bingo_board;
-            if (!bingoBoard) {
-                bingoBoard = generateBingoBoard();
-                save(`UPDATE ${CHALLENGERS_TABLE} SET bingo_board = ? WHERE id = ?`, [bingoBoard, id], (error, rowCount) => {
-                    if (error) {
-                        logger.api.error(`Error saving new bingo board for id=${id}`);
-                    } else {
-                        logger.api.info(`Saved new bingo board for id=${id}`);
-                    }
-                });
+            logger.api.info(`Saved new bingo board for id=${id}`);
+        }
+    }
+
+    const retval = {
+        displayName: row.display_name,
+        queuesEntered: [],
+        badgesEarned: []
+    };
+
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    result = await fetch(`SELECT m.leader_id, l.leader_name, m.challenger_id, m.battle_difficulty FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) AND timestamp <= (SELECT timestamp FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?)`, [constants.matchStatus.inQueue, id, constants.matchStatus.inQueue, id, constants.matchStatus.inQueue]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    for (row of result.rows) {
+        const match = retval.queuesEntered.find(item => item.leaderId === row.leader_id);
+        if (!match) {
+            retval.queuesEntered.push({
+                leaderId: row.leader_id,
+                leaderName: row.leader_name,
+                position: 0, // Start this at 0, increment if we have additional rows for the leader ID
+                linkCode: getLinkCode(row.leader_id, id),
+                difficulty: row.battle_difficulty // Default to the new row, clobber it if we get another one
+            });
+        } else {
+            match.position++;
+            if (row.challenger_id === id) {
+                match.difficulty = row.battle_difficulty;
             }
-
-            const result = {
-                displayName: rows[0].display_name,
-                queuesEntered: [],
-                badgesEarned: []
-            };
-
-            // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-            fetch(`SELECT m.leader_id, l.leader_name, COUNT(m.challenger_id) position FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) AND timestamp <= (SELECT timestamp FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) GROUP BY leader_id`, [constants.matchStatus.inQueue, id, constants.matchStatus.inQueue, id, constants.matchStatus.inQueue], (error, rows) => {
-                if (error) {
-                    callback(error);
-                } else {
-                    for (row of rows) {
-                        // Position gets a -1 here because the count includes the challenger themselves and we want it 0-indexed
-                        result.queuesEntered.push({
-                            leaderId: row.leader_id,
-                            leaderName: row.leader_name,
-                            position: row.position - 1,
-                            linkCode: getLinkCode(row.leader_id, id)
-                        });
-                    }
-
-                    fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, constants.matchStatus.win, constants.matchStatus.ash], (error, rows) => {
-                        if (error) {
-                            callback(error);
-                        } else {
-                            let championDefeated = false;
-                            for (row of rows) {
-                                result.badgesEarned.push({
-                                    leaderId: row.leader_id,
-                                    leaderName: row.leader_name,
-                                    badgeName: row.badge_name
-                                });
-
-                                if (row.leader_type === constants.leaderType.champion) {
-                                    championDefeated = true;
-                                }
-                            }
-
-                            result.championDefeated = championDefeated;
-                            if (championDefeated) {
-                                result.championSurveyUrl = config.championSurveyUrl;
-                            }
-
-                            if (shouldIncludeFeedbackSurvey()) {
-                                result.feedbackSurveyUrl = config.challengerSurveyUrl;
-                            }
-
-                            callback(constants.resultCode.success, result);
-                        }
-                    });
-                }
-            });
         }
-    });
+    }
+
+    result = await fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, constants.matchStatus.win, constants.matchStatus.ash]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    let championDefeated = false;
+    for (row of result.rows) {
+        retval.badgesEarned.push({
+            leaderId: row.leader_id,
+            leaderName: row.leader_name,
+            badgeName: row.badge_name
+        });
+
+        if (row.leader_type === constants.leaderType.champion) {
+            championDefeated = true;
+        }
+    }
+
+    retval.championDefeated = championDefeated;
+    if (championDefeated) {
+        retval.championSurveyUrl = config.championSurveyUrl;
+    }
+
+    if (shouldIncludeFeedbackSurvey()) {
+        retval.feedbackSurveyUrl = config.challengerSurveyUrl;
+    }
+
+    callback(constants.resultCode.success, retval);
 }
 
-function setDisplayName(id, name, callback) {
-    save(`UPDATE ${CHALLENGERS_TABLE} SET display_name = ? WHERE id = ?`, [name, id], (error, rowCount) => {
-        if (error) {
-            callback(error);
-        } else if (rowCount === 0) {
-            callback(constants.resultCode.notFound);
-        } else {
-            callback(constants.resultCode.success);
-        }
-    });
+async function setDisplayName(id, name, callback) {
+    const result = await save(`UPDATE ${CHALLENGERS_TABLE} SET display_name = ? WHERE id = ?`, [name, id]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rowCount === 0) {
+        callback(constants.resultCode.notFound);
+        return;
+    }
+
+    callback(constants.resultCode.success);
 }
 
-function getBingoBoard(id, callback) {
-    fetch(`SELECT bingo_board FROM ${CHALLENGERS_TABLE} WHERE id = ?`, [id], (error, rows) => {
-        if (error) {
-            callback(error);
-        } else if (rows.length === 0) {
-            callback(constants.resultCode.notFound);
-        } else {
-            const flatBoard = rows[0].bingo_board;
-            fetch(`SELECT leader_id FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?, ?)`, [id, constants.matchStatus.loss, constants.matchStatus.win, constants.matchStatus.ash], (error, rows) => {
-                if (error) {
-                    callback(error);
-                } else {
-                    const result = {
-                        bingoBoard: inflateBingoBoard(flatBoard, rows.map(row => row.leader_id))
-                    };
-                    callback(constants.resultCode.success, result);
-                }
-            });
-        }
-    });
+async function getBingoBoard(id, callback) {
+    let result = await fetch(`SELECT bingo_board FROM ${CHALLENGERS_TABLE} WHERE id = ?`, [id]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rows.length === 0) {
+        callback(constants.resultCode.notFound);
+        return;
+    }
+
+    const flatBoard = result.rows[0].bingo_board;
+    result = await fetch(`SELECT leader_id FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?, ?)`, [id, constants.matchStatus.loss, constants.matchStatus.win, constants.matchStatus.ash]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    callback(constants.resultCode.success, { bingoBoard: inflateBingoBoard(flatBoard, result.rows.map(row => row.leader_id)) });
 }
 
 // Leader functions
-function getLeaderInfo(id, callback) {
-    fetch(`SELECT leader_name, leader_type, badge_name FROM ${LEADERS_TABLE} WHERE id = ?`, [id], (error, rows) => {
-        if (error) {
-            callback(error);
-        } else if (rows.length === 0) {
-            callback(constants.resultCode.notFound);
+async function getLeaderInfo(id, callback) {
+    let result = await fetch(`SELECT leader_name, leader_type, badge_name, queue_open FROM ${LEADERS_TABLE} WHERE id = ?`, [id]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rows.length === 0) {
+        callback(constants.resultCode.notFound);
+        return;
+    }
+
+    const retval = {
+        leaderName: result.rows[0].leader_name,
+        leaderType: result.rows[0].leader_type,
+        badgeName: result.rows[0].badge_name,
+        queueOpen: result.rows[0].queue_open === 1,
+        winCount: 0,
+        lossCount: 0,
+        badgesAwarded: 0,
+        queue: [],
+        onHold: []
+    };
+
+    result = await fetch(`SELECT m.challenger_id, c.display_name, m.status, m.battle_difficulty FROM ${MATCHES_TABLE} m INNER JOIN ${CHALLENGERS_TABLE} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.timestamp ASC`, [id, constants.matchStatus.inQueue, constants.matchStatus.onHold]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    let position = 0;
+    for (row of result.rows) {
+        if (row.status === constants.matchStatus.inQueue) {
+            retval.queue.push({
+                challengerId: row.challenger_id,
+                displayName: row.display_name,
+                position: position++,
+                linkCode: getLinkCode(id, row.challenger_id),
+                difficulty: row.battle_difficulty
+            });
         } else {
-            const result = {
-                leaderName: rows[0].leader_name,
-                leaderType: rows[0].leader_type,
-                badgeName: rows[0].badge_name,
-                winCount: 0,
-                lossCount: 0,
-                badgesAwarded: 0,
-                queue: [],
-                onHold: []
-            };
-
-            fetch(`SELECT m.challenger_id, c.display_name, m.status, m.battle_difficulty FROM ${MATCHES_TABLE} m INNER JOIN ${CHALLENGERS_TABLE} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.timestamp ASC`, [id, constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rows) => {
-                if (error) {
-                    callback(error);
-                } else {
-                    let position = 0;
-                    for (row of rows) {
-                        if (row.status === constants.matchStatus.inQueue) {
-                            result.queue.push({
-                                challengerId: row.challenger_id,
-                                displayName: row.display_name,
-                                position: position++,
-                                linkCode: getLinkCode(id, row.challenger_id),
-                                difficulty: row.battle_difficulty
-                            });
-                        } else {
-                            result.onHold.push({
-                                challengerId: row.challenger_id,
-                                displayName: row.display_name
-                            });
-                        }
-                    }
-
-                    fetch(`SELECT status, COUNT(challenger_id) count FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status NOT IN (?, ?) GROUP BY status`, [id, constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rows) => {
-                        if (error) {
-                            callback(error);
-                        } else {
-                            // Win/loss is from the challenger perspective, so it's inverted here
-                            const wins = (rows.find(row => row.status === constants.matchStatus.loss) || { count: 0 }).count;
-                            const losses = (rows.find(row => row.status === constants.matchStatus.win) || { count: 0 }).count;
-                            const ash = (rows.find(row => row.status === constants.matchStatus.ash) || { count: 0 }).count;
-                            const gary = (rows.find(row => row.status === constants.matchStatus.gary) || { count: 0 }).count;
-
-                            result.winCount = wins + ash;
-                            result.lossCount = losses + gary;
-                            result.badgesAwarded = losses + ash;
-
-                            if (shouldIncludeFeedbackSurvey()) {
-                                result.feedbackSurveyUrl = config.leaderSurveyUrl;
-                            }
-
-                            callback(constants.resultCode.success, result);
-                        }
-                    });
-                }
+            retval.onHold.push({
+                challengerId: row.challenger_id,
+                displayName: row.display_name
             });
         }
-    });
+    }
+
+    result = await fetch(`SELECT status, COUNT(challenger_id) count FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status NOT IN (?, ?) GROUP BY status`, [id, constants.matchStatus.inQueue, constants.matchStatus.onHold]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    // Win/loss is from the challenger perspective, so it's inverted here
+    const wins = (result.rows.find(row => row.status === constants.matchStatus.loss) || { count: 0 }).count;
+    const losses = (result.rows.find(row => row.status === constants.matchStatus.win) || { count: 0 }).count;
+    const ash = (result.rows.find(row => row.status === constants.matchStatus.ash) || { count: 0 }).count;
+    const gary = (result.rows.find(row => row.status === constants.matchStatus.gary) || { count: 0 }).count;
+
+    retval.winCount = wins + ash;
+    retval.lossCount = losses + gary;
+    retval.badgesAwarded = losses + ash;
+
+    if (shouldIncludeFeedbackSurvey()) {
+        retval.feedbackSurveyUrl = config.leaderSurveyUrl;
+    }
+
+    callback(constants.resultCode.success, retval);
 }
 
-function updateQueueStatus(open, id, callback) {
-    save(`UPDATE ${LEADERS_TABLE} SET queue_open = ? WHERE id = ?`, [open ? constants.queueStatus.open : constants.queueStatus.closed, id], (error, rowCount) => {
-        if (error) {
-            callback(error);
-        } else if (rowCount === 0) {
-            callback(constants.resultCode.notFound);
-        } else {
-            callback(constants.resultCode.success, {});
-        }
-    });
+async function updateQueueStatus(id, open, callback) {
+    const result = await save(`UPDATE ${LEADERS_TABLE} SET queue_open = ? WHERE id = ?`, [open ? constants.queueStatus.open : constants.queueStatus.closed, id]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rowCount === 0) {
+        callback(constants.resultCode.notFound);
+        return;
+    }
+
+    callback(constants.resultCode.success, {});
 }
 
-function enqueue(leaderId, challengerId, callback) {
+async function enqueue(leaderId, challengerId, callback) {
     // This is still disgusting and I still hate it, even if it's smaller than the clusterfuck in the bot.
     // Checks, in order, are:
-    // 1. Challenger isn't already in this leader's queue and hasn't already beaten them (0 matches with status <> 2)
-    // 2. Leader has room in the queue (<5 matches with status in [0, 1])
-    // 3. Challenger isn't in too many queues (<3 matches with status in [0, 1] across all leaders)
-    fetch(`SELECT status FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status <> ?`, [leaderId, challengerId, constants.matchStatus.loss], (error, rows) => {
-        if (error) {
-            callback(error);
-        } else if (rows.find(row => row.status === constants.matchStatus.inQueue || row.status === constants.matchStatus.onHold)) {
-            callback(constants.resultCode.alreadyInQueue);
-        } else if (rows.find(row => row.status === constants.matchStatus.win)) {
-            callback(constants.resultCode.alreadyWon);
-        } else {
-            fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [leaderId, constants.matchStatus.inQueue], (error, rows) => {
-                if (error) {
-                    callback(error);
-                } else if (rows.length >= MAX_CHALLENGERS_PER_QUEUE) {
-                    callback(constants.resultCode.queueIsFull);
-                } else {
-                    fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rows) => {
-                        if (error) {
-                            callback(error);
-                        } else if (rows.length >= MAX_QUEUES_PER_CHALLENGER) {
-                            callback(constants.resultCode.tooManyChallenges);
-                        } else {
-                            save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, status, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP())`, [leaderId, challengerId, constants.matchStatus.inQueue], callback);
-                        }
-                    });
-                }
-            });
+    // 1. Leader's queue is open
+    // 2. Challenger has enough badges/emblems to challenge
+    // 3. Challenger isn't already in this leader's queue and hasn't already beaten them (0 matches with status <> 2)
+    // 4. Leader has room in the queue (<20 matches with status in [0, 1])
+    // 5. Challenger isn't in too many queues (<3 matches with status in [0, 1] across all leaders)
+    let result = await fetch(`SELECT leader_type, queue_open FROM ${LEADERS_TABLE} WHERE id = ?`, [leaderId]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rows.length === 0) {
+        callback(constants.resultCode.notFound);
+        return;
+    }
+
+    if (result.rows[0].queue_open === 0) {
+        callback(constants.resultCode.queueIsClosed);
+        return;
+    }
+
+    const leaderType = result.rows[0].leader_type;
+    if (leaderType & (constants.leaderType.elite | constants.leaderType.champion)) {
+        // Elite or champ; pull badges and validate
+        result = await fetch(`SELECT battle_difficulty FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, constants.matchStatus.win, constants.matchStatus.ash]);
+        const badgeCount = result.rows.filter(row => !(row.battle_difficulty & (constants.leaderType.elite | constants.leaderType.champion))).length;
+        const emblemCount = result.rows.filter(row => row.battle_difficulty & constants.leaderType.elite).length;
+        if ((leaderType & constants.leaderType.elite && badgeCount < config.requiredBadges) || (leaderType & constants.leaderType.champion && emblemCount < config.requiredEmblems)) {
+            callback(constants.resultCode.notEnoughBadges);
+            return;
         }
-    });
+    }
+
+    result = await fetch(`SELECT status FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status <> ?`, [leaderId, challengerId, constants.matchStatus.loss]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rows.find(row => row.status === constants.matchStatus.inQueue || row.status === constants.matchStatus.onHold)) {
+        callback(constants.resultCode.alreadyInQueue);
+        return;
+    }
+
+    if (result.rows.find(row => row.status === constants.matchStatus.win)) {
+        callback(constants.resultCode.alreadyWon);
+        return;
+    }
+
+    result = await fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [leaderId, constants.matchStatus.inQueue]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rows.length >= MAX_CHALLENGERS_PER_QUEUE) {
+        callback(constants.resultCode.queueIsFull);
+        return;
+    }
+
+    result = await fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, constants.matchStatus.inQueue, constants.matchStatus.onHold]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rows.length >= MAX_QUEUES_PER_CHALLENGER) {
+        callback(constants.resultCode.tooManyChallenges);
+        return;
+    }
+
+    result = await save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, status, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP())`, [leaderId, challengerId, constants.matchStatus.inQueue]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    callback(constants.resultCode.success);
 }
 
-function dequeue(leaderId, challengerId, callback) {
-    save(`DELETE FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status IN (?, ?)`, [leaderId, challengerId, constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rowCount) => {
-        if (error) {
-            callback(error);
-        } else if (rowCount === 0) {
-            callback(constants.resultCode.notInQueue);
-        } else {
-            clearLinkCode(leaderId, challengerId);
-            callback(constants.resultCode.success);
-        }
-    });
+async function dequeue(leaderId, challengerId, callback) {
+    const result = await save(`DELETE FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status IN (?, ?)`, [leaderId, challengerId, constants.matchStatus.inQueue, constants.matchStatus.onHold]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rowCount === 0) {
+        callback(constants.resultCode.notInQueue);
+        return;
+    }
+
+    clearLinkCode(leaderId, challengerId);
+    callback(constants.resultCode.success);
 }
 
-function reportResult(leaderId, challengerId, challengerWin, badgeAwarded, callback) {
+async function reportResult(leaderId, challengerId, challengerWin, badgeAwarded, callback) {
     let matchResult;
     if (challengerWin) {
         matchResult = badgeAwarded ? constants.matchStatus.win : constants.matchStatus.gary;
@@ -601,118 +725,127 @@ function reportResult(leaderId, challengerId, challengerWin, badgeAwarded, callb
         matchResult = badgeAwarded ? constants.matchStatus.ash : constants.matchStatus.loss;
     }
 
-    save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, leaderId, challengerId, constants.matchStatus.inQueue], (error, rowCount) => {
-        if (error) {
-            callback(error);
-        } else if (rowCount === 0) {
-            callback(constants.resultCode.notInQueue);
-        } else {
-            clearLinkCode(leaderId, challengerId);
-            callback(constants.resultCode.success);
-        }
-    });
+    const result = await save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, leaderId, challengerId, constants.matchStatus.inQueue]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rowCount === 0) {
+        callback(constants.resultCode.notInQueue);
+        return;
+    }
+
+    clearLinkCode(leaderId, challengerId);
+    callback(constants.resultCode.success);
 }
 
-function hold(leaderId, challengerId, callback) {
-    save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [constants.matchStatus.onHold, leaderId, challengerId, constants.matchStatus.inQueue], (error, rowCount) => {
-        if (error) {
-            callback(error);
-        } else if (rowCount === 0) {
-            callback(constants.resultCode.notInQueue);
-        } else {
-            callback(constants.resultCode.success);
-        }
-    });
+async function hold(leaderId, challengerId, callback) {
+    const result = await save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [constants.matchStatus.onHold, leaderId, challengerId, constants.matchStatus.inQueue]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rowCount === 0) {
+        callback(constants.resultCode.notInQueue);
+        return;
+    }
+
+    callback(constants.resultCode.success);
 }
 
-function unhold(leaderId, challengerId, placeAtFront, callback) {
-    fetch(`SELECT SUBDATE(MIN(timestamp), INTERVAL 1 MINUTE) front_timestamp FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [leaderId, constants.matchStatus.inQueue], (error, rows) => {
-        if (error) {
-            callback(error);
-        } else {
-            let sql = `UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
-            let params = [constants.matchStatus.inQueue, leaderId, challengerId, constants.matchStatus.onHold];
-            if (!placeAtFront) {
-                sql = `UPDATE ${MATCHES_TABLE} SET status = ?, timestamp = CURRENT_TIMESTAMP() WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
-            } else if (rows[0].front_timestamp) {
-                sql = `UPDATE ${MATCHES_TABLE} SET status = ?, timestamp = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
-                params.splice(1, 0, rows[0].front_timestamp);
-            }
+async function unhold(leaderId, challengerId, placeAtFront, callback) {
+    let result = await fetch(`SELECT SUBDATE(MIN(timestamp), INTERVAL 1 MINUTE) front_timestamp FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [leaderId, constants.matchStatus.inQueue]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
 
-            save(sql, params, (error, rowCount) => {
-                if (error) {
-                    callback(error);
-                } else if (rowCount === 0) {
-                    callback(constants.resultCode.notInQueue);
-                } else {
-                    callback(constants.resultCode.success);
-                }
-            });
-        }
-    });
+    let sql = `UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
+    let params = [constants.matchStatus.inQueue, leaderId, challengerId, constants.matchStatus.onHold];
+    if (!placeAtFront) {
+        sql = `UPDATE ${MATCHES_TABLE} SET status = ?, timestamp = CURRENT_TIMESTAMP() WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
+    } else if (result.rows[0].front_timestamp) {
+        sql = `UPDATE ${MATCHES_TABLE} SET status = ?, timestamp = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
+        params.splice(1, 0, result.rows[0].front_timestamp);
+    }
+
+    result = await save(sql, params);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rowCount === 0) {
+        callback(constants.resultCode.notInQueue);
+        return;
+    }
+
+    callback(constants.resultCode.success);
 }
 
-function getAllChallengers(pplEvent, callback) {
+async function getAllChallengers(pplEvent, callback) {
     const eventMask = pplEventToBitmask(pplEvent);
-    fetch(`SELECT c.id, c.display_name FROM ${CHALLENGERS_TABLE} c INNER JOIN ${LOGINS_TABLE} l ON l.id = c.id WHERE l.ppl_events & ? <> 0 AND l.is_leader = 0`, [eventMask], (error, rows) => {
-        if (error) {
-            callback(error);
-        } else {
-            const result = [];
-            for (row of rows) {
-                result.push({ id: row.id, name: row.display_name });
-            }
+    const result = await fetch(`SELECT c.id, c.display_name FROM ${CHALLENGERS_TABLE} c INNER JOIN ${LOGINS_TABLE} l ON l.id = c.id WHERE l.ppl_events & ? <> 0 AND l.is_leader = 0`, [eventMask]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
 
-            callback(constants.resultCode.success, result);
-        }
-    });
+    const retval = [];
+    for (row of result.rows) {
+        retval.push({ id: row.id, name: row.display_name });
+    }
+
+    callback(constants.resultCode.success, retval);
 }
 
-function getLeaderMetrics(callback) {
-    fetch(`SELECT l.id, l.leader_name, m.status FROM ${MATCHES_TABLE} AS m INNER JOIN ${LEADERS_TABLE} AS l ON l.id = m.leader_id WHERE m.status NOT IN (?, ?)`, [constants.matchStatus.inQueue, constants.matchStatus.onHold], (error, rows) => {
-        if (error) {
-            callback(error);
-        } else {
-            const result = {};
-            for (row of rows) {
-                if (!result[row.id]) {
-                    result[row.id] = {
-                        name: row.leader_name,
-                        wins: 0,
-                        losses: 0,
-                        badgesAwarded: 0
-                    };
-                }
+async function getLeaderMetrics(callback) {
+    const result = await fetch(`SELECT l.id, l.leader_name, m.status FROM ${MATCHES_TABLE} AS m INNER JOIN ${LEADERS_TABLE} AS l ON l.id = m.leader_id WHERE m.status NOT IN (?, ?)`, [constants.matchStatus.inQueue, constants.matchStatus.onHold]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
 
-                if (row.status === constants.matchStatus.loss || row.status === constants.matchStatus.ash) {
-                    result[row.id].wins++;
-                } else {
-                    result[row.id].losses++;
-                }
-
-                if (row.status === constants.matchStatus.win || row.status === constants.matchStatus.ash) {
-                    result[row.id].badgesAwarded++;
-                }
-            }
-
-            callback(constants.resultCode.success, result);
+    const retval = {};
+    for (row of result.rows) {
+        if (!retval[row.id]) {
+            retval[row.id] = {
+                name: row.leader_name,
+                wins: 0,
+                losses: 0,
+                badgesAwarded: 0
+            };
         }
-    });
+
+        if (row.status === constants.matchStatus.loss || row.status === constants.matchStatus.ash) {
+            retval[row.id].wins++;
+        } else {
+            retval[row.id].losses++;
+        }
+
+        if (row.status === constants.matchStatus.win || row.status === constants.matchStatus.ash) {
+            retval[row.id].badgesAwarded++;
+        }
+    }
+
+    callback(constants.resultCode.success, retval);
 }
 
-function debugSave(sql, params, callback) {
+async function debugSave(query, params, callback) {
     if (!config.debug) {
         callback(0);
         return;
     }
 
-    save(sql, params, (error, rowCount) => {
-        if (error) {
-            callback(0);
-        } else {
-            callback(rowCount);
-        }
-    });
+    const result = await save(query, params);
+    if (result.resultCode) {
+        callback(0);
+        return;
+    }
+
+    callback(result.rowCount);
 }
 
 module.exports = {
@@ -741,6 +874,7 @@ module.exports = {
     generateHex: generateHex,
     getAllIds: getAllIds,
     getAllLeaderData: getAllLeaderData,
+    getBadges: getBadges,
     debugSave: debugSave,
     tables: {
         logins: LOGINS_TABLE,

@@ -5,7 +5,7 @@ const cors = require('cors');
 const fs = require('fs');
 const https = require('https');
 const logger = require('./logger.js');
-const db = require('./db-async.js');
+const db = require('./db.js');
 const config = require('./config.js');
 const constants = require('./constants.js');
 
