@@ -384,6 +384,21 @@ async function getAllLeaderData(callback) {
     callback(constants.resultCode.success, retval);
 }
 
+async function getOpenQueues(callback) {
+    const result = await fetch(`SELECT id, queue_open FROM ${LEADERS_TABLE}`, []);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    const retval = {};
+    for (row of result.rows) {
+        retval[row.id] = row.queue_open === constants.queueStatus.open;
+    }
+
+    callback(constants.resultCode.success, retval);
+}
+
 async function getBadges(id, callback) {
     const result = await fetch(`SELECT m.leader_id, l.leader_name, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, constants.matchStatus.win, constants.matchStatus.ash]);
     if (result.resultCode) {
@@ -548,7 +563,7 @@ async function getLeaderInfo(id, callback) {
         leaderName: result.rows[0].leader_name,
         leaderType: result.rows[0].leader_type,
         badgeName: result.rows[0].badge_name,
-        queueOpen: result.rows[0].queue_open === 1,
+        queueOpen: result.rows[0].queue_open === constants.queueStatus.open,
         winCount: 0,
         lossCount: 0,
         badgesAwarded: 0,
@@ -880,6 +895,7 @@ module.exports = {
     generateHex: generateHex,
     getAllIds: getAllIds,
     getAllLeaderData: getAllLeaderData,
+    getOpenQueues: getOpenQueues,
     getBadges: getBadges,
     debugSave: debugSave,
     tables: {

@@ -30,7 +30,7 @@ module.exports = {
         singles: 1,
         doubles: 2,
         multi: 4,
-        gimmick: 8
+        special: 8
     },
     matchStatus: {
         inQueue: 0,

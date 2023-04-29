@@ -652,6 +652,17 @@ app.get('/appsettings', (req, res) => {
     res.json({ showTrainerCard: new Date() > new Date(config.trainerCardShowDate) });
 });
 
+app.get('/openqueues', (req, res) => {
+    logger.api.info('Returning a list of open leader queues');
+    db.getOpenQueues((error, result) => {
+        if (error) {
+            handleDbError(error, res);
+        } else {
+            res.json(result);
+        }
+    });
+});
+
 app.get('/badges/:id', (req, res) => {
     logger.api.info(`Returning simple badge list for loginId=${req.params.id}`);
     db.getBadges(req.params.id, (error, result) => {
