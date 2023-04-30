@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const app = express();
 const cors = require('cors');
 const fs = require('fs');
+const http = require('http');
 const https = require('https');
 const logger = require('./logger.js');
 const db = require('./db.js');
@@ -283,6 +284,35 @@ function generateLogviewResponse(res, daysAgo) {
     }
 }
 
+function sendHttpBotRequest(path, params) {
+    const postData = JSON.stringify(params);
+    const options = {
+        hostname: 'localhost',
+        port: 9001,
+        path: path,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    };
+
+    logger.api.info(`Sending HTTP request to the bot webserver with path=${path} and postData=${postData}`);
+    const req = https.request(options, (res) => {
+        if (res.statusCode !== 200) {
+            logger.api.warn(`Received non-200 status code from the bot webserver, statusCode=${res.statusCode}`);
+        }
+
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+            logger.api.info(`Response body: ${chunk}`);
+        });
+    });
+
+    req.write(postData);
+    req.end();
+}
+
 /*********************
  * Authentication APIs *
  *********************/
@@ -310,6 +340,7 @@ app.post('/register', (req, res) => {
             logger.api.info(`Registered loginId=${result.id} with username=${parts[0]}`);
             const token = createSession(result.id, result.isLeader, result.leaderId);
             idCache.challengers.push(result.id);
+            sendHttpBotRequest('/challengerregistered', {});
             res.json({
                 id: result.id,
                 loginId: result.id,
@@ -515,6 +546,7 @@ app.post('/leader/:id/openqueue', (req, res) => {
         if (error) {
             handleDbError(error, res);
         } else {
+            sendHttpBotRequest('/queueopened', { leaderId: req.leaderId });
             getLeaderInfo(req, res);
         }
     });
@@ -526,6 +558,7 @@ app.post('/leader/:id/closequeue', (req, res) => {
         if (error) {
             handleDbError(error, res);
         } else {
+            sendHttpBotRequest('/queueclosed', { leaderId: req.leaderId });
             getLeaderInfo(req, res);
         }
     });
@@ -576,7 +609,7 @@ app.post('/leader/:id/dequeue/:challenger', (req, res) => {
 app.post('/leader/:id/report/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to report a match result for invalid challengerId=${req.params.challenger}`);
-        res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
+        res.status(400).json({ error: `Challenger ID ${req.params.challenger} is invalid` });
         return;
     }
 
@@ -585,6 +618,12 @@ app.post('/leader/:id/report/:challenger', (req, res) => {
         if (error) {
             handleDbError(error, res);
         } else {
+            if (result.hof) {
+                sendHttpBotRequest('/hofentered', { challengerId: req.params.challenger });
+            } else {
+                sendHttpBotRequest('/badgeearned', { challengerId: req.params.challenger, leaderId: req.leaderId });
+            }
+
             getLeaderInfo(req, res);
         }
     });

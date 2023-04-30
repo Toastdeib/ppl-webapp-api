@@ -748,7 +748,7 @@ async function reportResult(leaderId, challengerId, challengerWin, badgeAwarded,
         matchResult = badgeAwarded ? constants.matchStatus.ash : constants.matchStatus.loss;
     }
 
-    const result = await save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, leaderId, challengerId, constants.matchStatus.inQueue]);
+    let result = await save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, leaderId, challengerId, constants.matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -759,8 +759,21 @@ async function reportResult(leaderId, challengerId, challengerWin, badgeAwarded,
         return;
     }
 
+    let hof = false;
+    if (challengerWin) {
+        // Check whether the leader they were battling was the champ and notify the API that it was a HoFer if yes
+        result = await fetch(`SELECT 1 FROM ${LEADERS_TABLE} WHERE id = ? AND leader_type = ?`, [leaderId, constants.leaderType.champion]);
+        if (result.resultCode) {
+            callback(result.resultCode);
+            return;
+        }
+
+        // The query will return a row only if the leader ID is the champ; otherwise it'll be an empty set
+        hof = result.rows.length > 0;
+    }
+
     clearLinkCode(leaderId, challengerId);
-    callback(constants.resultCode.success);
+    callback(constants.resultCode.success, { hof: hof });
 }
 
 async function hold(leaderId, challengerId, callback) {

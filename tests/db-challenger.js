@@ -275,6 +275,8 @@ function recordLeaderWin() {
     db.leader.reportResult(leaderIds.open, challengerId, true, true, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
+        } else if (result.hof) {
+            test.fail('match result recorded with an erroneously true hof flag');
         } else {
             test.pass('match result recorded successfully');
         }
@@ -303,6 +305,8 @@ function recordEliteWin() {
     db.leader.reportResult(leaderIds.elite, challengerId, true, true, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
+        } else if (result.hof) {
+            test.fail('match result recorded with an erroneously true hof flag');
         } else {
             test.pass('match result recorded successfully');
         }
@@ -364,6 +368,8 @@ function recordChampWin() {
     db.leader.reportResult(leaderIds.champ, challengerId, true, true, (error, result) => {
         if (error) {
             test.fail(`error=${error}`);
+        } else if (!result.hof) {
+            test.fail('match result recorded with an erroneously false hof flag');
         } else {
             test.pass('match result recorded successfully');
         }
