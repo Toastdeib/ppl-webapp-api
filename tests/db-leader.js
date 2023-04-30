@@ -32,6 +32,7 @@ const baseline = {
     leaderType: 7,
     badgeName: 'Test Badge',
     queueOpen: false,
+    twitchEnabled: true,
     winCount: 2, // 1 loss, 1 ash
     lossCount: 2, // 1 win, 1 gary
     badgesAwarded: 2, // 1 win, 1 ash
@@ -92,6 +93,10 @@ function verifyBaseline() {
             }
 
             if (result.queueOpen !== baseline.queueOpen) {
+                baselineValid = false;
+            }
+
+            if (result.twitchEnabled !== baseline.twitchEnabled) {
                 baselineValid = false;
             }
 

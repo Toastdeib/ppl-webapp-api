@@ -57,6 +57,7 @@ const linkCodeCache = {};
  * - queue_open: BOOLEAN
  * - queue_open_text: VARCHAR(150)
  * - queue_close_text: VARCHAR(150)
+ * - twitch_handle: VARCHAR(30)
  * - badge_art: MEDIUMTEXT (defunct)
  * - profile_art: MEDIUMTEXT (defunct)
  *
@@ -548,7 +549,7 @@ async function getBingoBoard(id, callback) {
 
 // Leader functions
 async function getLeaderInfo(id, callback) {
-    let result = await fetch(`SELECT leader_name, leader_type, badge_name, queue_open FROM ${LEADERS_TABLE} WHERE id = ?`, [id]);
+    let result = await fetch(`SELECT leader_name, leader_type, badge_name, queue_open, twitch_handle FROM ${LEADERS_TABLE} WHERE id = ?`, [id]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -564,6 +565,7 @@ async function getLeaderInfo(id, callback) {
         leaderType: result.rows[0].leader_type,
         badgeName: result.rows[0].badge_name,
         queueOpen: result.rows[0].queue_open === constants.queueStatus.open,
+        twitchEnabled: !!result.rows[0].twitch_handle,
         winCount: 0,
         lossCount: 0,
         badgesAwarded: 0,
