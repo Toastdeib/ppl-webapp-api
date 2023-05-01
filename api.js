@@ -674,6 +674,12 @@ app.post('/leader/:id/unhold/:challenger', (req, res) => {
     });
 });
 
+app.post('/leader/:id/live', (req, res) => {
+    // Assume the leader should be able to hit this and pass it along; we validate at the bot level anyway
+    sendHttpBotRequest('/live', { leaderId: req.leaderId });
+    getLeaderInfo(req, res);
+});
+
 app.get('/leader/:id/allchallengers', (req, res) => {
     const pplEvent = req.get(PPL_EVENT_HEADER);
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} fetching all challengers`);
