@@ -298,7 +298,7 @@ function sendHttpBotRequest(path, params) {
     };
 
     logger.api.info(`Sending HTTP request to the bot webserver with path=${path} and postData=${postData}`);
-    const req = https.request(options, (res) => {
+    const req = http.request(options, (res) => {
         if (res.statusCode !== 200) {
             logger.api.warn(`Received non-200 status code from the bot webserver, statusCode=${res.statusCode}`);
         }
@@ -307,6 +307,10 @@ function sendHttpBotRequest(path, params) {
         res.on('data', (chunk) => {
             logger.api.info(`Response body: ${chunk}`);
         });
+    });
+
+    req.on('error', (error) => {
+        logger.api.error(`Bot webserver error: ${error.message}`);
     });
 
     req.write(postData);
@@ -340,7 +344,10 @@ app.post('/register', (req, res) => {
             logger.api.info(`Registered loginId=${result.id} with username=${parts[0]}`);
             const token = createSession(result.id, result.isLeader, result.leaderId);
             idCache.challengers.push(result.id);
-            sendHttpBotRequest('/challengerregistered', {});
+            if (result.pplEvent === constants.pplEvent.online) {
+                sendHttpBotRequest('/challengerregistered', {});
+            }
+
             res.json({
                 id: result.id,
                 loginId: result.id,
@@ -375,6 +382,10 @@ app.post('/login', (req, res) => {
         } else {
             logger.api.info(`Logged in loginId=${result.id} with username=${parts[0]}`);
             const token = createSession(result.id, result.isLeader, result.leaderId);
+            if (result.newEvent === constants.pplEvent.online) {
+                sendHttpBotRequest('/challengerregistered', {});
+            }
+
             res.json({
                 id: result.id,
                 loginId: result.id,

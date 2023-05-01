@@ -300,7 +300,8 @@ async function register(username, password, pplEvent, callback) {
     callback(constants.resultCode.success, {
         id: id,
         isLeader: false,
-        leaderId: null
+        leaderId: null,
+        pplEvent: eventMask
     });
 }
 
@@ -326,6 +327,7 @@ async function login(username, password, pplEvent, callback) {
 
     const oldMask = row.ppl_events;
     const eventMask = pplEventToBitmask(pplEvent);
+
     result = await save(`UPDATE ${LOGINS_TABLE} SET ppl_events = ?, last_used_date = CURRENT_TIMESTAMP() WHERE username = ?`, [oldMask | eventMask, username]);
     if (result.resultCode) {
         callback(result.resultCode);
@@ -340,7 +342,9 @@ async function login(username, password, pplEvent, callback) {
     callback(constants.resultCode.success, {
         id: row.id,
         isLeader: row.is_leader === 1,
-        leaderId: row.leader_id
+        leaderId: row.leader_id,
+        // Pass back the event mask for this login event if it wasn't in the existing mask
+        newEvent: (oldMask & eventMask) === 0 ? eventMask : 0
     });
 }
 
