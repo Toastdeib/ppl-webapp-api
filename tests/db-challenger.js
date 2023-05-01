@@ -427,6 +427,6 @@ function cleanup() {
  * TEST EXECUTION *
  ******************/
 db.dbReady.then(() => {
-    test.start();
+    test.start(19);
     verifyBaseline();
 });

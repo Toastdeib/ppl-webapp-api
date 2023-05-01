@@ -270,7 +270,7 @@ function cleanup() {
  * TEST EXECUTION *
  ******************/
 db.dbReady.then(() => {
-    test.start();
+    test.start(12);
     getAllChallengersEast1();
 });
 
