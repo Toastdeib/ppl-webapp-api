@@ -18,72 +18,29 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
     process.exit();
 }
 
-const http = require('http');
-const api = require('../api.js');
 const constants = require('../constants.js');
+const base = require('./base-api-test.js');
 const test = require('./test-logger.js');
 
 /****************
  * TESTING DATA *
  ****************/
-const hostname = 'localhost';
-const port = 9002;
 
 const username = 'toastchallenger';
 const password = 'password1';
-const credentials = { Authorization: encodeCredentials(username, password) };
+const credentials = { Authorization: base.encodeCredentials(username, password) };
 const token = {};
 let basePath;
 
 const newName = 'toastyboi';
 const leaderId = 'd08cde9beddd';
 
-function encodeCredentials(username, password) {
-    const encoded = Buffer.from(`${username}:${password}`, 'utf8').toString('base64');
-    return `Basic ${encoded}`;
-}
-
-function sendRequest(path, method, params, headers, callback) {
-    const postData = JSON.stringify(params);
-    const options = {
-        hostname: hostname,
-        port: port,
-        path: path,
-        method: method,
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(postData),
-            ...headers
-        }
-    };
-
-    let data = '';
-    const req = http.request(options, (res) => {
-        res.setEncoding('utf8');
-        res.on('data', (chunk) => {
-            data += chunk;
-        });
-        res.on('end', () => {
-            callback({ status: res.statusCode, body: data });
-        });
-
-    });
-
-    req.on('error', (error) => {
-        console.log(`Error in web request: ${error.message}`);
-        callback({ status: res.statusCode });
-    });
-
-    req.write(postData);
-    req.end();
-}
-
 /******************
  * TEST FUNCTIONS *
  ******************/
 function login() {
     test.name(1, 'Log in with stored credentials');
-    sendRequest('/login', 'POST', {}, credentials, (result) => {
+    base.sendRequest('/login', 'POST', {}, credentials, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}, aborting test run`);
             process.exit();
@@ -99,7 +56,7 @@ function login() {
 
 function setDisplayName() {
     test.name(2, 'Update display name');
-    sendRequest(basePath, 'POST', { displayName: newName }, token, (result) => {
+    base.sendRequest(basePath, 'POST', { displayName: newName }, token, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}`);
         } else {
@@ -117,7 +74,7 @@ function setDisplayName() {
 
 function getBingoBoard() {
     test.name(3, 'Fetch and validate bingo board');
-    sendRequest(`${basePath}/bingoboard`, 'GET', {}, token, (result) => {
+    base.sendRequest(`${basePath}/bingoboard`, 'GET', {}, token, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}`);
         } else {
@@ -132,7 +89,7 @@ function getBingoBoard() {
 
 function joinQueue1() {
     test.name(4, 'Join a leader queue');
-    sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: constants.leaderType.casual }, token, (result) => {
+    base.sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: constants.leaderType.casual }, token, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}`);
         } else {
@@ -151,7 +108,7 @@ function joinQueue1() {
 
 function leaveQueue1() {
     test.name(5, 'Leave the leader queue');
-    sendRequest(`${basePath}/dequeue/${leaderId}`, 'POST', {}, token, (result) => {
+    base.sendRequest(`${basePath}/dequeue/${leaderId}`, 'POST', {}, token, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}`);
         } else {
@@ -169,7 +126,7 @@ function leaveQueue1() {
 
 function joinQueue2() {
     test.name(6, 'Join a leader queue (again)');
-    sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: constants.leaderType.veteran }, token, (result) => {
+    base.sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: constants.leaderType.veteran }, token, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}`);
         } else {
@@ -188,7 +145,7 @@ function joinQueue2() {
 
 function hold() {
     test.name(7, 'Go on hold in the queue');
-    sendRequest(`${basePath}/hold/${leaderId}`, 'POST', {}, token, (result) => {
+    base.sendRequest(`${basePath}/hold/${leaderId}`, 'POST', {}, token, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}`);
         } else {
@@ -207,7 +164,7 @@ function hold() {
 
 function leaveQueue2() {
     test.name(8, 'Leave the queue while on hold');
-    sendRequest(`${basePath}/dequeue/${leaderId}`, 'POST', {}, token, (result) => {
+    base.sendRequest(`${basePath}/dequeue/${leaderId}`, 'POST', {}, token, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}`);
         } else {
@@ -225,7 +182,7 @@ function leaveQueue2() {
 
 function cleanup() {
     test.finish();
-    sendRequest(basePath, 'POST', { displayName: 'toastchallenger' }, token, (result) => {
+    base.sendRequest(basePath, 'POST', { displayName: 'toastchallenger' }, token, (result) => {
         if (result.status !== 200) {
             test.debug(`Unable to revert display name, response came back with status=${result.status}`);
             process.exit();
@@ -236,18 +193,14 @@ function cleanup() {
     });
 }
 
-const httpServer = http.createServer({}, api);
-httpServer.listen({ host: hostname, port: port }, () => {
-    test.debug('Test API running, beginning test suite');
-    setTimeout(() => {
-        test.start(8);
-        login();
-    }, 2000);
+base.init(() => {
+    test.start(8);
+    login();
 });
 
 /*
     test.name(0, '');
-    sendRequest(`${basePath}/`, 'POST', {}, token, (result) => {
+    base.sendRequest(`${basePath}/`, 'POST', {}, token, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}`);
         } else {
