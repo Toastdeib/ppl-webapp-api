@@ -18,6 +18,7 @@ INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_
 INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('8b7a46b38cf6321f', 'testchallenger5', 'dummyvalue', 3, 0, NULL);
 INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('c80f226aeb5ec8ae', 'testchallenger6', 'dummyvalue', 3, 0, NULL);
 INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('5ae3d0f7ea736bda', 'testchallenger7', 'dummyvalue', 3, 0, NULL);
+INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('77959f8b9e892345', 'toastchallenger', 'be49cfd69c86880bdb62b0987707a7691b9591e311a9f95482fe47a2d8da73b9:529c63a8c3f27e49da4ab5ff496fb1d9', 8, 0, NULL);
 -- Leaders
 INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('f6266e86ce91cc9a', 'testleader1', 'dummyvalue', 1, 1, '6a9406eedec6');
 INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('1ce00c42ae247693', 'testleader2', 'dummyvalue', 1, 1, '7729e38c3f7d');
@@ -58,6 +59,7 @@ INSERT INTO ppl_webapp_challengers_test (id, display_name, bingo_board) VALUES (
 INSERT INTO ppl_webapp_challengers_test (id, display_name, bingo_board) VALUES ('8b7a46b38cf6321f', 'testchallenger5', '');
 INSERT INTO ppl_webapp_challengers_test (id, display_name, bingo_board) VALUES ('c80f226aeb5ec8ae', 'testchallenger6', '');
 INSERT INTO ppl_webapp_challengers_test (id, display_name, bingo_board) VALUES ('5ae3d0f7ea736bda', 'testchallenger7', '');
+INSERT INTO ppl_webapp_challengers_test (id, display_name, bingo_board) VALUES ('77959f8b9e892345', 'toastchallenger', '');
 
 -- ppl_webapp_leaders_test
 DELETE FROM ppl_webapp_leaders_test;
