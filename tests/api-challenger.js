@@ -14,7 +14,7 @@
  * TEST_RUN=true TABLE_SUFFIX=_test node api-challenger.js *
  **********************************************************/
 if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
-    console.log('Environment variables are missing. Proper usage: TEST_RUN=true TABLE_SUFFIX=_test node db-leader.js');
+    console.log('Environment variables are missing. Proper usage: TEST_RUN=true TABLE_SUFFIX=_test node api-challenger.js');
     process.exit();
 }
 
@@ -25,7 +25,6 @@ const test = require('./test-logger.js');
 /****************
  * TESTING DATA *
  ****************/
-
 const username = 'toastchallenger';
 const password = 'password1';
 const credentials = { Authorization: base.encodeCredentials(username, password) };
@@ -45,11 +44,16 @@ function login() {
             test.fail(`received HTTP status code ${result.status}, aborting test run`);
             process.exit();
         } else {
-            test.pass('successfully logged in');
             const data = JSON.parse(result.body);
-            token.Authorization = `Bearer ${data.token}`;
-            basePath = `/challenger/${data.id}`;
-            setDisplayName();
+            if (data.isLeader) {
+                test.fail(`login succeeded but isLeader=${data.isLeader}, aborting test run`);
+                process.exit();
+            } else {
+                test.pass('successfully logged in');
+                token.Authorization = `Bearer ${data.token}`;
+                basePath = `/challenger/${data.id}`;
+                setDisplayName();
+            }
         }
     });
 }
@@ -79,8 +83,11 @@ function getBingoBoard() {
             test.fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
-            // TODO - Validate
-            test.pass('successfully fetched bingo board');
+            if (data.length === 0) {
+                test.fail('/bingoboard endpoint returned an empty board');
+            } else {
+                test.pass('successfully fetched bingo board');
+            }
         }
 
         joinQueue1();
@@ -197,17 +204,3 @@ base.init(() => {
     test.start(8);
     login();
 });
-
-/*
-    test.name(0, '');
-    base.sendRequest(`${basePath}/`, 'POST', {}, token, (result) => {
-        if (result.status !== 200) {
-            test.fail(`received HTTP status code ${result.status}`);
-        } else {
-            const data = JSON.parse(result.body);
-            // TODO - Validate
-        }
-
-        cleanup();
-    });
-*/

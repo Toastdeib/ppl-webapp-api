@@ -305,9 +305,9 @@ function sendHttpBotRequest(path, params) {
     req.end();
 }
 
-/*********************
+/***********************
  * Authentication APIs *
- *********************/
+ ***********************/
 app.post('/register', (req, res) => {
     const credentials = req.get(AUTH_HEADER);
     const pplEvent = req.get(PPL_EVENT_HEADER);
@@ -619,7 +619,7 @@ app.post('/leader/:id/report/:challenger', (req, res) => {
         } else {
             if (result.hof) {
                 sendHttpBotRequest('/hofentered', { challengerId: req.params.challenger });
-            } else {
+            } else if (!!req.body.badgeAwarded) {
                 sendHttpBotRequest('/badgeearned', { challengerId: req.params.challenger, leaderId: req.leaderId });
             }
 
