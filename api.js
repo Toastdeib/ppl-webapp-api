@@ -4,7 +4,6 @@ const app = express();
 const cors = require('cors');
 const fs = require('fs');
 const http = require('http');
-const https = require('https');
 const logger = require('./logger.js');
 const db = require('./db.js');
 const config = require('./config.js');
@@ -13,17 +12,6 @@ const constants = require('./constants.js');
 app.use(cors({ origin: config.corsOrigin }));
 app.use(bodyParser.json());
 app.set('view engine', 'pug');
-
-// Certificate
-const privateKey = fs.readFileSync(config.certPath + 'privkey.pem', 'utf8');
-const certificate = fs.readFileSync(config.certPath + 'cert.pem', 'utf8');
-const ca = fs.readFileSync(config.certPath + 'chain.pem', 'utf8');
-
-const credentials = {
-    key: privateKey,
-    cert: certificate,
-    ca: ca
-};
 
 const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
 const SESSION_EXPIRATION_MILLIS = 4 * 24 * 60 * 60 * 1000; // 4 days in ms
@@ -739,23 +727,8 @@ app.get('/logview/:daysago', (req, res) => {
     generateLogviewResponse(res, daysAgo || 0);
 });
 
-const httpsServer = https.createServer(credentials, app);
-httpsServer.listen(config.port, () => {
-    logger.api.info(`API running on port ${config.port}`);
-});
-
 initCaches();
 
 setInterval(pruneSessionCache, PRUNE_INTERVAL_MILLIS);
 
-if (config.debug) {
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', chunk => {
-        try {
-            eval(chunk);
-        } catch (e) {
-            console.error(e);
-        }
-    });
-}
+module.exports = app;
