@@ -40,6 +40,7 @@ INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_
 INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('5623a572f237b72f', 'testleader18', 'dummyvalue', 1, 1, '93ff6484633d');
 INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('9bc88996690db61f', 'testleader19', 'dummyvalue', 1, 1, '02f7564a033c');
 INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('3a724e0203487c62', 'testleader20', 'dummyvalue', 1, 1, '15721dcb512b');
+INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('e7143e57fd079297', 'toastleader', 'fbbd7f6ee969fc5379c4334258c2abc56fe444df8f26af6d643195acccaf16f5:8c1c86ab215118578dcfb8c622169b56', 8, 1, '8bb2ddda0a3c');
 -- Elites
 INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('5e671436a1bbb2f8', 'testelite1', 'dummyvalue', 1, 1, 'b6857070a317');
 INSERT INTO ppl_webapp_logins_test (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES ('a27e8c82e4df6695', 'testelite2', 'dummyvalue', 1, 1, '1194829fc135');
@@ -84,6 +85,7 @@ INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, l
 INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('93ff6484633d', '', 4, '', '', '', 0);
 INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('02f7564a033c', '', 4, '', '', '', 0);
 INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('15721dcb512b', '', 2, '', '', '', 1);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open, queue_open_text, queue_close_text, twitch_handle) VALUES ('8bb2ddda0a3c', 'Toastdeib, the Toasty Boi', 7, 'Toast Badge', '', '', 0, '{name} is toasting up some trouble!', '{name} is burnt and needs a break.', 'toastdeib');
 -- Elites
 INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open, twitch_handle) VALUES ('b6857070a317', 'Test Elite, the Testable', 8, 'Test Emblem', 'Pest toast, please ignore.', 'Also pest toast, also please ignore.', 0, 'testelite1');
 INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('1194829fc135', '', 8, '', '', '', 0);
