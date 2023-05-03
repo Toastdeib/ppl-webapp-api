@@ -455,6 +455,7 @@ async function getChallengerInfo(id, callback) {
     const retval = {
         displayName: row.display_name,
         queuesEntered: [],
+        queuesOnHold: [],
         badgesEarned: []
     };
 
@@ -483,7 +484,7 @@ async function getChallengerInfo(id, callback) {
         }
     }
 
-    result = await fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, constants.matchStatus.win, constants.matchStatus.ash]);
+    result = await fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name, m.battle_difficulty, m.status FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?, ?)`, [id, constants.matchStatus.onHold, constants.matchStatus.win, constants.matchStatus.ash]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -491,14 +492,22 @@ async function getChallengerInfo(id, callback) {
 
     let championDefeated = false;
     for (row of result.rows) {
-        retval.badgesEarned.push({
-            leaderId: row.leader_id,
-            leaderName: row.leader_name,
-            badgeName: row.badge_name
-        });
+        if (row.status === constants.matchStatus.onHold) {
+            retval.queuesOnHold.push({
+                leaderId: row.leader_id,
+                leaderName: row.leader_name,
+                difficulty: row.battle_difficulty
+            });
+        } else {
+            retval.badgesEarned.push({
+                leaderId: row.leader_id,
+                leaderName: row.leader_name,
+                badgeName: row.badge_name
+            });
 
-        if (row.leader_type === constants.leaderType.champion) {
-            championDefeated = true;
+            if (row.leader_type === constants.leaderType.champion) {
+                championDefeated = true;
+            }
         }
     }
 

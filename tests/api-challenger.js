@@ -157,8 +157,8 @@ function hold() {
             test.fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
-            // TODO - Validate with the actual hold property, when we have that
-            if (data.queuesEntered.length > 0) {
+            const match = data.queuesOnHold.find(item => item.leaderId === leaderId);
+            if (!match) {
                 test.fail('failed to go on hold in the leader queue');
             } else {
                 test.pass('successfully went on hold in the leader queue');
@@ -176,7 +176,7 @@ function leaveQueue2() {
             test.fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
-            if (data.queuesEntered.length > 0) {
+            if (data.queuesEntered.length > 0 || data.queuesOnHold.length > 0) {
                 test.fail('failed to leave the leader queue');
             } else {
                 test.pass('successfully left the leader queue');
