@@ -229,7 +229,7 @@ function clientLog(req, res, logFunc) {
     const message = sanitize(req.body.message);
     if (!message) {
         logger.api.debug('Received client log request with no message in the body');
-        res.status(400).json({ error: 'Received client log request with no message in the body' });
+        res.status(400).json({ error: 'The JSON body for requests to this endpoint must include a \'message\' property.' });
         return;
     }
 
@@ -285,14 +285,14 @@ app.post('/register', (req, res) => {
 
     if (!credentials) {
         logger.api.warn('Registration attempt with missing auth header');
-        res.status(400).json({ error: 'Missing required Authorization header' });
+        res.status(400).json({ error: 'Registration requests must include an \'Authorization\' header.' });
         return;
     }
 
     const parts = decodeCredentials(credentials);
     if (!parts) {
         logger.api.warn('Registration attempt with malformed auth header');
-        res.status(400).json({ error: 'Authorization header was malformed' });
+        res.status(400).json({ error: 'The \'Authorization\' header in your request was malformed.' });
         return;
     }
 
@@ -324,14 +324,14 @@ app.post('/login', (req, res) => {
 
     if (!credentials) {
         logger.api.warn('Login attempt with missing auth header');
-        res.status(400).json({ error: 'Missing required Authorization header' });
+        res.status(400).json({ error: 'Login requests must include an \'Authorization\' header.' });
         return;
     }
 
     const parts = decodeCredentials(credentials);
     if (!parts) {
         logger.api.warn('Login attempt with malformed auth header');
-        res.status(400).json({ error: 'Authorization header was malformed' });
+        res.status(400).json({ error: 'The \'Authorization\' header in your request was malformed.' });
         return;
     }
 
@@ -402,7 +402,7 @@ app.get('/challenger/:id', getChallengerInfo);
 app.post('/challenger/:id', (req, res) => {
     const name = req.body.displayName;
     if (!name) {
-        res.status(400).json({ error: 'Missing required parameter: \'displayName\'' });
+        res.status(400).json({ error: 'The JSON body for requests to this endpoint must include a \'displayName\' property.' });
         return;
     }
 
@@ -430,7 +430,7 @@ app.get('/challenger/:id/bingoboard', (req, res) => {
 app.post('/challenger/:id/enqueue/:leader', (req, res) => {
     if (!validateLeaderId(req.params.leader)) {
         logger.api.warn(`loginId=${req.params.id} attempted to join queue for invalid leaderId=${req.params.leader}`);
-        res.status(400).json({ error: `Leader ID ${req.params.leader} is invalid` });
+        res.status(400).json({ error: 'That leader ID is invalid.' });
         return;
     }
 
@@ -438,7 +438,7 @@ app.post('/challenger/:id/enqueue/:leader', (req, res) => {
     if (!difficulty) {
         // Missing or invalid parameter
         logger.api.warn(`loginId=${req.params.id} attempted to join queue with invalid battleDifficulty=${req.body.battleDifficulty}`);
-        res.status(400).json({ error: `Battle difficulty ${req.body.battleDifficulty} is invalid` });
+        res.status(400).json({ error: 'That battle difficulty is invalid.' });
         return;
     }
 
@@ -455,7 +455,7 @@ app.post('/challenger/:id/enqueue/:leader', (req, res) => {
 app.post('/challenger/:id/dequeue/:leader', (req, res) => {
     if (!validateLeaderId(req.params.leader)) {
         logger.api.warn(`loginId=${req.params.id} attempted to leave queue for invalid leaderId=${req.params.leader}`);
-        res.status(400).json({ error: `Leader ID ${req.params.leader} is invalid` });
+        res.status(400).json({ error: 'That leader ID is invalid.' });
         return;
     }
 
@@ -472,7 +472,7 @@ app.post('/challenger/:id/dequeue/:leader', (req, res) => {
 app.post('/challenger/:id/hold/:leader', (req, res) => {
     if (!validateLeaderId(req.params.leader)) {
         logger.api.warn(`loginId=${req.params.id} attempted to go on hold for invalid leaderId=${req.params.leader}`);
-        res.status(400).json({ error: `Leader ID ${req.params.leader} is invalid` });
+        res.status(400).json({ error: 'That leader ID is invalid.' });
         return;
     }
 
@@ -537,7 +537,7 @@ app.post('/leader/:id/closequeue', (req, res) => {
 app.post('/leader/:id/enqueue/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to enqueue invalid challengerId=${req.params.challenger}`);
-        res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
+        res.status(400).json({ error: 'That challenger ID is invalid.' });
         return;
     }
 
@@ -545,7 +545,7 @@ app.post('/leader/:id/enqueue/:challenger', (req, res) => {
     if (!difficulty) {
         // Missing or invalid parameter
         logger.api.warn(`loginId=${req.params.id} attempted to join queue with invalid battleDifficulty=${req.body.battleDifficulty}`);
-        res.status(400).json({ error: `Battle difficulty ${req.body.battleDifficulty} is invalid` });
+        res.status(400).json({ error: 'That battle difficulty is invalid.' });
         return;
     }
 
@@ -562,7 +562,7 @@ app.post('/leader/:id/enqueue/:challenger', (req, res) => {
 app.post('/leader/:id/dequeue/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to dequeue invalid challengerId=${req.params.challenger}`);
-        res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
+        res.status(400).json({ error: 'That challenger ID is invalid.' });
         return;
     }
 
@@ -579,7 +579,7 @@ app.post('/leader/:id/dequeue/:challenger', (req, res) => {
 app.post('/leader/:id/report/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to report a match result for invalid challengerId=${req.params.challenger}`);
-        res.status(400).json({ error: `Challenger ID ${req.params.challenger} is invalid` });
+        res.status(400).json({ error: 'That challenger ID is invalid.' });
         return;
     }
 
@@ -602,7 +602,7 @@ app.post('/leader/:id/report/:challenger', (req, res) => {
 app.post('/leader/:id/hold/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to hold invalid challengerId=${req.params.challenger}`);
-        res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
+        res.status(400).json({ error: 'That challenger ID is invalid.' });
         return;
     }
 
@@ -619,7 +619,7 @@ app.post('/leader/:id/hold/:challenger', (req, res) => {
 app.post('/leader/:id/unhold/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to unhold invalid challengerId=${req.params.challenger}`);
-        res.status(400).json({ error: `Challenger ID ${req.params.leader} is invalid` });
+        res.status(400).json({ error: 'That challenger ID is invalid.' });
         return;
     }
 
