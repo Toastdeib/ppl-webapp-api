@@ -37,7 +37,7 @@ function handleDbError(errorList, code, res) {
         return;
     }
 
-    logger.api.error(error.logMessage);
+    logger.api.info(error.logMessage);
     res.status(error.statusCode).json({ error: error.userMessage, code: code });
 }
 
