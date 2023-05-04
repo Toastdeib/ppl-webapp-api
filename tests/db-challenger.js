@@ -258,8 +258,8 @@ function joinFullQueue() {
 function joinRestrictedQueue() {
     test.name(11, 'Attempt to join the champ queue without enough emblems');
     db.queue.enqueue(leaderIds.champ, challengerId, constants.leaderType.champion, (error, result) => {
-        if (error === constants.resultCode.notEnoughBadges) {
-            test.pass('failed to join with result code notEnoughBadges');
+        if (error === constants.resultCode.notEnoughEmblems) {
+            test.pass('failed to join with result code notEnoughEmblems');
         } else if (error) {
             test.fail(`error=${error}`);
         } else {

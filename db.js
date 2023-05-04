@@ -10,9 +10,6 @@ const CHALLENGERS_TABLE = 'ppl_webapp_challengers' + TABLE_SUFFIX;
 const LEADERS_TABLE = 'ppl_webapp_leaders' + TABLE_SUFFIX;
 const MATCHES_TABLE = 'ppl_webapp_matches' + TABLE_SUFFIX;
 
-const MAX_CHALLENGERS_PER_QUEUE = 20;
-const MAX_QUEUES_PER_CHALLENGER = 3;
-
 const BINGO_SPACE_COUNT = config.bingoBoardWidth * config.bingoBoardWidth;
 
 // For even-width boards, we don't want a free space since it can't be centered
@@ -720,7 +717,7 @@ async function enqueue(leaderId, challengerId, difficulty, callback) {
         return;
     }
 
-    if (result.rows.length >= MAX_CHALLENGERS_PER_QUEUE) {
+    if (result.rows.length >= config.maxQueueSize) {
         callback(constants.resultCode.queueIsFull);
         return;
     }
@@ -731,7 +728,7 @@ async function enqueue(leaderId, challengerId, difficulty, callback) {
         return;
     }
 
-    if (result.rows.length >= MAX_QUEUES_PER_CHALLENGER) {
+    if (result.rows.length >= config.maxQueuesPerChallenger) {
         callback(constants.resultCode.tooManyChallenges);
         return;
     }

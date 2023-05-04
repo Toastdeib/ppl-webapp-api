@@ -76,7 +76,7 @@ const challengerErrors = {
     },
     [constants.resultCode.tooManyChallenges]: {
         logMessage: 'Challenger is in too many queues',
-        userMessage: 'You\'re already in three different leader queues.',
+        userMessage: `You're already in ${config.maxQueuesPerChallenger} different leader queues.`,
         statusCode: 400
     },
     [constants.resultCode.notInQueue]: {
@@ -125,7 +125,7 @@ const leaderErrors = {
     },
     [constants.resultCode.tooManyChallenges]: {
         logMessage: 'Challenger is in too many queues',
-        userMessage: 'That challenger is already in three different queues.',
+        userMessage: `That challenger is already in ${config.maxQueuesPerChallenger} different queues.`,
         statusCode: 400
     },
     [constants.resultCode.notInQueue]: {

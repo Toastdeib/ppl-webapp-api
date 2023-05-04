@@ -18,5 +18,7 @@ module.exports = {
     trainerCardShowDate: '1970-01-01T00:00:00Z',
     bingoBoardWidth: 5,
     requiredBadges: 8,
-    requiredEmblems: 4
+    requiredEmblems: 4,
+    maxQueueSize: 20,
+    maxQueuesPerChallenger: 3
 }
