@@ -684,8 +684,16 @@ async function enqueue(leaderId, challengerId, difficulty, callback) {
         result = await fetch(`SELECT battle_difficulty FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, constants.matchStatus.win, constants.matchStatus.ash]);
         const badgeCount = result.rows.filter(row => !(row.battle_difficulty & (constants.leaderType.elite | constants.leaderType.champion))).length;
         const emblemCount = result.rows.filter(row => row.battle_difficulty & constants.leaderType.elite).length;
-        if ((leaderType & constants.leaderType.elite && badgeCount < config.requiredBadges) || (leaderType & constants.leaderType.champion && emblemCount < config.requiredEmblems)) {
+        // Match validity check is a bit wacky because PPL West doesn't have elites,
+        // so we need to check badge count for the champ if config.requiredEmblems === 0
+        if (((leaderType & constants.leaderType.elite) && badgeCount < config.requiredBadges) || // Elite with insufficient badges
+            ((leaderType & constants.leaderType.champion) && config.requiredEmblems === 0 && badgeCount < config.requiredBadges)) { // Champ with no elites and insufficient badges
             callback(constants.resultCode.notEnoughBadges);
+            return;
+        }
+
+        if (((leaderType & constants.leaderType.champion) && emblemCount < config.requiredEmblems)) { // Champ with insufficient emblems
+            callback(constants.resultCode.notEnoughEmblems);
             return;
         }
     }
