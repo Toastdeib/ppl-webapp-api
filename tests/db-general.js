@@ -37,12 +37,12 @@ const idCounts = {
     },
     all: {
         challengers: {
-            first: 7,
-            second: 8
+            first: 8,
+            second: 9
         },
         leaders: {
-            first: 27,
-            second: 27
+            first: 28,
+            second: 28
         }
     }
 };
