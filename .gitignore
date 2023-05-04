@@ -1,6 +1,10 @@
 **/node_modules
 **/logs
 config.js
+config.js.aus
+config.js.east
+config.js.online
+config.js.west
 cache.json
 *.swp
 **/tests/db-test.js
