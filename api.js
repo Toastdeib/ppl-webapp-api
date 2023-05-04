@@ -9,6 +9,7 @@ const logger = require('./logger.js');
 const db = require('./db.js');
 const config = require('./config.js');
 const constants = require('./constants.js');
+const errors = require('./errors.js');
 
 app.use(cors({ origin: config.corsOrigin }));
 app.use(bodyParser.json());
@@ -25,142 +26,11 @@ let idCache;
 const AUTH_HEADER = 'Authorization';
 const PPL_EVENT_HEADER = 'PPL-Event';
 
-const genericErrors = {
-    [constants.resultCode.dbFailure]: {
-        logMessage: 'Unexpected database error',
-        userMessage: 'An unexpected database error occurred, please try again.',
-        statusCode: 500
-    },
-    [constants.resultCode.notFound]: {
-        logMessage: 'ID not found',
-        userMessage: 'One or more IDs in the request path couldn\'t be found.',
-        statusCode: 404
-    },
-    [constants.resultCode.usernameTaken]: {
-        logMessage: 'Username is already taken',
-        userMessage: 'That username is already in use.',
-        statusCode: 400
-    },
-    [constants.resultCode.registrationFailure]: {
-        logMessage: 'Unknown error during registration',
-        userMessage: 'An unknown error occurred during registration, please try again later.',
-        statusCode: 500
-    },
-    [constants.resultCode.badCredentials]: {
-        logMessage: 'Invalid login credentials',
-        userMessage: 'Invalid login credentials, please try again.',
-        statusCode: 401
-    },
-    [constants.resultCode.invalidToken]: {
-        logMessage: 'Invalid access token',
-        userMessage: 'Your access token is invalid, please try logging out and back in.',
-        statusCode: 401
-    },
-};
-
-const challengerErrors = {
-    [constants.resultCode.alreadyInQueue]: {
-        logMessage: 'Challenger already in queue',
-        userMessage: 'You\'re already in that leader\'s queue.',
-        statusCode: 400
-    },
-    [constants.resultCode.alreadyWon]: {
-        logMessage: 'Challenger has already won',
-        userMessage: 'You\'ve already earned that leader\'s badge.',
-        statusCode: 400
-    },
-    [constants.resultCode.queueIsFull]: {
-        logMessage: 'Leader queue is full',
-        userMessage: 'That leader\'s queue is currently full.',
-        statusCode: 400
-    },
-    [constants.resultCode.tooManyChallenges]: {
-        logMessage: 'Challenger is in too many queues',
-        userMessage: `You're already in ${config.maxQueuesPerChallenger} different leader queues.`,
-        statusCode: 400
-    },
-    [constants.resultCode.notInQueue]: {
-        logMessage: 'Challenger is not in queue',
-        userMessage: 'You aren\'t in that leader\'s queue.',
-        statusCode: 400
-    },
-    [constants.resultCode.queueIsClosed]: {
-        logMessage: 'Leader queue is closed',
-        userMessage: 'That leader\'s queue is currently closed.',
-        statusCode: 400
-    },
-    [constants.resultCode.notEnoughBadges]: {
-        logMessage: 'Not enough badges to join the queue',
-        userMessage: 'You don\'t have enough badges to join that leader\'s queue.',
-        statusCode: 400
-    },
-    [constants.resultCode.notEnoughEmblems]: {
-        logMessage: 'Not enough emblems to join the queue',
-        userMessage: 'You don\'t have enough emblems to join that leader\'s queue.',
-        statusCode: 400
-    },
-    [constants.resultCode.unsupportedDifficulty]: {
-        logMessage: 'Unsupported battle difficulty',
-        userMessage: 'That leader doesn\'t support that battle difficulty.',
-        statusCode: 400
-    },
-    ...genericErrors
-};
-
-const leaderErrors = {
-    [constants.resultCode.alreadyInQueue]: {
-        logMessage: 'Challenger already in queue',
-        userMessage: 'That challenger is already in your queue.',
-        statusCode: 400
-    },
-    [constants.resultCode.alreadyWon]: {
-        logMessage: 'Challenger has already won',
-        userMessage: 'That challenger has already earned your badge.',
-        statusCode: 400
-    },
-    [constants.resultCode.queueIsFull]: {
-        logMessage: 'Leader queue is full',
-        userMessage: 'Your queue is currently full.',
-        statusCode: 400
-    },
-    [constants.resultCode.tooManyChallenges]: {
-        logMessage: 'Challenger is in too many queues',
-        userMessage: `That challenger is already in ${config.maxQueuesPerChallenger} different queues.`,
-        statusCode: 400
-    },
-    [constants.resultCode.notInQueue]: {
-        logMessage: 'Challenger is not in queue',
-        userMessage: 'That challenger isn\'t in your queue.',
-        statusCode: 400
-    },
-    [constants.resultCode.queueIsClosed]: {
-        logMessage: 'Leader queue is closed',
-        userMessage: 'Your queue is currently closed.',
-        statusCode: 400
-    },
-    [constants.resultCode.notEnoughBadges]: {
-        logMessage: 'Not enough badges to join the queue',
-        userMessage: 'That challenger doesn\'t have enough badges to join your queue.',
-        statusCode: 400
-    },
-    [constants.resultCode.notEnoughEmblems]: {
-        logMessage: 'Not enough emblems to join the queue',
-        userMessage: 'That challenger doesn\'t have enough emblems to join your queue.',
-        statusCode: 400
-    },
-    [constants.resultCode.unsupportedDifficulty]: {
-        logMessage: 'Unsupported battle difficulty',
-        userMessage: 'Your leader type doesn\'t support that battle difficulty.',
-        statusCode: 400
-    },
-    ...genericErrors
-};
-
 /******************
  * Util functions *
  ******************/
-function handleDbError(errors, code, res) {
-    const error = errors[code];
+function handleDbError(errorList, code, res) {
+    const error = errorList[code];
     if (!error) {
         logger.api.error(`No error data found for code=${code}`);
         res.status(400).json({ error: 'An unexpected error occurred, please try again.', code: code });
@@ -175,7 +45,7 @@ function getChallengerInfo(req, res) {
     logger.api.info(`Returning challenger info for loginId=${req.params.id}`);
     db.challenger.getInfo(req.params.id, (error, result) => {
         if (error) {
-            handleDbError(challengerErrors, error, res);
+            handleDbError(errors.challengerErrors, error, res);
         } else {
             res.json({
                 id: req.params.id,
@@ -189,7 +59,7 @@ function getLeaderInfo(req, res) {
     logger.api.info(`Returning leader info for loginId=${req.params.id}, leaderId=${req.leaderId}`);
     db.leader.getInfo(req.leaderId, (error, result) => {
         if (error) {
-            handleDbError(leaderErrors, error, res);
+            handleDbError(errors.leaderErrors, error, res);
         } else {
             res.json({
                 loginId: req.params.id,
@@ -428,7 +298,7 @@ app.post('/register', (req, res) => {
 
     db.auth.register(parts[0], parts[1], pplEvent, (error, result) => {
         if (error) {
-            handleDbError(challengerErrors, error, res);
+            handleDbError(errors.challengerErrors, error, res);
         } else {
             logger.api.info(`Registered loginId=${result.id} with username=${parts[0]}`);
             const token = createSession(result.id, result.isLeader, result.leaderId);
@@ -467,7 +337,7 @@ app.post('/login', (req, res) => {
 
     db.auth.login(parts[0], parts[1], pplEvent, (error, result) => {
         if (error) {
-            handleDbError(challengerErrors, error, res);
+            handleDbError(errors.challengerErrors, error, res);
         } else {
             logger.api.info(`Logged in loginId=${result.id} with username=${parts[0]}`);
             const token = createSession(result.id, result.isLeader, result.leaderId);
@@ -500,7 +370,7 @@ app.get('/allleaderdata', (req, res) => {
     logger.api.info('Fetching all leader data');
     db.getAllLeaderData((error, result) => {
         if (error) {
-            handleDbError(challengerErrors, error, res);
+            handleDbError(errors.challengerErrors, error, res);
         } else {
             res.json(result);
         }
@@ -539,7 +409,7 @@ app.post('/challenger/:id', (req, res) => {
     logger.api.info(`Setting display name for loginId=${req.params.id} to ${name}`);
     db.challenger.setDisplayName(req.params.id, name, (error, result) => {
         if (error) {
-            handleDbError(challengerErrors, error, res);
+            handleDbError(errors.challengerErrors, error, res);
         } else {
             getChallengerInfo(req, res);
         }
@@ -550,7 +420,7 @@ app.get('/challenger/:id/bingoboard', (req, res) => {
     logger.api.info(`Returning bingo board for loginId=${req.params.id}`);
     db.challenger.getBingoBoard(req.params.id, (error, result) => {
         if (error) {
-            handleDbError(challengerErrors, error, res);
+            handleDbError(errors.challengerErrors, error, res);
         } else {
             res.json(result);
         }
@@ -575,7 +445,7 @@ app.post('/challenger/:id/enqueue/:leader', (req, res) => {
     logger.api.info(`loginId=${req.params.id} joining leaderId=${req.params.leader}'s queue`);
     db.queue.enqueue(req.params.leader, req.params.id, difficulty, (error, result) => {
         if (error) {
-            handleDbError(challengerErrors, error, res);
+            handleDbError(errors.challengerErrors, error, res);
         } else {
             getChallengerInfo(req, res);
         }
@@ -592,7 +462,7 @@ app.post('/challenger/:id/dequeue/:leader', (req, res) => {
     logger.api.info(`loginId=${req.params.id} leaving leaderId=${req.params.leader}'s queue`);
     db.queue.dequeue(req.params.leader, req.params.id, (error, result) => {
         if (error) {
-            handleDbError(challengerErrors, error, res);
+            handleDbError(errors.challengerErrors, error, res);
         } else {
             getChallengerInfo(req, res);
         }
@@ -609,7 +479,7 @@ app.post('/challenger/:id/hold/:leader', (req, res) => {
     logger.api.info(`loginId=${req.params.id} placing themselves on hold in leaderId=${req.params.leader}'s queue`);
     db.queue.hold(req.params.leader, req.params.id, (error, result) => {
         if (error) {
-            handleDbError(challengerErrors, error, res);
+            handleDbError(errors.challengerErrors, error, res);
         } else {
             getChallengerInfo(req, res);
         }
@@ -644,7 +514,7 @@ app.post('/leader/:id/openqueue', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} opening queue`);
     db.leader.updateQueueStatus(req.leaderId, true, (error, result) => {
         if (error) {
-            handleDbError(leaderErrors, error, res);
+            handleDbError(errors.leaderErrors, error, res);
         } else {
             sendHttpBotRequest('/queueopened', { leaderId: req.leaderId });
             getLeaderInfo(req, res);
@@ -656,7 +526,7 @@ app.post('/leader/:id/closequeue', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} closing queue`);
     db.leader.updateQueueStatus(req.leaderId, false, (error, result) => {
         if (error) {
-            handleDbError(leaderErrors, error, res);
+            handleDbError(errors.leaderErrors, error, res);
         } else {
             sendHttpBotRequest('/queueclosed', { leaderId: req.leaderId });
             getLeaderInfo(req, res);
@@ -682,7 +552,7 @@ app.post('/leader/:id/enqueue/:challenger', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} adding challengerId=${req.params.challenger} to queue`);
     db.queue.enqueue(req.leaderId, req.params.challenger, difficulty, (error, result) => {
         if (error) {
-            handleDbError(leaderErrors, error, res);
+            handleDbError(errors.leaderErrors, error, res);
         } else {
             getLeaderInfo(req, res);
         }
@@ -699,7 +569,7 @@ app.post('/leader/:id/dequeue/:challenger', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} removing challengerId=${req.params.challenger} from queue`);
     db.queue.dequeue(req.leaderId, req.params.challenger, (error, result) => {
         if (error) {
-            handleDbError(leaderErrors, error, res);
+            handleDbError(errors.leaderErrors, error, res);
         } else {
             getLeaderInfo(req, res);
         }
@@ -716,7 +586,7 @@ app.post('/leader/:id/report/:challenger', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} reporting match result ${!!req.body.challengerWin}, badge awarded ${!!req.body.badgeAwarded} for challengerId=${req.params.challenger}`);
     db.leader.reportResult(req.leaderId, req.params.challenger, !!req.body.challengerWin, !!req.body.badgeAwarded, (error, result) => {
         if (error) {
-            handleDbError(leaderErrors, error, res);
+            handleDbError(errors.leaderErrors, error, res);
         } else {
             if (result.hof) {
                 sendHttpBotRequest('/hofentered', { challengerId: req.params.challenger });
@@ -739,7 +609,7 @@ app.post('/leader/:id/hold/:challenger', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} placing challengerId=${req.params.challenger} on hold`);
     db.queue.hold(req.leaderId, req.params.challenger, (error, result) => {
         if (error) {
-            handleDbError(leaderErrors, error, res);
+            handleDbError(errors.leaderErrors, error, res);
         } else {
             getLeaderInfo(req, res);
         }
@@ -756,7 +626,7 @@ app.post('/leader/:id/unhold/:challenger', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} returning challengerId=${req.params.challenger} from hold`);
     db.queue.unhold(req.leaderId, req.params.challenger, !!req.body.placeAtFront, (error, result) => {
         if (error) {
-            handleDbError(leaderErrors, error, res);
+            handleDbError(errors.leaderErrors, error, res);
         } else {
             getLeaderInfo(req, res);
         }
@@ -774,7 +644,7 @@ app.get('/leader/:id/allchallengers', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} fetching all challengers`);
     db.leader.getAllChallengers(pplEvent, (error, result) => {
         if (error) {
-            handleDbError(leaderErrors, error, res);
+            handleDbError(errors.leaderErrors, error, res);
         } else {
             res.json(result);
         }
@@ -785,7 +655,7 @@ app.get('/metrics', (req, res) => {
     logger.api.info('Returning leader metrics');
     db.leader.metrics((error, result) => {
         if (error) {
-            handleDbError(leaderErrors, error, res);
+            handleDbError(errors.leaderErrors, error, res);
         } else {
             res.json(result);
         }
@@ -801,7 +671,7 @@ app.get('/openqueues', (req, res) => {
     logger.api.info('Returning a list of open leader queues');
     db.getOpenQueues((error, result) => {
         if (error) {
-            handleDbError(challengerErrors, error, res);
+            handleDbError(errors.challengerErrors, error, res);
         } else {
             res.json(result);
         }
@@ -812,7 +682,7 @@ app.get('/badges/:id', (req, res) => {
     logger.api.info(`Returning simple badge list for loginId=${req.params.id}`);
     db.getBadges(req.params.id, (error, result) => {
         if (error) {
-            handleDbError(challengerErrors, error, res);
+            handleDbError(errors.challengerErrors, error, res);
         } else {
             res.json(result);
         }
