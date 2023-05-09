@@ -42,11 +42,13 @@ function login() {
     base.sendRequest('/login', 'POST', {}, credentials, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}, aborting test run`);
+            test.finish();
             process.exit();
         } else {
             const data = JSON.parse(result.body);
             if (data.isLeader) {
                 test.fail(`login succeeded but isLeader=${data.isLeader}, aborting test run`);
+                test.finish();
                 process.exit();
             } else {
                 test.pass('successfully logged in');
@@ -109,12 +111,30 @@ function joinQueue1() {
             }
         }
 
+        joinQueue2();
+    });
+}
+
+function joinQueue2() {
+    test.name(5, 'Attempt to join a leader queue the challenger is already in');
+    base.sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: constants.leaderType.casual }, token, (result) => {
+        if (result.status === 200) {
+            test.fail('successfully joined the leader queue');
+        } else  {
+            const data = JSON.parse(result.body);
+            if (result.status !== 400 || data.code !== constants.resultCode.alreadyInQueue) {
+                test.fail(`failed to join the leader queue with unexpected HTTP status code ${result.status} and/or error code ${data.code}`);
+            } else {
+                test.pass(`failed to join the leader queue with HTTP status code ${result.status} and error code ${data.code}`);
+            }
+        }
+
         leaveQueue1();
     });
 }
 
 function leaveQueue1() {
-    test.name(5, 'Leave the leader queue');
+    test.name(6, 'Leave the leader queue');
     base.sendRequest(`${basePath}/dequeue/${leaderId}`, 'POST', {}, token, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}`);
@@ -127,12 +147,12 @@ function leaveQueue1() {
             }
         }
 
-        joinQueue2();
+        joinQueue3();
     });
 }
 
-function joinQueue2() {
-    test.name(6, 'Join a leader queue (again)');
+function joinQueue3() {
+    test.name(7, 'Join a leader queue (again)');
     base.sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: constants.leaderType.veteran }, token, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}`);
@@ -151,7 +171,7 @@ function joinQueue2() {
 }
 
 function hold() {
-    test.name(7, 'Go on hold in the queue');
+    test.name(8, 'Go on hold in the queue');
     base.sendRequest(`${basePath}/hold/${leaderId}`, 'POST', {}, token, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}`);
@@ -170,7 +190,7 @@ function hold() {
 }
 
 function leaveQueue2() {
-    test.name(8, 'Leave the queue while on hold');
+    test.name(9, 'Leave the queue while on hold');
     base.sendRequest(`${basePath}/dequeue/${leaderId}`, 'POST', {}, token, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}`);
@@ -201,6 +221,6 @@ function cleanup() {
 }
 
 base.init(() => {
-    test.start(8);
+    test.start(9);
     login();
 });

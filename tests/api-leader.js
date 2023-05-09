@@ -41,11 +41,13 @@ function login() {
     base.sendRequest('/login', 'POST', {}, credentials, (result) => {
         if (result.status !== 200) {
             test.fail(`received HTTP status code ${result.status}, aborting test run`);
+            test.finish();
             process.exit();
         } else {
             const data = JSON.parse(result.body);
             if (!data.isLeader) {
                 test.fail(`login succeeded but isLeader=${data.isLeader}, aborting test run`);
+                test.finish();
                 process.exit();
             } else {
                 test.pass('successfully logged in');

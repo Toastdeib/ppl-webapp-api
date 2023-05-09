@@ -6,7 +6,7 @@ const hostname = 'localhost';
 const port = 9002;
 
 function encodeCredentials(username, password) {
-    const encoded = Buffer.from(`${username}:${password}`, 'utf8').toString('base64');
+    const encoded = btoa(`${username}:${password}`);
     return `Basic ${encoded}`;
 }
 

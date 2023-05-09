@@ -76,7 +76,7 @@ function decodeCredentials(credentials) {
         return false;
     }
 
-    return Buffer.from(parts[1], 'base64').toString('utf8').split(':');
+    return atob(parts[1]).split(':');
 }
 
 function createSession(id, isLeader, leaderId) {
