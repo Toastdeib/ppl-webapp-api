@@ -1,16 +1,16 @@
-const http = require('http');
-const api = require('../api.js');
-const test = require('./test-logger.js');
+import http from 'http';
+import api from '../api.js';
+import { debug } from './test-logger.js';
 
 const hostname = 'localhost';
 const port = 9002;
 
-function encodeCredentials(username, password) {
+export function encodeCredentials(username, password) {
     const encoded = btoa(`${username}:${password}`);
     return `Basic ${encoded}`;
 }
 
-function sendRequest(path, method, params, headers, callback) {
+export function sendRequest(path, method, params, headers, callback) {
     const postData = JSON.stringify(params);
     const options = {
         hostname: hostname,
@@ -45,16 +45,10 @@ function sendRequest(path, method, params, headers, callback) {
     req.end();
 }
 
-function init(callback) {
+export function init(callback) {
     const httpServer = http.createServer({}, api);
     httpServer.listen({ host: hostname, port: port }, () => {
-        test.debug('Test API running, beginning test suite');
+        debug('Test API running, beginning test suite');
         setTimeout(callback, 2000);
     });
 }
-
-module.exports = {
-    encodeCredentials: encodeCredentials,
-    sendRequest: sendRequest,
-    init: init
-};

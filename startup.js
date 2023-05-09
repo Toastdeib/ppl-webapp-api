@@ -1,8 +1,8 @@
-const https = require('https');
-const fs = require('fs');
-const api = require('./api.js');
-const logger = require('./logger.js');
-const config = require('./config.js');
+import https from 'https';
+import fs from 'fs';
+import api from './api.js';
+import logger from './logger.js';
+import config from './config.js';
 
 // Certificate
 const privateKey = fs.readFileSync(config.certPath + 'privkey.pem', 'utf8');

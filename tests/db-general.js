@@ -18,9 +18,9 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
     process.exit();
 }
 
-const db = require('../db.js');
-const constants = require('../constants.js');
-const test = require('./test-logger.js');
+import db from '../db.js';
+import { resultCode } from '../constants.js';
+import { name, pass, fail, start, finish, debug } from './test-logger.js';
 
 /****************
  * TESTING DATA *
@@ -57,14 +57,14 @@ let id;
  * TEST FUNCTIONS *
  ******************/
 function getAllChallengersEast1() {
-    test.name(1, 'Get all challenger IDs for east (before registration)');
+    name(1, 'Get all challenger IDs for east (before registration)');
     db.leader.getAllChallengers('east', (error, result) => {
         if (error) {
-            test.fail(`error=${error}`);
+            fail(`error=${error}`);
         } else if (result.length !== idCounts.east.first) {
-            test.fail(`expected ${idCounts.east.first} IDs, found ${result.length}`);
+            fail(`expected ${idCounts.east.first} IDs, found ${result.length}`);
         } else {
-            test.pass('challenger count for east was correct');
+            pass('challenger count for east was correct');
         }
 
         getAllChallengersWest1();
@@ -72,14 +72,14 @@ function getAllChallengersEast1() {
 }
 
 function getAllChallengersWest1() {
-    test.name(2, 'Get all challenger IDs for west (before registration)');
+    name(2, 'Get all challenger IDs for west (before registration)');
     db.leader.getAllChallengers('west', (error, result) => {
         if (error) {
-            test.fail(`error=${error}`);
+            fail(`error=${error}`);
         } else if (result.length !== idCounts.west.first) {
-            test.fail(`expected ${idCounts.west.first} IDs, found ${result.length}`);
+            fail(`expected ${idCounts.west.first} IDs, found ${result.length}`);
         } else {
-            test.pass('challenger count for west was correct');
+            pass('challenger count for west was correct');
         }
 
         getAllIds1();
@@ -87,16 +87,16 @@ function getAllChallengersWest1() {
 }
 
 function getAllIds1() {
-    test.name(3, 'Get all IDs (before registration)');
+    name(3, 'Get all IDs (before registration)');
     db.getAllIds((error, result) => {
         if (error) {
-            test.fail(`error=${error}`);
+            fail(`error=${error}`);
         } else if (result.challengers.length !== idCounts.all.challengers.first) {
-            test.fail(`expected ${idCounts.all.challengers.first} challenger IDs, found ${result.challengers.length}`);
+            fail(`expected ${idCounts.all.challengers.first} challenger IDs, found ${result.challengers.length}`);
         } else if (result.leaders.length !== idCounts.all.leaders.first) {
-            test.fail(`expected ${idCounts.all.leaders.first} leader IDs, found ${result.leaders.length}`);
+            fail(`expected ${idCounts.all.leaders.first} leader IDs, found ${result.leaders.length}`);
         } else {
-            test.pass('ID counts were correct');
+            pass('ID counts were correct');
         }
 
         registerWithTakenUsername();
@@ -104,14 +104,14 @@ function getAllIds1() {
 }
 
 function registerWithTakenUsername() {
-    test.name(4, 'Register with a taken username');
+    name(4, 'Register with a taken username');
     db.auth.register(takenUsername, password, 'east', (error, result) => {
-        if (error === constants.resultCode.usernameTaken) {
-            test.pass('registration failed with usernameTaken result code');
+        if (error === resultCode.usernameTaken) {
+            pass('registration failed with usernameTaken result code');
         } else if (error) {
-            test.fail(`error=${error}`);
+            fail(`error=${error}`);
         } else {
-            test.fail('registration was successful');
+            fail('registration was successful');
         }
 
         registerWithNewUsername();
@@ -119,12 +119,12 @@ function registerWithTakenUsername() {
 }
 
 function registerWithNewUsername() {
-    test.name(5, 'Register with a new username');
+    name(5, 'Register with a new username');
     db.auth.register(newUsername, password, 'east', (error, result) => {
         if (error) {
-            test.fail(`error=${error}`);
+            fail(`error=${error}`);
         } else {
-            test.pass('registration was successful');
+            pass('registration was successful');
             id = result.id;
         }
 
@@ -133,14 +133,14 @@ function registerWithNewUsername() {
 }
 
 function loginWithGoodCredentials() {
-    test.name(6, 'Login with valid credentials');
+    name(6, 'Login with valid credentials');
     db.auth.login(newUsername, password, 'east', (error, result) => {
         if (error) {
-            test.fail(`error=${error}`);
+            fail(`error=${error}`);
         } else if (result.id !== id) {
-            test.fail(`id mismatch, actual=${result.id}, expected=${id}`);
+            fail(`id mismatch, actual=${result.id}, expected=${id}`);
         } else {
-            test.pass('login was successful');
+            pass('login was successful');
         }
 
         loginWithBadCredentials();
@@ -148,14 +148,14 @@ function loginWithGoodCredentials() {
 }
 
 function loginWithBadCredentials() {
-    test.name(7, 'Login with invalid credentials');
+    name(7, 'Login with invalid credentials');
     db.auth.login(newUsername, badPassword, 'east', (error, result) => {
-        if (error === constants.resultCode.badCredentials) {
-            test.pass('login failed with badCredentials result code');
+        if (error === resultCode.badCredentials) {
+            pass('login failed with badCredentials result code');
         } else if (error) {
-            test.fail(`error=${error}`);
+            fail(`error=${error}`);
         } else {
-            test.fail('login was successful');
+            fail('login was successful');
         }
 
         getAllChallengersEast2();
@@ -163,14 +163,14 @@ function loginWithBadCredentials() {
 }
 
 function getAllChallengersEast2() {
-    test.name(8, 'Get all challenger IDs for east (after registration)');
+    name(8, 'Get all challenger IDs for east (after registration)');
     db.leader.getAllChallengers('east', (error, result) => {
         if (error) {
-            test.fail(`error=${error}`);
+            fail(`error=${error}`);
         } else if (result.length !== idCounts.east.second) {
-            test.fail(`expected ${idCounts.east.second} IDs, found ${result.length}`);
+            fail(`expected ${idCounts.east.second} IDs, found ${result.length}`);
         } else {
-            test.pass('challenger count for east was correct');
+            pass('challenger count for east was correct');
         }
 
         getAllChallengersWest2();
@@ -178,14 +178,14 @@ function getAllChallengersEast2() {
 }
 
 function getAllChallengersWest2() {
-    test.name(9, 'Get all challenger IDs for west (after registration)');
+    name(9, 'Get all challenger IDs for west (after registration)');
     db.leader.getAllChallengers('west', (error, result) => {
         if (error) {
-            test.fail(`error=${error}`);
+            fail(`error=${error}`);
         } else if (result.length !== idCounts.west.second) {
-            test.fail(`expected ${idCounts.west.second} IDs, found ${result.length}`);
+            fail(`expected ${idCounts.west.second} IDs, found ${result.length}`);
         } else {
-            test.pass('challenger count for west was correct');
+            pass('challenger count for west was correct');
         }
 
         getAllIds2();
@@ -193,16 +193,16 @@ function getAllChallengersWest2() {
 }
 
 function getAllIds2() {
-    test.name(10, 'Get all IDs (after registration)');
+    name(10, 'Get all IDs (after registration)');
     db.getAllIds((error, result) => {
         if (error) {
-            test.fail(`error=${error}`);
+            fail(`error=${error}`);
         } else if (result.challengers.length !== idCounts.all.challengers.second) {
-            test.fail(`expected ${idCounts.all.challengers.second} challenger IDs, found ${result.challengers.length}`);
+            fail(`expected ${idCounts.all.challengers.second} challenger IDs, found ${result.challengers.length}`);
         } else if (result.leaders.length !== idCounts.all.leaders.second) {
-            test.fail(`expected ${idCounts.all.leaders.second} leader IDs, found ${result.leaders.length}`);
+            fail(`expected ${idCounts.all.leaders.second} leader IDs, found ${result.leaders.length}`);
         } else {
-            test.pass('ID counts were correct');
+            pass('ID counts were correct');
         }
 
         loginForWest();
@@ -210,14 +210,14 @@ function getAllIds2() {
 }
 
 function loginForWest() {
-    test.name(11, 'Login for west');
+    name(11, 'Login for west');
     db.auth.login(newUsername, password, 'west', (error, result) => {
         if (error) {
-            test.fail(`error=${error}`);
+            fail(`error=${error}`);
         } else if (result.id !== id) {
-            test.fail(`id mismatch, actual=${result.id}, expected=${id}`);
+            fail(`id mismatch, actual=${result.id}, expected=${id}`);
         } else {
-            test.pass('login was successful');
+            pass('login was successful');
         }
 
         getAllChallengersWest3();
@@ -225,14 +225,14 @@ function loginForWest() {
 }
 
 function getAllChallengersWest3() {
-    test.name(12, 'Get all challenger IDs for west (after second login)');
+    name(12, 'Get all challenger IDs for west (after second login)');
     db.leader.getAllChallengers('west', (error, result) => {
         if (error) {
-            test.fail(`error=${error}`);
+            fail(`error=${error}`);
         } else if (result.length !== idCounts.west.third) {
-            test.fail(`expected ${idCounts.west.third} IDs, found ${result.length}`);
+            fail(`expected ${idCounts.west.third} IDs, found ${result.length}`);
         } else {
-            test.pass('challenger count for west was correct');
+            pass('challenger count for west was correct');
         }
 
         cleanup();
@@ -240,28 +240,28 @@ function getAllChallengersWest3() {
 }
 
 function cleanup() {
-    test.finish();
+    finish();
     if (id) {
-        test.debug('Cleaning up db modifications');
+        debug('Cleaning up db modifications');
         db.debugSave(`DELETE FROM ${db.tables.logins} WHERE id = ?`, [id], (rowCount) => {
             if (rowCount === 0) {
-                test.debug('Cleanup failed to find a login row to delete, please validate the db manually');
+                debug('Cleanup failed to find a login row to delete, please validate the db manually');
                 process.exit();
             }
 
-            test.debug('Deleted login row');
+            debug('Deleted login row');
             db.debugSave(`DELETE FROM ${db.tables.challengers} WHERE id = ?`, [id], (rowCount) => {
                 if (rowCount === 0) {
-                    test.debug('Cleanup failed to find a challenger row to delete, please validate the db manually');
+                    debug('Cleanup failed to find a challenger row to delete, please validate the db manually');
                     process.exit();
                 }
 
-                test.debug('Deleted challenger row');
+                debug('Deleted challenger row');
                 process.exit();
             });
         });
     } else {
-        test.debug('No db modifications to clean up');
+        debug('No db modifications to clean up');
         process.exit();
     }
 }
@@ -270,7 +270,7 @@ function cleanup() {
  * TEST EXECUTION *
  ******************/
 db.dbReady.then(() => {
-    test.start(12);
+    start(12);
     getAllChallengersEast1();
 });
 

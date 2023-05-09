@@ -1,8 +1,8 @@
-const sql = require('mysql');
-const crypto = require('crypto');
-const logger = require('./logger.js');
-const config = require('./config.js');
-const constants = require('./constants.js');
+import sql from 'mysql';
+import crypto from 'crypto';
+import logger from './logger.js';
+import config from './config.js';
+import { resultCode, leaderType, matchStatus, queueStatus, pplEvent } from './constants.js';
 
 const TABLE_SUFFIX = process.env.TABLE_SUFFIX || config.tableSuffix;
 const LOGINS_TABLE = 'ppl_webapp_logins' + TABLE_SUFFIX;
@@ -67,7 +67,7 @@ const linkCodeCache = {};
  * - timestamp: TIMESTAMP
  */
 
-const db = sql.createPool({
+const sqlDb = sql.createPool({
     host: config.mysqlHost,
     user: config.mysqlUser,
     password: config.mysqlPassword,
@@ -77,13 +77,13 @@ const db = sql.createPool({
 
 function fetch(query, params) {
     return new Promise((resolve) => {
-        db.query(query, params, (error, result) => {
+        sqlDb.query(query, params, (error, result) => {
             if (error) {
                 logger.api.error('Database read failed');
                 logger.api.error(error);
-                resolve({ status: constants.resultCode.dbFailure, rows: [] });
+                resolve({ status: resultCode.dbFailure, rows: [] });
             } else {
-                resolve({ status: constants.resultCode.success, rows: result });
+                resolve({ status: resultCode.success, rows: result });
             }
         });
     });
@@ -91,34 +91,34 @@ function fetch(query, params) {
 
 function save(query, params) {
     return new Promise((resolve) => {
-        db.query(query, params, (error, result) => {
+        sqlDb.query(query, params, (error, result) => {
             if (error) {
                 logger.api.error('Database write failed');
                 logger.api.error(error);
-                resolve({ status: constants.resultCode.dbFailure, rowCount: [] });
+                resolve({ status: resultCode.dbFailure, rowCount: [] });
             } else {
-                resolve({ status: constants.resultCode.success, rowCount: result.affectedRows });
+                resolve({ status: resultCode.success, rowCount: result.affectedRows });
             }
         });
     });
 }
 
-function pplEventToBitmask(pplEvent) {
-    if (!pplEvent) {
+function pplEventToBitmask(eventString) {
+    if (!eventString) {
         return 0;
     }
 
-    pplEvent = pplEvent.toLowerCase();
-    if (!constants.pplEvent[pplEvent]) {
-        logger.api.warn(`Unexpected PPL event header value: ${pplEvent}`);
+    eventString = eventString.toLowerCase();
+    if (!pplEvent[eventString]) {
+        logger.api.warn(`Unexpected PPL event header value: ${eventString}`);
         return 0;
     }
 
-    return constants.pplEvent[pplEvent];
+    return pplEvent[eventString];
 }
 
 async function fetchBingoIds(callback) {
-    const result = await fetch(`SELECT id, leader_type FROM ${LEADERS_TABLE} WHERE leader_type <> ?`, [constants.leaderType.champion]);
+    const result = await fetch(`SELECT id, leader_type FROM ${LEADERS_TABLE} WHERE leader_type <> ?`, [leaderType.champion]);
     if (result.resultCode) {
         logger.api.error('Couldn\'t populate IDs for bingo boards due to a DB error');
         callback();
@@ -133,8 +133,8 @@ async function fetchBingoIds(callback) {
 
     leaderIds = [];
     eliteIds = [];
-    for (row of result.rows) {
-        if (row.leader_type === constants.leaderType.elite) {
+    for (const row of result.rows) {
+        if (row.leader_type === leaderType.elite) {
             eliteIds.push(row.id);
         } else {
             leaderIds.push(row.id);
@@ -255,7 +255,7 @@ function hashWithSalt(password, salt) {
     return hash.digest('hex');
 }
 
-async function register(username, password, pplEvent, callback) {
+async function register(username, password, eventString, callback) {
     let result = await fetch(`SELECT 1 FROM ${LOGINS_TABLE} WHERE username = ?`, [username]);
     if (result.resultCode) {
         callback(result.resultCode);
@@ -263,14 +263,14 @@ async function register(username, password, pplEvent, callback) {
     }
 
     if (result.rows.length !== 0) {
-        callback(constants.resultCode.usernameTaken);
+        callback(resultCode.usernameTaken);
         return;
     }
 
     const salt = generateHex(16);
     const hash = hashWithSalt(password, salt);
     const id = generateHex(8);
-    const eventMask = pplEventToBitmask(pplEvent);
+    const eventMask = pplEventToBitmask(eventString);
     result = await save(`INSERT INTO ${LOGINS_TABLE} (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES (?, ?, ?, ?, 0, NULL)`, [id, username, `${hash}:${salt}`, eventMask]);
     if (result.resultCode) {
         callback(result.resultCode);
@@ -278,7 +278,7 @@ async function register(username, password, pplEvent, callback) {
     }
 
     if (result.rowCount === 0) {
-        callback(constants.resultCode.registrationFailure);
+        callback(resultCode.registrationFailure);
         return;
     }
 
@@ -290,11 +290,11 @@ async function register(username, password, pplEvent, callback) {
     }
 
     if (result.rowCount === 0) {
-        callback(constants.resultCode.registrationFailure);
+        callback(resultCode.registrationFailure);
         return;
     }
 
-    callback(constants.resultCode.success, {
+    callback(resultCode.success, {
         id: id,
         isLeader: false,
         leaderId: null,
@@ -302,7 +302,7 @@ async function register(username, password, pplEvent, callback) {
     });
 }
 
-async function login(username, password, pplEvent, callback) {
+async function login(username, password, eventString, callback) {
     let result = await fetch(`SELECT id, password_hash, ppl_events, is_leader, leader_id FROM ${LOGINS_TABLE} WHERE username = ?`, [username]);
     if (result.resultCode) {
         callback(result.resultCode);
@@ -310,7 +310,7 @@ async function login(username, password, pplEvent, callback) {
     }
 
     if (result.rows.length === 0) {
-        callback(constants.resultCode.badCredentials);
+        callback(resultCode.badCredentials);
         return;
     }
 
@@ -318,12 +318,12 @@ async function login(username, password, pplEvent, callback) {
     const parts = row.password_hash.split(':');
     const hash = hashWithSalt(password, parts[1]);
     if (hash !== parts[0]) {
-        callback(constants.resultCode.badCredentials);
+        callback(resultCode.badCredentials);
         return;
     }
 
     const oldMask = row.ppl_events;
-    const eventMask = pplEventToBitmask(pplEvent);
+    const eventMask = pplEventToBitmask(eventString);
 
     result = await save(`UPDATE ${LOGINS_TABLE} SET ppl_events = ?, last_used_date = CURRENT_TIMESTAMP() WHERE username = ?`, [oldMask | eventMask, username]);
     if (result.resultCode) {
@@ -332,11 +332,11 @@ async function login(username, password, pplEvent, callback) {
     }
 
     if (result.rowCount === 0) {
-        callback(constants.resultCode.badCredentials);
+        callback(resultCode.badCredentials);
         return;
     }
 
-    callback(constants.resultCode.success, {
+    callback(resultCode.success, {
         id: row.id,
         isLeader: row.is_leader === 1,
         leaderId: row.leader_id,
@@ -361,7 +361,7 @@ async function getAllIds(callback) {
     }
 
     retval.leaders = result.rows.map(row => row.id);
-    callback(constants.resultCode.success, retval);
+    callback(resultCode.success, retval);
 }
 
 async function getAllLeaderData(callback) {
@@ -372,7 +372,7 @@ async function getAllLeaderData(callback) {
     }
 
     const retval = {};
-    for (row of result.rows) {
+    for (const row of result.rows) {
         retval[row.id] = {
             name: row.leader_name,
             leaderType: row.leader_type,
@@ -383,7 +383,7 @@ async function getAllLeaderData(callback) {
         };
     }
 
-    callback(constants.resultCode.success, retval);
+    callback(resultCode.success, retval);
 }
 
 async function getOpenQueues(callback) {
@@ -394,15 +394,15 @@ async function getOpenQueues(callback) {
     }
 
     const retval = {};
-    for (row of result.rows) {
-        retval[row.id] = row.queue_open === constants.queueStatus.open;
+    for (const row of result.rows) {
+        retval[row.id] = row.queue_open === queueStatus.open;
     }
 
-    callback(constants.resultCode.success, retval);
+    callback(resultCode.success, retval);
 }
 
 async function getBadges(id, callback) {
-    const result = await fetch(`SELECT m.leader_id, l.leader_name, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, constants.matchStatus.win, constants.matchStatus.ash]);
+    const result = await fetch(`SELECT m.leader_id, l.leader_name, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, matchStatus.win, matchStatus.ash]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -413,7 +413,7 @@ async function getBadges(id, callback) {
         badgesEarned: []
     };
 
-    for (row of result.rows) {
+    for (const row of result.rows) {
         retval.badgesEarned.push({
             leaderId: row.leader_id,
             leaderName: row.leader_name,
@@ -421,7 +421,7 @@ async function getBadges(id, callback) {
         });
     }
 
-    callback(constants.resultCode.success, retval);
+    callback(resultCode.success, retval);
 }
 
 // Challenger functions
@@ -433,7 +433,7 @@ async function getChallengerInfo(id, callback) {
     }
 
     if (result.rows.length === 0) {
-        callback(constants.resultCode.notFound);
+        callback(resultCode.notFound);
         return;
     }
 
@@ -457,13 +457,13 @@ async function getChallengerInfo(id, callback) {
     };
 
     // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    result = await fetch(`SELECT m.leader_id, l.leader_name, m.challenger_id, m.battle_difficulty FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) AND timestamp <= (SELECT timestamp FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?)`, [constants.matchStatus.inQueue, id, constants.matchStatus.inQueue, id, constants.matchStatus.inQueue]);
+    result = await fetch(`SELECT m.leader_id, l.leader_name, m.challenger_id, m.battle_difficulty FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) AND timestamp <= (SELECT timestamp FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?)`, [matchStatus.inQueue, id, matchStatus.inQueue, id, matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
-    for (row of result.rows) {
+    for (const row of result.rows) {
         const match = retval.queuesEntered.find(item => item.leaderId === row.leader_id);
         if (!match) {
             retval.queuesEntered.push({
@@ -481,15 +481,15 @@ async function getChallengerInfo(id, callback) {
         }
     }
 
-    result = await fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name, m.battle_difficulty, m.status FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?, ?)`, [id, constants.matchStatus.onHold, constants.matchStatus.win, constants.matchStatus.ash]);
+    result = await fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name, m.battle_difficulty, m.status FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?, ?)`, [id, matchStatus.onHold, matchStatus.win, matchStatus.ash]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
     let championDefeated = false;
-    for (row of result.rows) {
-        if (row.status === constants.matchStatus.onHold) {
+    for (const row of result.rows) {
+        if (row.status === matchStatus.onHold) {
             retval.queuesOnHold.push({
                 leaderId: row.leader_id,
                 leaderName: row.leader_name,
@@ -502,7 +502,7 @@ async function getChallengerInfo(id, callback) {
                 badgeName: row.badge_name
             });
 
-            if (row.leader_type === constants.leaderType.champion) {
+            if (row.leader_type === leaderType.champion) {
                 championDefeated = true;
             }
         }
@@ -517,7 +517,7 @@ async function getChallengerInfo(id, callback) {
         retval.feedbackSurveyUrl = config.challengerSurveyUrl;
     }
 
-    callback(constants.resultCode.success, retval);
+    callback(resultCode.success, retval);
 }
 
 async function setDisplayName(id, name, callback) {
@@ -528,11 +528,11 @@ async function setDisplayName(id, name, callback) {
     }
 
     if (result.rowCount === 0) {
-        callback(constants.resultCode.notFound);
+        callback(resultCode.notFound);
         return;
     }
 
-    callback(constants.resultCode.success);
+    callback(resultCode.success);
 }
 
 async function getBingoBoard(id, callback) {
@@ -543,18 +543,18 @@ async function getBingoBoard(id, callback) {
     }
 
     if (result.rows.length === 0) {
-        callback(constants.resultCode.notFound);
+        callback(resultCode.notFound);
         return;
     }
 
     const flatBoard = result.rows[0].bingo_board;
-    result = await fetch(`SELECT leader_id FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?, ?)`, [id, constants.matchStatus.loss, constants.matchStatus.win, constants.matchStatus.ash]);
+    result = await fetch(`SELECT leader_id FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?, ?)`, [id, matchStatus.loss, matchStatus.win, matchStatus.ash]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
-    callback(constants.resultCode.success, { bingoBoard: inflateBingoBoard(flatBoard, result.rows.map(row => row.leader_id)) });
+    callback(resultCode.success, { bingoBoard: inflateBingoBoard(flatBoard, result.rows.map(row => row.leader_id)) });
 }
 
 // Leader functions
@@ -566,7 +566,7 @@ async function getLeaderInfo(id, callback) {
     }
 
     if (result.rows.length === 0) {
-        callback(constants.resultCode.notFound);
+        callback(resultCode.notFound);
         return;
     }
 
@@ -574,7 +574,7 @@ async function getLeaderInfo(id, callback) {
         leaderName: result.rows[0].leader_name,
         leaderType: result.rows[0].leader_type,
         badgeName: result.rows[0].badge_name,
-        queueOpen: result.rows[0].queue_open === constants.queueStatus.open,
+        queueOpen: result.rows[0].queue_open === queueStatus.open,
         twitchEnabled: !!result.rows[0].twitch_handle,
         winCount: 0,
         lossCount: 0,
@@ -583,15 +583,15 @@ async function getLeaderInfo(id, callback) {
         onHold: []
     };
 
-    result = await fetch(`SELECT m.challenger_id, c.display_name, m.status, m.battle_difficulty FROM ${MATCHES_TABLE} m INNER JOIN ${CHALLENGERS_TABLE} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.timestamp ASC`, [id, constants.matchStatus.inQueue, constants.matchStatus.onHold]);
+    result = await fetch(`SELECT m.challenger_id, c.display_name, m.status, m.battle_difficulty FROM ${MATCHES_TABLE} m INNER JOIN ${CHALLENGERS_TABLE} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.timestamp ASC`, [id, matchStatus.inQueue, matchStatus.onHold]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
     let position = 0;
-    for (row of result.rows) {
-        if (row.status === constants.matchStatus.inQueue) {
+    for (const row of result.rows) {
+        if (row.status === matchStatus.inQueue) {
             retval.queue.push({
                 challengerId: row.challenger_id,
                 displayName: row.display_name,
@@ -607,17 +607,17 @@ async function getLeaderInfo(id, callback) {
         }
     }
 
-    result = await fetch(`SELECT status, COUNT(challenger_id) count FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status NOT IN (?, ?) GROUP BY status`, [id, constants.matchStatus.inQueue, constants.matchStatus.onHold]);
+    result = await fetch(`SELECT status, COUNT(challenger_id) count FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status NOT IN (?, ?) GROUP BY status`, [id, matchStatus.inQueue, matchStatus.onHold]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
     // Win/loss is from the challenger perspective, so it's inverted here
-    const wins = (result.rows.find(row => row.status === constants.matchStatus.loss) || { count: 0 }).count;
-    const losses = (result.rows.find(row => row.status === constants.matchStatus.win) || { count: 0 }).count;
-    const ash = (result.rows.find(row => row.status === constants.matchStatus.ash) || { count: 0 }).count;
-    const gary = (result.rows.find(row => row.status === constants.matchStatus.gary) || { count: 0 }).count;
+    const wins = (result.rows.find(row => row.status === matchStatus.loss) || { count: 0 }).count;
+    const losses = (result.rows.find(row => row.status === matchStatus.win) || { count: 0 }).count;
+    const ash = (result.rows.find(row => row.status === matchStatus.ash) || { count: 0 }).count;
+    const gary = (result.rows.find(row => row.status === matchStatus.gary) || { count: 0 }).count;
 
     retval.winCount = wins + ash;
     retval.lossCount = losses + gary;
@@ -627,22 +627,22 @@ async function getLeaderInfo(id, callback) {
         retval.feedbackSurveyUrl = config.leaderSurveyUrl;
     }
 
-    callback(constants.resultCode.success, retval);
+    callback(resultCode.success, retval);
 }
 
 async function updateQueueStatus(id, open, callback) {
-    const result = await save(`UPDATE ${LEADERS_TABLE} SET queue_open = ? WHERE id = ?`, [open ? constants.queueStatus.open : constants.queueStatus.closed, id]);
+    const result = await save(`UPDATE ${LEADERS_TABLE} SET queue_open = ? WHERE id = ?`, [open ? queueStatus.open : queueStatus.closed, id]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
     if (result.rowCount === 0) {
-        callback(constants.resultCode.notFound);
+        callback(resultCode.notFound);
         return;
     }
 
-    callback(constants.resultCode.success, {});
+    callback(resultCode.success, {});
 }
 
 async function enqueue(leaderId, challengerId, difficulty, callback) {
@@ -661,126 +661,126 @@ async function enqueue(leaderId, challengerId, difficulty, callback) {
     }
 
     if (result.rows.length === 0) {
-        callback(constants.resultCode.notFound);
+        callback(resultCode.notFound);
         return;
     }
 
     if (result.rows[0].queue_open === 0) {
-        callback(constants.resultCode.queueIsClosed);
+        callback(resultCode.queueIsClosed);
         return;
     }
 
-    const leaderType = result.rows[0].leader_type;
-    if (!(leaderType & difficulty)) {
-        callback(constants.resultCode.unsupportedDifficulty);
+    const type = result.rows[0].leader_type;
+    if (!(type & difficulty)) {
+        callback(resultCode.unsupportedDifficulty);
         return;
     }
 
-    if (leaderType & (constants.leaderType.elite | constants.leaderType.champion)) {
+    if (type & (leaderType.elite | leaderType.champion)) {
         // Elite or champ; pull badges and validate
-        result = await fetch(`SELECT battle_difficulty FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, constants.matchStatus.win, constants.matchStatus.ash]);
-        const badgeCount = result.rows.filter(row => !(row.battle_difficulty & (constants.leaderType.elite | constants.leaderType.champion))).length;
-        const emblemCount = result.rows.filter(row => row.battle_difficulty & constants.leaderType.elite).length;
+        result = await fetch(`SELECT battle_difficulty FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, matchStatus.win, matchStatus.ash]);
+        const badgeCount = result.rows.filter(row => !(row.battle_difficulty & (leaderType.elite | leaderType.champion))).length;
+        const emblemCount = result.rows.filter(row => row.battle_difficulty & leaderType.elite).length;
         // Match validity check is a bit wacky because PPL West doesn't have elites,
         // so we need to check badge count for the champ if config.requiredEmblems === 0
-        if (((leaderType & constants.leaderType.elite) && badgeCount < config.requiredBadges) || // Elite with insufficient badges
-            ((leaderType & constants.leaderType.champion) && config.requiredEmblems === 0 && badgeCount < config.requiredBadges)) { // Champ with no elites and insufficient badges
-            callback(constants.resultCode.notEnoughBadges);
+        if (((type & leaderType.elite) && badgeCount < config.requiredBadges) || // Elite with insufficient badges
+            ((type & leaderType.champion) && config.requiredEmblems === 0 && badgeCount < config.requiredBadges)) { // Champ with no elites and insufficient badges
+            callback(resultCode.notEnoughBadges);
             return;
         }
 
-        if (((leaderType & constants.leaderType.champion) && emblemCount < config.requiredEmblems)) { // Champ with insufficient emblems
-            callback(constants.resultCode.notEnoughEmblems);
+        if (((type & leaderType.champion) && emblemCount < config.requiredEmblems)) { // Champ with insufficient emblems
+            callback(resultCode.notEnoughEmblems);
             return;
         }
     }
 
-    result = await fetch(`SELECT status FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status <> ?`, [leaderId, challengerId, constants.matchStatus.loss]);
+    result = await fetch(`SELECT status FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status <> ?`, [leaderId, challengerId, matchStatus.loss]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
-    if (result.rows.find(row => row.status === constants.matchStatus.inQueue || row.status === constants.matchStatus.onHold)) {
-        callback(constants.resultCode.alreadyInQueue);
+    if (result.rows.find(row => row.status === matchStatus.inQueue || row.status === matchStatus.onHold)) {
+        callback(resultCode.alreadyInQueue);
         return;
     }
 
-    if (result.rows.find(row => row.status === constants.matchStatus.win)) {
-        callback(constants.resultCode.alreadyWon);
+    if (result.rows.find(row => row.status === matchStatus.win)) {
+        callback(resultCode.alreadyWon);
         return;
     }
 
-    result = await fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [leaderId, constants.matchStatus.inQueue]);
+    result = await fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [leaderId, matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
     if (result.rows.length >= config.maxQueueSize) {
-        callback(constants.resultCode.queueIsFull);
+        callback(resultCode.queueIsFull);
         return;
     }
 
-    result = await fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, constants.matchStatus.inQueue, constants.matchStatus.onHold]);
+    result = await fetch(`SELECT 1 FROM ${MATCHES_TABLE} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, matchStatus.inQueue, matchStatus.onHold]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
     if (result.rows.length >= config.maxQueuesPerChallenger) {
-        callback(constants.resultCode.tooManyChallenges);
+        callback(resultCode.tooManyChallenges);
         return;
     }
 
-    result = await save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP())`, [leaderId, challengerId, difficulty, constants.matchStatus.inQueue]);
+    result = await save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP())`, [leaderId, challengerId, difficulty, matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
-    callback(constants.resultCode.success);
+    callback(resultCode.success);
 }
 
 async function dequeue(leaderId, challengerId, callback) {
-    const result = await save(`DELETE FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status IN (?, ?)`, [leaderId, challengerId, constants.matchStatus.inQueue, constants.matchStatus.onHold]);
+    const result = await save(`DELETE FROM ${MATCHES_TABLE} WHERE leader_id = ? AND challenger_id = ? AND status IN (?, ?)`, [leaderId, challengerId, matchStatus.inQueue, matchStatus.onHold]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
     if (result.rowCount === 0) {
-        callback(constants.resultCode.notInQueue);
+        callback(resultCode.notInQueue);
         return;
     }
 
     clearLinkCode(leaderId, challengerId);
-    callback(constants.resultCode.success);
+    callback(resultCode.success);
 }
 
 async function reportResult(leaderId, challengerId, challengerWin, badgeAwarded, callback) {
     let matchResult;
     if (challengerWin) {
-        matchResult = badgeAwarded ? constants.matchStatus.win : constants.matchStatus.gary;
+        matchResult = badgeAwarded ? matchStatus.win : matchStatus.gary;
     } else {
-        matchResult = badgeAwarded ? constants.matchStatus.ash : constants.matchStatus.loss;
+        matchResult = badgeAwarded ? matchStatus.ash : matchStatus.loss;
     }
 
-    let result = await save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, leaderId, challengerId, constants.matchStatus.inQueue]);
+    let result = await save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, leaderId, challengerId, matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
     if (result.rowCount === 0) {
-        callback(constants.resultCode.notInQueue);
+        callback(resultCode.notInQueue);
         return;
     }
 
     let hof = false;
     if (challengerWin) {
         // Check whether the leader they were battling was the champ and notify the API that it was a HoFer if yes
-        result = await fetch(`SELECT 1 FROM ${LEADERS_TABLE} WHERE id = ? AND leader_type = ?`, [leaderId, constants.leaderType.champion]);
+        result = await fetch(`SELECT 1 FROM ${LEADERS_TABLE} WHERE id = ? AND leader_type = ?`, [leaderId, leaderType.champion]);
         if (result.resultCode) {
             callback(result.resultCode);
             return;
@@ -791,33 +791,33 @@ async function reportResult(leaderId, challengerId, challengerWin, badgeAwarded,
     }
 
     clearLinkCode(leaderId, challengerId);
-    callback(constants.resultCode.success, { hof: hof });
+    callback(resultCode.success, { hof: hof });
 }
 
 async function hold(leaderId, challengerId, callback) {
-    const result = await save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [constants.matchStatus.onHold, leaderId, challengerId, constants.matchStatus.inQueue]);
+    const result = await save(`UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchStatus.onHold, leaderId, challengerId, matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
     if (result.rowCount === 0) {
-        callback(constants.resultCode.notInQueue);
+        callback(resultCode.notInQueue);
         return;
     }
 
-    callback(constants.resultCode.success);
+    callback(resultCode.success);
 }
 
 async function unhold(leaderId, challengerId, placeAtFront, callback) {
-    let result = await fetch(`SELECT SUBDATE(MIN(timestamp), INTERVAL 1 MINUTE) front_timestamp FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [leaderId, constants.matchStatus.inQueue]);
+    let result = await fetch(`SELECT SUBDATE(MIN(timestamp), INTERVAL 1 MINUTE) front_timestamp FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status = ?`, [leaderId, matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
     let sql = `UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
-    let params = [constants.matchStatus.inQueue, leaderId, challengerId, constants.matchStatus.onHold];
+    let params = [matchStatus.inQueue, leaderId, challengerId, matchStatus.onHold];
     if (!placeAtFront) {
         sql = `UPDATE ${MATCHES_TABLE} SET status = ?, timestamp = CURRENT_TIMESTAMP() WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
     } else if (result.rows[0].front_timestamp) {
@@ -832,15 +832,15 @@ async function unhold(leaderId, challengerId, placeAtFront, callback) {
     }
 
     if (result.rowCount === 0) {
-        callback(constants.resultCode.notInQueue);
+        callback(resultCode.notInQueue);
         return;
     }
 
-    callback(constants.resultCode.success);
+    callback(resultCode.success);
 }
 
-async function getAllChallengers(pplEvent, callback) {
-    const eventMask = pplEventToBitmask(pplEvent);
+async function getAllChallengers(eventString, callback) {
+    const eventMask = pplEventToBitmask(eventString);
     const result = await fetch(`SELECT c.id, c.display_name FROM ${CHALLENGERS_TABLE} c INNER JOIN ${LOGINS_TABLE} l ON l.id = c.id WHERE l.ppl_events & ? <> 0 AND l.is_leader = 0`, [eventMask]);
     if (result.resultCode) {
         callback(result.resultCode);
@@ -848,22 +848,22 @@ async function getAllChallengers(pplEvent, callback) {
     }
 
     const retval = [];
-    for (row of result.rows) {
+    for (const row of result.rows) {
         retval.push({ id: row.id, name: row.display_name });
     }
 
-    callback(constants.resultCode.success, retval);
+    callback(resultCode.success, retval);
 }
 
 async function getLeaderMetrics(callback) {
-    const result = await fetch(`SELECT l.id, l.leader_name, m.status FROM ${MATCHES_TABLE} AS m INNER JOIN ${LEADERS_TABLE} AS l ON l.id = m.leader_id WHERE m.status NOT IN (?, ?)`, [constants.matchStatus.inQueue, constants.matchStatus.onHold]);
+    const result = await fetch(`SELECT l.id, l.leader_name, m.status FROM ${MATCHES_TABLE} AS m INNER JOIN ${LEADERS_TABLE} AS l ON l.id = m.leader_id WHERE m.status NOT IN (?, ?)`, [matchStatus.inQueue, matchStatus.onHold]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
     const retval = {};
-    for (row of result.rows) {
+    for (const row of result.rows) {
         if (!retval[row.id]) {
             retval[row.id] = {
                 name: row.leader_name,
@@ -873,18 +873,18 @@ async function getLeaderMetrics(callback) {
             };
         }
 
-        if (row.status === constants.matchStatus.loss || row.status === constants.matchStatus.ash) {
+        if (row.status === matchStatus.loss || row.status === matchStatus.ash) {
             retval[row.id].wins++;
         } else {
             retval[row.id].losses++;
         }
 
-        if (row.status === constants.matchStatus.win || row.status === constants.matchStatus.ash) {
+        if (row.status === matchStatus.win || row.status === matchStatus.ash) {
             retval[row.id].badgesAwarded++;
         }
     }
 
-    callback(constants.resultCode.success, retval);
+    callback(resultCode.success, retval);
 }
 
 async function debugSave(query, params, callback) {
@@ -902,7 +902,7 @@ async function debugSave(query, params, callback) {
     callback(result.rowCount);
 }
 
-module.exports = {
+const db = {
     challenger: {
         getInfo: getChallengerInfo,
         setDisplayName: setDisplayName,
@@ -943,3 +943,5 @@ module.exports = {
         });
     })
 };
+
+export default db;
