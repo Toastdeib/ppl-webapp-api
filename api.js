@@ -8,7 +8,7 @@ import logger from './logger.js';
 import db from './db.js';
 import config from './config.js';
 import { pplEvent } from './constants.js';
-import * as errors from './errors.js';
+import { challengerErrors, leaderErrors } from './errors.js';
 
 const api = express();
 api.use(cors({ origin: config.corsOrigin }));
@@ -45,7 +45,7 @@ function getChallengerInfo(req, res) {
     logger.api.info(`Returning challenger info for loginId=${req.params.id}`);
     db.challenger.getInfo(req.params.id, (error, result) => {
         if (error) {
-            handleDbError(errors.challengerErrors, error, res);
+            handleDbError(challengerErrors, error, res);
         } else {
             res.json({
                 id: req.params.id,
@@ -59,7 +59,7 @@ function getLeaderInfo(req, res) {
     logger.api.info(`Returning leader info for loginId=${req.params.id}, leaderId=${req.leaderId}`);
     db.leader.getInfo(req.leaderId, (error, result) => {
         if (error) {
-            handleDbError(errors.leaderErrors, error, res);
+            handleDbError(leaderErrors, error, res);
         } else {
             res.json({
                 loginId: req.params.id,
@@ -298,7 +298,7 @@ api.post('/register', (req, res) => {
 
     db.auth.register(parts[0], parts[1], eventString, (error, result) => {
         if (error) {
-            handleDbError(errors.challengerErrors, error, res);
+            handleDbError(challengerErrors, error, res);
         } else {
             logger.api.info(`Registered loginId=${result.id} with username=${parts[0]}`);
             const token = createSession(result.id, result.isLeader, result.leaderId);
@@ -337,7 +337,7 @@ api.post('/login', (req, res) => {
 
     db.auth.login(parts[0], parts[1], eventString, (error, result) => {
         if (error) {
-            handleDbError(errors.challengerErrors, error, res);
+            handleDbError(challengerErrors, error, res);
         } else {
             logger.api.info(`Logged in loginId=${result.id} with username=${parts[0]}`);
             const token = createSession(result.id, result.isLeader, result.leaderId);
@@ -370,7 +370,7 @@ api.get('/allleaderdata', (req, res) => {
     logger.api.info('Fetching all leader data');
     db.getAllLeaderData((error, result) => {
         if (error) {
-            handleDbError(errors.challengerErrors, error, res);
+            handleDbError(challengerErrors, error, res);
         } else {
             res.json(result);
         }
@@ -409,7 +409,7 @@ api.post('/challenger/:id', (req, res) => {
     logger.api.info(`Setting display name for loginId=${req.params.id} to ${name}`);
     db.challenger.setDisplayName(req.params.id, name, (error, result) => {
         if (error) {
-            handleDbError(errors.challengerErrors, error, res);
+            handleDbError(challengerErrors, error, res);
         } else {
             getChallengerInfo(req, res);
         }
@@ -420,7 +420,7 @@ api.get('/challenger/:id/bingoboard', (req, res) => {
     logger.api.info(`Returning bingo board for loginId=${req.params.id}`);
     db.challenger.getBingoBoard(req.params.id, (error, result) => {
         if (error) {
-            handleDbError(errors.challengerErrors, error, res);
+            handleDbError(challengerErrors, error, res);
         } else {
             res.json(result);
         }
@@ -445,7 +445,7 @@ api.post('/challenger/:id/enqueue/:leader', (req, res) => {
     logger.api.info(`loginId=${req.params.id} joining leaderId=${req.params.leader}'s queue`);
     db.queue.enqueue(req.params.leader, req.params.id, difficulty, (error, result) => {
         if (error) {
-            handleDbError(errors.challengerErrors, error, res);
+            handleDbError(challengerErrors, error, res);
         } else {
             getChallengerInfo(req, res);
         }
@@ -462,7 +462,7 @@ api.post('/challenger/:id/dequeue/:leader', (req, res) => {
     logger.api.info(`loginId=${req.params.id} leaving leaderId=${req.params.leader}'s queue`);
     db.queue.dequeue(req.params.leader, req.params.id, (error, result) => {
         if (error) {
-            handleDbError(errors.challengerErrors, error, res);
+            handleDbError(challengerErrors, error, res);
         } else {
             getChallengerInfo(req, res);
         }
@@ -479,7 +479,7 @@ api.post('/challenger/:id/hold/:leader', (req, res) => {
     logger.api.info(`loginId=${req.params.id} placing themselves on hold in leaderId=${req.params.leader}'s queue`);
     db.queue.hold(req.params.leader, req.params.id, (error, result) => {
         if (error) {
-            handleDbError(errors.challengerErrors, error, res);
+            handleDbError(challengerErrors, error, res);
         } else {
             getChallengerInfo(req, res);
         }
@@ -514,7 +514,7 @@ api.post('/leader/:id/openqueue', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} opening queue`);
     db.leader.updateQueueStatus(req.leaderId, true, (error, result) => {
         if (error) {
-            handleDbError(errors.leaderErrors, error, res);
+            handleDbError(leaderErrors, error, res);
         } else {
             sendHttpBotRequest('/queueopened', { leaderId: req.leaderId });
             getLeaderInfo(req, res);
@@ -526,7 +526,7 @@ api.post('/leader/:id/closequeue', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} closing queue`);
     db.leader.updateQueueStatus(req.leaderId, false, (error, result) => {
         if (error) {
-            handleDbError(errors.leaderErrors, error, res);
+            handleDbError(leaderErrors, error, res);
         } else {
             sendHttpBotRequest('/queueclosed', { leaderId: req.leaderId });
             getLeaderInfo(req, res);
@@ -552,7 +552,7 @@ api.post('/leader/:id/enqueue/:challenger', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} adding challengerId=${req.params.challenger} to queue`);
     db.queue.enqueue(req.leaderId, req.params.challenger, difficulty, (error, result) => {
         if (error) {
-            handleDbError(errors.leaderErrors, error, res);
+            handleDbError(leaderErrors, error, res);
         } else {
             getLeaderInfo(req, res);
         }
@@ -569,7 +569,7 @@ api.post('/leader/:id/dequeue/:challenger', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} removing challengerId=${req.params.challenger} from queue`);
     db.queue.dequeue(req.leaderId, req.params.challenger, (error, result) => {
         if (error) {
-            handleDbError(errors.leaderErrors, error, res);
+            handleDbError(leaderErrors, error, res);
         } else {
             getLeaderInfo(req, res);
         }
@@ -586,7 +586,7 @@ api.post('/leader/:id/report/:challenger', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} reporting match result ${!!req.body.challengerWin}, badge awarded ${!!req.body.badgeAwarded} for challengerId=${req.params.challenger}`);
     db.leader.reportResult(req.leaderId, req.params.challenger, !!req.body.challengerWin, !!req.body.badgeAwarded, (error, result) => {
         if (error) {
-            handleDbError(errors.leaderErrors, error, res);
+            handleDbError(leaderErrors, error, res);
         } else {
             if (result.hof) {
                 sendHttpBotRequest('/hofentered', { challengerId: req.params.challenger });
@@ -609,7 +609,7 @@ api.post('/leader/:id/hold/:challenger', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} placing challengerId=${req.params.challenger} on hold`);
     db.queue.hold(req.leaderId, req.params.challenger, (error, result) => {
         if (error) {
-            handleDbError(errors.leaderErrors, error, res);
+            handleDbError(leaderErrors, error, res);
         } else {
             getLeaderInfo(req, res);
         }
@@ -626,7 +626,7 @@ api.post('/leader/:id/unhold/:challenger', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} returning challengerId=${req.params.challenger} from hold`);
     db.queue.unhold(req.leaderId, req.params.challenger, !!req.body.placeAtFront, (error, result) => {
         if (error) {
-            handleDbError(errors.leaderErrors, error, res);
+            handleDbError(leaderErrors, error, res);
         } else {
             getLeaderInfo(req, res);
         }
@@ -644,7 +644,7 @@ api.get('/leader/:id/allchallengers', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} fetching all challengers`);
     db.leader.getAllChallengers(eventString, (error, result) => {
         if (error) {
-            handleDbError(errors.leaderErrors, error, res);
+            handleDbError(leaderErrors, error, res);
         } else {
             res.json(result);
         }
@@ -655,7 +655,7 @@ api.get('/metrics', (req, res) => {
     logger.api.info('Returning leader metrics');
     db.leader.metrics((error, result) => {
         if (error) {
-            handleDbError(errors.leaderErrors, error, res);
+            handleDbError(leaderErrors, error, res);
         } else {
             res.json(result);
         }
@@ -671,7 +671,7 @@ api.get('/openqueues', (req, res) => {
     logger.api.info('Returning a list of open leader queues');
     db.getOpenQueues((error, result) => {
         if (error) {
-            handleDbError(errors.challengerErrors, error, res);
+            handleDbError(challengerErrors, error, res);
         } else {
             res.json(result);
         }
@@ -682,7 +682,7 @@ api.get('/badges/:id', (req, res) => {
     logger.api.info(`Returning simple badge list for loginId=${req.params.id}`);
     db.getBadges(req.params.id, (error, result) => {
         if (error) {
-            handleDbError(errors.challengerErrors, error, res);
+            handleDbError(challengerErrors, error, res);
         } else {
             res.json(result);
         }
