@@ -1,6 +1,5 @@
 import winston from 'winston';
 import 'winston-daily-rotate-file';
-import config from './config.js';
 
 function dDebug(msg) {
     console.log(`\x1b[36mD>\x1b[0m ${msg}`);

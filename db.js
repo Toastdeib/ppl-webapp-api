@@ -937,7 +937,7 @@ const db = {
         leaders: LEADERS_TABLE,
         matches: MATCHES_TABLE
     },
-    dbReady: new Promise((resolve, reject) => {
+    dbReady: new Promise((resolve) => {
         fetchBingoIds(() => {
             resolve();
         });

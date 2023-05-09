@@ -38,7 +38,7 @@ export function sendRequest(path, method, params, headers, callback) {
 
     req.on('error', (error) => {
         console.log(`Error in web request: ${error.message}`);
-        callback({ status: res.statusCode });
+        callback({ status: 500 });
     });
 
     req.write(postData);

@@ -32,7 +32,7 @@ const baseline = {
     queuesEntered: { 'bc95c2fc3f1a': 0, 'd0cceeaf006a': 1 },
     badgesEarned: [ '6a9406eedec6', '7729e38c3f7d', 'bcc6f08242fb', '7e8ab2c43c76', '1ed127c44156', '74fe35c10ba6', '68e65518c4d6', 'd08cde9beddd', 'b6857070a317', '1194829fc135', 'be90adcbbe2f' ],
     championDefeated: false
-}
+};
 
 const leaderIds = {
     closed: 'f54af38b4829',
@@ -106,7 +106,7 @@ function verifyBaseline() {
 
 function setDisplayName() {
     name(1, 'Setting display name');
-    db.challenger.setDisplayName(challengerId, newName, (error, result) => {
+    db.challenger.setDisplayName(challengerId, newName, (error) => {
         if (error) {
             fail(`error=${error}`);
         } else {
@@ -138,7 +138,7 @@ function getBingoBoard() {
         if (error) {
             fail(`error=${error}`);
         } else if (result.bingoBoard.length === 0) {
-            fail(`empty board was returned`);
+            fail('empty board was returned');
         } else {
             pass('bingo board inflated successfully');
         }
@@ -149,7 +149,7 @@ function getBingoBoard() {
 
 function joinClosedQueue() {
     name(4, 'Attempt to join a closed leader queue');
-    db.queue.enqueue(leaderIds.closed, challengerId, leaderType.veteran, (error, result) => {
+    db.queue.enqueue(leaderIds.closed, challengerId, leaderType.veteran, (error) => {
         if (error === resultCode.queueIsClosed) {
             pass('failed to join with result code queueIsClosed');
         } else if (error) {
@@ -164,7 +164,7 @@ function joinClosedQueue() {
 
 function joinJoinedQueue() {
     name(5, 'Attempt to join a queue the challenger is already in');
-    db.queue.enqueue(leaderIds.joined, challengerId, leaderType.veteran, (error, result) => {
+    db.queue.enqueue(leaderIds.joined, challengerId, leaderType.veteran, (error) => {
         if (error === resultCode.alreadyInQueue) {
             pass('failed to join with result code alreadyInQueue');
         } else if (error) {
@@ -179,7 +179,7 @@ function joinJoinedQueue() {
 
 function joinDefeatedQueue() {
     name(6, 'Attempt to join the queue for a previously defeated leader');
-    db.queue.enqueue(leaderIds.defeated, challengerId, leaderType.veteran, (error, result) => {
+    db.queue.enqueue(leaderIds.defeated, challengerId, leaderType.veteran, (error) => {
         if (error === resultCode.alreadyWon) {
             pass('failed to join with result code alreadyWon');
         } else if (error) {
@@ -194,7 +194,7 @@ function joinDefeatedQueue() {
 
 function joinUnsupportedQueue() {
     name(7, 'Attempt to join a queue with an unsupported battle difficulty');
-    db.queue.enqueue(leaderIds.open, challengerId, leaderType.veteran, (error, result) => {
+    db.queue.enqueue(leaderIds.open, challengerId, leaderType.veteran, (error) => {
         if (error === resultCode.unsupportedDifficulty) {
             pass('failed to join with result code unsupportedDifficulty');
         } else if (error) {
@@ -209,7 +209,7 @@ function joinUnsupportedQueue() {
 
 function joinOpenQueue() {
     name(8, 'Attempt to join an open leader queue');
-    db.queue.enqueue(leaderIds.open, challengerId, leaderType.casual, (error, result) => {
+    db.queue.enqueue(leaderIds.open, challengerId, leaderType.casual, (error) => {
         if (error) {
             fail(`error=${error}`);
         } else {
@@ -242,7 +242,7 @@ function verifyNewQueue1() {
 
 function joinFullQueue() {
     name(10, 'Attempt to join the queue while in the maximum allowed number');
-    db.queue.enqueue(leaderIds.full, challengerId, leaderType.casual, (error, result) => {
+    db.queue.enqueue(leaderIds.full, challengerId, leaderType.casual, (error) => {
         if (error === resultCode.tooManyChallenges) {
             pass('failed to join with result code tooManyChallenges');
         } else if (error) {
@@ -257,7 +257,7 @@ function joinFullQueue() {
 
 function joinRestrictedQueue() {
     name(11, 'Attempt to join the champ queue without enough emblems');
-    db.queue.enqueue(leaderIds.champ, challengerId, leaderType.champion, (error, result) => {
+    db.queue.enqueue(leaderIds.champ, challengerId, leaderType.champion, (error) => {
         if (error === resultCode.notEnoughEmblems) {
             pass('failed to join with result code notEnoughEmblems');
         } else if (error) {
@@ -332,7 +332,7 @@ function verifyBadgeCount2() {
 
 function joinChampQueue() {
     name(16, 'Attempt to join the champ queue');
-    db.queue.enqueue(leaderIds.champ, challengerId, leaderType.champion, (error, result) => {
+    db.queue.enqueue(leaderIds.champ, challengerId, leaderType.champion, (error) => {
         if (error) {
             fail(`error=${error}`);
         } else {

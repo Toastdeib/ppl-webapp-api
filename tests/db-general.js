@@ -105,7 +105,7 @@ function getAllIds1() {
 
 function registerWithTakenUsername() {
     name(4, 'Register with a taken username');
-    db.auth.register(takenUsername, password, 'east', (error, result) => {
+    db.auth.register(takenUsername, password, 'east', (error) => {
         if (error === resultCode.usernameTaken) {
             pass('registration failed with usernameTaken result code');
         } else if (error) {
@@ -149,7 +149,7 @@ function loginWithGoodCredentials() {
 
 function loginWithBadCredentials() {
     name(7, 'Login with invalid credentials');
-    db.auth.login(newUsername, badPassword, 'east', (error, result) => {
+    db.auth.login(newUsername, badPassword, 'east', (error) => {
         if (error === resultCode.badCredentials) {
             pass('login failed with badCredentials result code');
         } else if (error) {

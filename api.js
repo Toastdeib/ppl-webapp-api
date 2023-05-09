@@ -18,7 +18,6 @@ api.set('view engine', 'pug');
 const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
 const SESSION_EXPIRATION_MILLIS = 4 * 24 * 60 * 60 * 1000; // 4 days in ms
 const PRUNE_INTERVAL_MILLIS = 24 * 60 * 60 * 1000; // 1 day in ms
-const CACHE_BACKUP_INTERVAL_MILLIS = 5 * 60 * 1000; // 5 minutes in ms
 const CACHE_FILE = 'cache.json';
 let sessionCache;
 let idCache;
@@ -105,6 +104,10 @@ function clearSession(token, id) {
         return;
     }
 
+    if (session.id !== id) {
+        logger.api.error('Clearing a session where the request ID didn\'t match the stored one');
+    }
+
     delete sessionCache[parts[1]];
     saveCache();
 }
@@ -185,7 +188,7 @@ function pruneSessionCache() {
     logger.api.info('Bulk pruning expired sessions');
     const now = new Date().getTime();
     let removed = 0;
-    for (id of Object.keys(sessionCache)) {
+    for (const id of Object.keys(sessionCache)) {
         if (now - sessionCache[id].lastUsed > SESSION_EXPIRATION_MILLIS) {
             // Session is expired, clear it out of the cache
             delete sessionCache[id];
@@ -208,7 +211,7 @@ function generateLogviewResponse(res, daysAgo) {
     date.setTime(date.getTime() - (daysAgo * ONE_DAY_MILLIS));
 
     // NOTE: This logic operates on the assumption that there's a file every day from the oldest one up to today
-    const logFileCount = fs.readdirSync('logs').reduce((acc, filename) => { return acc + (filename.startsWith('api-combined') ? 1 : 0) }, 0);
+    const logFileCount = fs.readdirSync('logs').reduce((acc, filename) => { return acc + (filename.startsWith('api-combined') ? 1 : 0); }, 0);
 
     try {
         const lines = fs.readFileSync(`./logs/api-combined-${date.toISOString().substring(0, 10)}.log`, 'utf8').trim().split('\n');
@@ -407,7 +410,7 @@ api.post('/challenger/:id', (req, res) => {
     }
 
     logger.api.info(`Setting display name for loginId=${req.params.id} to ${name}`);
-    db.challenger.setDisplayName(req.params.id, name, (error, result) => {
+    db.challenger.setDisplayName(req.params.id, name, (error) => {
         if (error) {
             handleDbError(challengerErrors, error, res);
         } else {
@@ -443,7 +446,7 @@ api.post('/challenger/:id/enqueue/:leader', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id} joining leaderId=${req.params.leader}'s queue`);
-    db.queue.enqueue(req.params.leader, req.params.id, difficulty, (error, result) => {
+    db.queue.enqueue(req.params.leader, req.params.id, difficulty, (error) => {
         if (error) {
             handleDbError(challengerErrors, error, res);
         } else {
@@ -460,7 +463,7 @@ api.post('/challenger/:id/dequeue/:leader', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id} leaving leaderId=${req.params.leader}'s queue`);
-    db.queue.dequeue(req.params.leader, req.params.id, (error, result) => {
+    db.queue.dequeue(req.params.leader, req.params.id, (error) => {
         if (error) {
             handleDbError(challengerErrors, error, res);
         } else {
@@ -477,7 +480,7 @@ api.post('/challenger/:id/hold/:leader', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id} placing themselves on hold in leaderId=${req.params.leader}'s queue`);
-    db.queue.hold(req.params.leader, req.params.id, (error, result) => {
+    db.queue.hold(req.params.leader, req.params.id, (error) => {
         if (error) {
             handleDbError(challengerErrors, error, res);
         } else {
@@ -512,7 +515,7 @@ api.get('/leader/:id', getLeaderInfo);
 
 api.post('/leader/:id/openqueue', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} opening queue`);
-    db.leader.updateQueueStatus(req.leaderId, true, (error, result) => {
+    db.leader.updateQueueStatus(req.leaderId, true, (error) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
@@ -524,7 +527,7 @@ api.post('/leader/:id/openqueue', (req, res) => {
 
 api.post('/leader/:id/closequeue', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} closing queue`);
-    db.leader.updateQueueStatus(req.leaderId, false, (error, result) => {
+    db.leader.updateQueueStatus(req.leaderId, false, (error) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
@@ -550,7 +553,7 @@ api.post('/leader/:id/enqueue/:challenger', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} adding challengerId=${req.params.challenger} to queue`);
-    db.queue.enqueue(req.leaderId, req.params.challenger, difficulty, (error, result) => {
+    db.queue.enqueue(req.leaderId, req.params.challenger, difficulty, (error) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
@@ -567,7 +570,7 @@ api.post('/leader/:id/dequeue/:challenger', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} removing challengerId=${req.params.challenger} from queue`);
-    db.queue.dequeue(req.leaderId, req.params.challenger, (error, result) => {
+    db.queue.dequeue(req.leaderId, req.params.challenger, (error) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
@@ -583,14 +586,16 @@ api.post('/leader/:id/report/:challenger', (req, res) => {
         return;
     }
 
-    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} reporting match result ${!!req.body.challengerWin}, badge awarded ${!!req.body.badgeAwarded} for challengerId=${req.params.challenger}`);
-    db.leader.reportResult(req.leaderId, req.params.challenger, !!req.body.challengerWin, !!req.body.badgeAwarded, (error, result) => {
+    const challengerWin = !!req.body.challengerWin;
+    const badgeAwarded = !!req.body.badgeAwarded;
+    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} reporting match result ${challengerWin}, badge awarded ${badgeAwarded} for challengerId=${req.params.challenger}`);
+    db.leader.reportResult(req.leaderId, req.params.challenger, challengerWin, badgeAwarded, (error, result) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
             if (result.hof) {
                 sendHttpBotRequest('/hofentered', { challengerId: req.params.challenger });
-            } else if (!!req.body.badgeAwarded) {
+            } else if (badgeAwarded) {
                 sendHttpBotRequest('/badgeearned', { challengerId: req.params.challenger, leaderId: req.leaderId });
             }
 
@@ -607,7 +612,7 @@ api.post('/leader/:id/hold/:challenger', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} placing challengerId=${req.params.challenger} on hold`);
-    db.queue.hold(req.leaderId, req.params.challenger, (error, result) => {
+    db.queue.hold(req.leaderId, req.params.challenger, (error) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
@@ -624,7 +629,7 @@ api.post('/leader/:id/unhold/:challenger', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} returning challengerId=${req.params.challenger} from hold`);
-    db.queue.unhold(req.leaderId, req.params.challenger, !!req.body.placeAtFront, (error, result) => {
+    db.queue.unhold(req.leaderId, req.params.challenger, !!req.body.placeAtFront, (error) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {

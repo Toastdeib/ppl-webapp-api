@@ -20,7 +20,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 
 import { leaderType } from '../constants.js';
 import { encodeCredentials, sendRequest, init } from './base-api-test.js';
-import { name, pass, fail, start, finish, debug } from './test-logger.js';
+import { name, pass, fail, start, finish } from './test-logger.js';
 
 /****************
  * TESTING DATA *
