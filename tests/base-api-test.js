@@ -1,4 +1,5 @@
 import http from 'http';
+import fs from 'fs';
 import api from '../api.js';
 import { debug } from './test-logger.js';
 
@@ -43,6 +44,15 @@ export function sendRequest(path, method, params, headers, callback) {
 
     req.write(postData);
     req.end();
+}
+
+export function clearCache() {
+    try {
+        fs.unlinkSync('cache.json');
+        debug('Cleaned up cache.json file');
+    } catch (e) {
+        debug('Unable to delete cache.json file, please perform cleanup manually');
+    }
 }
 
 export function init(callback) {

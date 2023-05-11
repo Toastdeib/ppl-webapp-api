@@ -19,7 +19,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 }
 
 import { leaderType } from '../constants.js';
-import { encodeCredentials, sendRequest, init } from './base-api-test.js';
+import { encodeCredentials, sendRequest, clearCache, init } from './base-api-test.js';
 import { name, pass, fail, start, finish } from './test-logger.js';
 
 /****************
@@ -225,6 +225,7 @@ function closeQueue() {
 function cleanup() {
     // No cleanup necessary for this suite
     finish();
+    clearCache();
     process.exit();
 }
 
