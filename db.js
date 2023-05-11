@@ -1,8 +1,8 @@
-import sql from 'mysql';
+import config from './config.js';
 import crypto from 'crypto';
 import logger from './logger.js';
-import config from './config.js';
-import { resultCode, leaderType, matchStatus, queueStatus, pplEvent } from './constants.js';
+import sql from 'mysql';
+import { leaderType, matchStatus, pplEvent, queueStatus, resultCode } from './constants.js';
 
 const TABLE_SUFFIX = process.env.TABLE_SUFFIX || config.tableSuffix;
 const LOGINS_TABLE = 'ppl_webapp_logins' + TABLE_SUFFIX;
@@ -10,9 +10,14 @@ const CHALLENGERS_TABLE = 'ppl_webapp_challengers' + TABLE_SUFFIX;
 const LEADERS_TABLE = 'ppl_webapp_leaders' + TABLE_SUFFIX;
 const MATCHES_TABLE = 'ppl_webapp_matches' + TABLE_SUFFIX;
 
-const BINGO_SPACE_COUNT = config.bingoBoardWidth * config.bingoBoardWidth;
+const SALT_HEX_LENGTH = 16;
+const LOGIN_ID_HEX_LENGTH = 8;
+
+const LINK_CODE_MULTIPLIER = 10000;
+const LINK_CODE_PADDING = 4;
 
 // For even-width boards, we don't want a free space since it can't be centered
+const BINGO_SPACE_COUNT = config.bingoBoardWidth * config.bingoBoardWidth;
 const BINGO_ID_COUNT = BINGO_SPACE_COUNT - (config.bingoBoardWidth % 2);
 const INCLUDE_FREE_SPACE = config.bingoBoardWidth % 2 === 1;
 
@@ -21,6 +26,7 @@ const EXCLUDED_BINGO_IDS = ['3ffb37c301b4', 'f27c016d37c9'];
 
 // Challenger/leader survey dates
 const SURVEY_START_DATE = new Date(config.surveyStartDate);
+// eslint-disable-next-line no-magic-numbers
 const SURVEY_END_DATE = new Date(SURVEY_START_DATE.getTime() + (config.surveyDurationDays * 24 * 60 * 60 * 1000));
 
 let leaderIds, eliteIds;
@@ -232,9 +238,9 @@ function getLinkCode(leaderId, challengerId) {
     }
 
     // New matchup, create a new code and store it
-    const firstHalf = Math.floor(Math.random() * 10000);
-    const secondHalf = Math.floor(Math.random() * 10000);
-    const code = `${zeroPad(firstHalf, 4)} ${zeroPad(secondHalf, 4)}`;
+    const firstHalf = Math.floor(Math.random() * LINK_CODE_MULTIPLIER);
+    const secondHalf = Math.floor(Math.random() * LINK_CODE_MULTIPLIER);
+    const code = `${zeroPad(firstHalf, LINK_CODE_PADDING)} ${zeroPad(secondHalf, LINK_CODE_PADDING)}`;
     linkCodeCache[key] = code;
     return code;
 }
@@ -267,9 +273,9 @@ async function register(username, password, eventString, callback) {
         return;
     }
 
-    const salt = generateHex(16);
+    const salt = generateHex(SALT_HEX_LENGTH);
     const hash = hashWithSalt(password, salt);
-    const id = generateHex(8);
+    const id = generateHex(LOGIN_ID_HEX_LENGTH);
     const eventMask = pplEventToBitmask(eventString);
     result = await save(`INSERT INTO ${LOGINS_TABLE} (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES (?, ?, ?, ?, 0, NULL)`, [id, username, `${hash}:${salt}`, eventMask]);
     if (result.resultCode) {
@@ -437,7 +443,7 @@ async function getChallengerInfo(id, callback) {
         return;
     }
 
-    let row = result.rows[0];
+    const row = result.rows[0];
     let bingoBoard = row.bingo_board;
     if (!bingoBoard) {
         bingoBoard = generateBingoBoard();
@@ -817,7 +823,7 @@ async function unhold(leaderId, challengerId, placeAtFront, callback) {
     }
 
     let sql = `UPDATE ${MATCHES_TABLE} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
-    let params = [matchStatus.inQueue, leaderId, challengerId, matchStatus.onHold];
+    const params = [matchStatus.inQueue, leaderId, challengerId, matchStatus.onHold];
     if (!placeAtFront) {
         sql = `UPDATE ${MATCHES_TABLE} SET status = ?, timestamp = CURRENT_TIMESTAMP() WHERE leader_id = ? AND challenger_id = ? AND status = ?`;
     } else if (result.rows[0].front_timestamp) {
@@ -919,11 +925,11 @@ const db = {
         enqueue: enqueue,
         dequeue: dequeue,
         hold: hold,
-        unhold: unhold,
+        unhold: unhold
     },
     auth: {
         register: register,
-        login: login,
+        login: login
     },
     generateHex: generateHex,
     getAllIds: getAllIds,

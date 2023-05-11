@@ -31,7 +31,7 @@ const genericErrors = {
         logMessage: 'Invalid access token',
         userMessage: 'Your access token is invalid, please try logging out and back in.',
         statusCode: 401
-    },
+    }
 };
 
 export const challengerErrors = {

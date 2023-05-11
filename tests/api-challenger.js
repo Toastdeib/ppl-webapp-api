@@ -18,9 +18,9 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
     process.exit();
 }
 
-import { resultCode, leaderType } from '../constants.js';
-import { encodeCredentials, sendRequest, clearCache, init } from './base-api-test.js';
-import { name, pass, fail, start, finish, debug } from './test-logger.js';
+import { clearCache, encodeCredentials, init, sendRequest } from './base-api-test.js';
+import { debug, fail, finish, name, pass, start } from './test-logger.js';
+import { leaderType, resultCode } from '../constants.js';
 
 /****************
  * TESTING DATA *
@@ -120,7 +120,7 @@ function joinQueue2() {
     sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: leaderType.casual }, token, (result) => {
         if (result.status === 200) {
             fail('successfully joined the leader queue');
-        } else  {
+        } else {
             const data = JSON.parse(result.body);
             if (result.status !== 400 || data.code !== resultCode.alreadyInQueue) {
                 fail(`failed to join the leader queue with unexpected HTTP status code ${result.status} and/or error code ${data.code}`);

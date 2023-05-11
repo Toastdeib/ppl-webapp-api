@@ -57,3 +57,11 @@ export const pplEvent = {
     aus: 4,
     online: 8
 };
+
+export const httpStatus = {
+    // Just a small subset, since this only uses a handful
+    ok: 200,
+    badRequest: 400,
+    unauthorized: 401,
+    serverError: 500
+};

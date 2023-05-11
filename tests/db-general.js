@@ -20,7 +20,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 
 import db from '../db.js';
 import { resultCode } from '../constants.js';
-import { name, pass, fail, start, finish, debug } from './test-logger.js';
+import { debug, fail, finish, name, pass, start } from './test-logger.js';
 
 /****************
  * TESTING DATA *

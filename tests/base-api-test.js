@@ -1,7 +1,7 @@
-import http from 'http';
-import fs from 'fs';
 import api from '../api.js';
 import { debug } from './test-logger.js';
+import fs from 'fs';
+import http from 'http';
 
 const hostname = 'localhost';
 const port = 9002;
@@ -59,6 +59,6 @@ export function init(callback) {
     const httpServer = http.createServer({}, api);
     httpServer.listen({ host: hostname, port: port }, () => {
         debug('Test API running, beginning test suite');
-        setTimeout(callback, 2000);
+        setTimeout(callback, 1500);
     });
 }

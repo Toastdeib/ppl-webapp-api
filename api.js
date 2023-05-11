@@ -1,23 +1,27 @@
-import express from 'express';
 import bodyParser from 'body-parser';
+import config from './config.js';
 import cors from 'cors';
+import db from './db.js';
+import express from 'express';
 import fs from 'fs';
 import http from 'http';
-import sanitize from 'sanitize-html';
 import logger from './logger.js';
-import db from './db.js';
-import config from './config.js';
-import { pplEvent } from './constants.js';
+import sanitize from 'sanitize-html';
 import { challengerErrors, leaderErrors } from './errors.js';
+import { httpStatus, pplEvent } from './constants.js';
 
 const api = express();
 api.use(cors({ origin: config.corsOrigin }));
 api.use(bodyParser.json());
 api.set('view engine', 'pug');
 
+// eslint-disable-next-line no-magic-numbers
 const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
+// eslint-disable-next-line no-magic-numbers
 const SESSION_EXPIRATION_MILLIS = 4 * 24 * 60 * 60 * 1000; // 4 days in ms
+// eslint-disable-next-line no-magic-numbers
 const PRUNE_INTERVAL_MILLIS = 24 * 60 * 60 * 1000; // 1 day in ms
+const SESSION_TOKEN_HEX_LENGTH = 16;
 const CACHE_FILE = 'cache.json';
 let sessionCache;
 let idCache;
@@ -32,7 +36,7 @@ function handleDbError(errorList, code, res) {
     const error = errorList[code];
     if (!error) {
         logger.api.error(`No error data found for code=${code}`);
-        res.status(400).json({ error: 'An unexpected error occurred, please try again.', code: code });
+        res.status(httpStatus.badRequest).json({ error: 'An unexpected error occurred, please try again.', code: code });
         return;
     }
 
@@ -79,7 +83,7 @@ function decodeCredentials(credentials) {
 }
 
 function createSession(id, isLeader, leaderId) {
-    const token = db.generateHex(16);
+    const token = db.generateHex(SESSION_TOKEN_HEX_LENGTH);
     sessionCache[token] = {
         id: id,
         lastUsed: new Date().getTime(),
@@ -214,6 +218,7 @@ function generateLogviewResponse(res, daysAgo) {
     const logFileCount = fs.readdirSync('logs').reduce((acc, filename) => { return acc + (filename.startsWith('api-combined') ? 1 : 0); }, 0);
 
     try {
+        // eslint-disable-next-line no-magic-numbers
         const lines = fs.readFileSync(`./logs/api-combined-${date.toISOString().substring(0, 10)}.log`, 'utf8').trim().split('\n');
         res.render('logs', {
             date: date.toDateString(),
@@ -232,7 +237,7 @@ function clientLog(req, res, logFunc) {
     const message = sanitize(req.body.message);
     if (!message) {
         logger.api.debug('Received client log request with no message in the body');
-        res.status(400).json({ error: 'The JSON body for requests to this endpoint must include a \'message\' property.' });
+        res.status(httpStatus.badRequest).json({ error: 'The JSON body for requests to this endpoint must include a \'message\' property.' });
         return;
     }
 
@@ -261,7 +266,7 @@ function sendHttpBotRequest(path, params) {
 
     logger.api.info(`Sending HTTP request to the bot webserver with path=${path} and postData=${postData}`);
     const req = http.request(options, (res) => {
-        if (res.statusCode !== 200) {
+        if (res.statusCode !== httpStatus.ok) {
             logger.api.warn(`Received non-200 status code from the bot webserver, statusCode=${res.statusCode}`);
         }
 
@@ -288,14 +293,14 @@ api.post('/register', (req, res) => {
 
     if (!credentials) {
         logger.api.warn('Registration attempt with missing auth header');
-        res.status(400).json({ error: 'Registration requests must include an \'Authorization\' header.' });
+        res.status(httpStatus.badRequest).json({ error: 'Registration requests must include an \'Authorization\' header.' });
         return;
     }
 
     const parts = decodeCredentials(credentials);
     if (!parts) {
         logger.api.warn('Registration attempt with malformed auth header');
-        res.status(400).json({ error: 'The \'Authorization\' header in your request was malformed.' });
+        res.status(httpStatus.badRequest).json({ error: 'The \'Authorization\' header in your request was malformed.' });
         return;
     }
 
@@ -327,14 +332,14 @@ api.post('/login', (req, res) => {
 
     if (!credentials) {
         logger.api.warn('Login attempt with missing auth header');
-        res.status(400).json({ error: 'Login requests must include an \'Authorization\' header.' });
+        res.status(httpStatus.badRequest).json({ error: 'Login requests must include an \'Authorization\' header.' });
         return;
     }
 
     const parts = decodeCredentials(credentials);
     if (!parts) {
         logger.api.warn('Login attempt with malformed auth header');
-        res.status(400).json({ error: 'The \'Authorization\' header in your request was malformed.' });
+        res.status(httpStatus.badRequest).json({ error: 'The \'Authorization\' header in your request was malformed.' });
         return;
     }
 
@@ -387,13 +392,13 @@ api.use('/challenger/:id', (req, res, next) => {
     const token = req.get(AUTH_HEADER);
     if (!token) {
         logger.api.warn(`Challenger endpoint request for loginId=${req.params.id} with missing auth header`);
-        res.status(403).json({});
+        res.status(httpStatus.unauthorized).json({});
         return;
     }
 
     if (!validateSession(token, req.params.id, false)) {
         logger.api.warn(`Challenger endpoint request for loginId=${req.params.id} with invalid auth header`);
-        res.status(403).json({});
+        res.status(httpStatus.unauthorized).json({});
         return;
     }
 
@@ -405,7 +410,7 @@ api.get('/challenger/:id', getChallengerInfo);
 api.post('/challenger/:id', (req, res) => {
     const name = req.body.displayName;
     if (!name) {
-        res.status(400).json({ error: 'The JSON body for requests to this endpoint must include a \'displayName\' property.' });
+        res.status(httpStatus.badRequest).json({ error: 'The JSON body for requests to this endpoint must include a \'displayName\' property.' });
         return;
     }
 
@@ -433,7 +438,7 @@ api.get('/challenger/:id/bingoboard', (req, res) => {
 api.post('/challenger/:id/enqueue/:leader', (req, res) => {
     if (!validateLeaderId(req.params.leader)) {
         logger.api.warn(`loginId=${req.params.id} attempted to join queue for invalid leaderId=${req.params.leader}`);
-        res.status(400).json({ error: 'That leader ID is invalid.' });
+        res.status(httpStatus.badRequest).json({ error: 'That leader ID is invalid.' });
         return;
     }
 
@@ -441,7 +446,7 @@ api.post('/challenger/:id/enqueue/:leader', (req, res) => {
     if (!difficulty) {
         // Missing or invalid parameter
         logger.api.warn(`loginId=${req.params.id} attempted to join queue with invalid battleDifficulty=${req.body.battleDifficulty}`);
-        res.status(400).json({ error: 'That battle difficulty is invalid.' });
+        res.status(httpStatus.badRequest).json({ error: 'That battle difficulty is invalid.' });
         return;
     }
 
@@ -458,7 +463,7 @@ api.post('/challenger/:id/enqueue/:leader', (req, res) => {
 api.post('/challenger/:id/dequeue/:leader', (req, res) => {
     if (!validateLeaderId(req.params.leader)) {
         logger.api.warn(`loginId=${req.params.id} attempted to leave queue for invalid leaderId=${req.params.leader}`);
-        res.status(400).json({ error: 'That leader ID is invalid.' });
+        res.status(httpStatus.badRequest).json({ error: 'That leader ID is invalid.' });
         return;
     }
 
@@ -475,7 +480,7 @@ api.post('/challenger/:id/dequeue/:leader', (req, res) => {
 api.post('/challenger/:id/hold/:leader', (req, res) => {
     if (!validateLeaderId(req.params.leader)) {
         logger.api.warn(`loginId=${req.params.id} attempted to go on hold for invalid leaderId=${req.params.leader}`);
-        res.status(400).json({ error: 'That leader ID is invalid.' });
+        res.status(httpStatus.badRequest).json({ error: 'That leader ID is invalid.' });
         return;
     }
 
@@ -496,14 +501,14 @@ api.use('/leader/:id', (req, res, next) => {
     const token = req.get(AUTH_HEADER);
     if (!token) {
         logger.api.error(`Leader endpoint request for loginId=${req.params.id} with missing auth header`);
-        res.status(403).json({});
+        res.status(httpStatus.unauthorized).json({});
         return;
     }
 
     const session = validateSession(token, req.params.id, true);
     if (!session) {
         logger.api.error(`Leader endpoint request for loginId=${req.params.id} with invalid auth header`);
-        res.status(403).json({});
+        res.status(httpStatus.unauthorized).json({});
         return;
     }
 
@@ -540,7 +545,7 @@ api.post('/leader/:id/closequeue', (req, res) => {
 api.post('/leader/:id/enqueue/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to enqueue invalid challengerId=${req.params.challenger}`);
-        res.status(400).json({ error: 'That challenger ID is invalid.' });
+        res.status(httpStatus.badRequest).json({ error: 'That challenger ID is invalid.' });
         return;
     }
 
@@ -548,7 +553,7 @@ api.post('/leader/:id/enqueue/:challenger', (req, res) => {
     if (!difficulty) {
         // Missing or invalid parameter
         logger.api.warn(`loginId=${req.params.id} attempted to join queue with invalid battleDifficulty=${req.body.battleDifficulty}`);
-        res.status(400).json({ error: 'That battle difficulty is invalid.' });
+        res.status(httpStatus.badRequest).json({ error: 'That battle difficulty is invalid.' });
         return;
     }
 
@@ -565,7 +570,7 @@ api.post('/leader/:id/enqueue/:challenger', (req, res) => {
 api.post('/leader/:id/dequeue/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to dequeue invalid challengerId=${req.params.challenger}`);
-        res.status(400).json({ error: 'That challenger ID is invalid.' });
+        res.status(httpStatus.badRequest).json({ error: 'That challenger ID is invalid.' });
         return;
     }
 
@@ -582,7 +587,7 @@ api.post('/leader/:id/dequeue/:challenger', (req, res) => {
 api.post('/leader/:id/report/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to report a match result for invalid challengerId=${req.params.challenger}`);
-        res.status(400).json({ error: 'That challenger ID is invalid.' });
+        res.status(httpStatus.badRequest).json({ error: 'That challenger ID is invalid.' });
         return;
     }
 
@@ -607,7 +612,7 @@ api.post('/leader/:id/report/:challenger', (req, res) => {
 api.post('/leader/:id/hold/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to hold invalid challengerId=${req.params.challenger}`);
-        res.status(400).json({ error: 'That challenger ID is invalid.' });
+        res.status(httpStatus.badRequest).json({ error: 'That challenger ID is invalid.' });
         return;
     }
 
@@ -624,7 +629,7 @@ api.post('/leader/:id/hold/:challenger', (req, res) => {
 api.post('/leader/:id/unhold/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to unhold invalid challengerId=${req.params.challenger}`);
-        res.status(400).json({ error: 'That challenger ID is invalid.' });
+        res.status(httpStatus.badRequest).json({ error: 'That challenger ID is invalid.' });
         return;
     }
 
