@@ -255,7 +255,7 @@ function sendHttpBotRequest(path, params) {
     const postData = JSON.stringify(params);
     const options = {
         hostname: 'localhost',
-        port: 9001,
+        port: config.botApiPort,
         path: path,
         method: 'POST',
         headers: {

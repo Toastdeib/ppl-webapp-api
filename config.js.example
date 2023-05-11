@@ -2,6 +2,7 @@ const config = {
     // API config
     debug: true,
     port: 12345,
+    botApiPort: 9001,
     certPath: '/cert/path/goes/here/',
     corsOrigin: 'localhost'
     mysqlHost: 'localhost',
