@@ -2,6 +2,14 @@
 
 **General note**: For all API paths detailed below, the `:id` param will **always** be a login ID (an 8-byte hex string), as will the `:challenger` param. The `:leader` param will **always** be a leader ID (a 6-byte hex string).
 
+## Table of Contents
+
+- [Authentication APIs](#authentication-apis)
+- [Challenger APIs](#challenger-apis)
+- [Leader APIs](#leader-apis)
+- [Unauthenticated APIs](#unauthenticated-apis)
+- [Constants](#constants)
+
 ## Authentication APIs
 
 #### /register (POST)
@@ -21,11 +29,11 @@ Creates a new account with the provided username and password.
 
 ```json
 {
-    id: [string],
-    loginId: [string],
-    leaderId: [string],
-    isLeader: [boolean],
-    token: [string]
+    "id": [string],
+    "loginId": [string],
+    "leaderId": [string],
+    "isLeader": [boolean],
+    "token": [string]
 }
 ```
 `id` and `loginId` will **always** be populated with the same value and should be used in the path for authenticated API calls. `token` should be used in an `Authorization` header for authenticated API calls.
@@ -537,7 +545,7 @@ Retrieves a collection of event-specific settings. Currently, the collection onl
 
 ```json
 {
-    showTrainerCard: [boolean, based on how close to the start of a PPL event it is]
+    "showTrainerCard": [boolean, based on how close to the start of a PPL event it is]
 }
 ```
 
@@ -654,23 +662,23 @@ Writes an error-level log message to file. This path should only be sent plainte
 These codes will be returned in **most** error payloads alongside an error string, to provide additional context around the nature of the error.
 
 ```json
-resultCode = {
-    success: 0,
-    dbFailure: 1,
-    notFound: 2,
-    alreadyInQueue: 3,
-    alreadyWon: 4,
-    queueIsFull: 5,
-    tooManyChallenges: 6,
-    notInQueue: 7,
-    usernameTaken: 8,
-    registrationFailure: 9,
-    badCredentials: 10,
-    invalidToken: 11,
-    queueIsClosed: 12,
-    notEnoughBadges: 13,
-    notEnoughEmblems: 14,
-    unsupportedDifficulty: 15
+{
+    "success": 0,
+    "dbFailure": 1,
+    "notFound": 2,
+    "alreadyInQueue": 3,
+    "alreadyWon": 4,
+    "queueIsFull": 5,
+    "tooManyChallenges": 6,
+    "notInQueue": 7,
+    "usernameTaken": 8,
+    "registrationFailure": 9,
+    "badCredentials": 10,
+    "invalidToken": 11,
+    "queueIsClosed": 12,
+    "notEnoughBadges": 13,
+    "notEnoughEmblems": 14,
+    "unsupportedDifficulty": 15
 }
 ```
 
@@ -679,12 +687,12 @@ resultCode = {
 These are used to identify what battle difficulties a leader supports. While this constant is used as a bitmask, only the first **three** values (`casual`, `intermediate`, `veteran`) will ever be masked together; `elite` and `champion` should never be combined with other values.
 
 ```json
-leaderType = {
-    casual: 1,
-    intermediate: 2,
-    veteran: 4,
-    elite: 8,
-    champion: 16
+{
+    "casual": 1,
+    "intermediate": 2,
+    "veteran": 4,
+    "elite": 8,
+    "champion": 16
 }
 ```
 
@@ -693,10 +701,10 @@ leaderType = {
 These are used to identify what battle formats a leader supports. This constant is used as a bitmask, as leaders can support multiple battle formats.
 
 ```json
-battleFormat = {
-    singles: 1,
-    doubles: 2,
-    multi: 4,
-    special: 8
+{
+    "singles": 1,
+    "doubles": 2,
+    "multi": 4,
+    "special": 8
 }
 ```
