@@ -12,7 +12,7 @@
  *                                                         *
  * Usage:                                                  *
  * TEST_RUN=true TABLE_SUFFIX=_test node api-challenger.js *
- **********************************************************/
+ ***********************************************************/
 if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
     console.log('Environment variables are missing. Proper usage: TEST_RUN=true TABLE_SUFFIX=_test node api-challenger.js');
     process.exit();
