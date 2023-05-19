@@ -1,5 +1,18 @@
 # PPL Webapp API
 
+## Table of Contents
+
+- [Overview](#overview)
+- [API Documentation](#api-documentation)
+    - [Authentication APIs](#authentication-apis)
+    - [Challenger APIs](#challenger-apis)
+    - [Leader APIs](#leader-apis)
+    - [Unauthenticated APIs](#unauthenticated-apis)
+    - [Constants](#constants)
+- [Tests](#tests)
+
+# Overview
+
 This project is an API built to support the [PPL Webapp](https://github.com/lunemily/ppl-in-person) frontend. It's set up to present its public-facing API through Express and be driven off of a MySQL database, the expected schema of which can be found in a comment near the top of the [db.js](db.js) module. In order to set up a new instance, you need to:
 
 1. Clone the project and install all the dependencies with npm.
@@ -27,14 +40,6 @@ If everything is correctly configured, you should see a few log statements appea
 # API Documentation
 
 **General note**: For all API paths detailed below, the `:id` param will **always** be a login ID (an 8-byte hex string), as will the `:challenger` param. The `:leader` param will **always** be a leader ID (a 6-byte hex string).
-
-## Table of Contents
-
-- [Authentication APIs](#authentication-apis)
-- [Challenger APIs](#challenger-apis)
-- [Leader APIs](#leader-apis)
-- [Unauthenticated APIs](#unauthenticated-apis)
-- [Constants](#constants)
 
 ## Authentication APIs
 
