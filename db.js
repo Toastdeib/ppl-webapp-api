@@ -408,16 +408,28 @@ async function getOpenQueues(callback) {
 }
 
 async function getBadges(id, callback) {
-    const result = await fetch(`SELECT m.leader_id, l.leader_name, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, matchStatus.win, matchStatus.ash]);
+    let result = await fetch(`SELECT display_name FROM ${CHALLENGERS_TABLE} WHERE id = ?`, [id]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
+    if (result.rows.length === 0) {
+        callback(resultCode.notFound);
+        return;
+    }
+
     const retval = {
         challengerId: id,
+        displayName: result.rows[0].display_name,
         badgesEarned: []
     };
+
+    result = await fetch(`SELECT m.leader_id, l.leader_name, l.badge_name FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?)`, [id, matchStatus.win, matchStatus.ash]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
 
     for (const row of result.rows) {
         retval.badgesEarned.push({

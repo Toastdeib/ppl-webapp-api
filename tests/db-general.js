@@ -50,6 +50,7 @@ const takenUsername = 'testchallenger1';
 const newUsername = 'newtestchallenger1';
 const password = 'password1';
 const badPassword = 'password2';
+const badgesId = 'efaa0cdd1cbd165b';
 
 let id;
 
@@ -235,6 +236,40 @@ function getAllChallengersWest3() {
             pass('challenger count for west was correct');
         }
 
+        getBadges1();
+    });
+}
+
+function getBadges1() {
+    name(13, 'Get all badges for the new challenger');
+    db.getBadges(id, (error, result) => {
+        if (error) {
+            fail(`error=${error}`);
+        } else if (result.displayName !== newUsername) {
+            fail(`expected displayName=${newUsername}, actual=${result.displayName}`);
+        } else if (result.badgesEarned.length !== 0) {
+            fail(`new challenger had ${result.badgesEarned.length} badges`);
+        } else {
+            pass('new challenger had 0 badges');
+        }
+
+        getBadges2();
+    });
+}
+
+function getBadges2() {
+    name(14, 'Get all badges for an existing challenger');
+    db.getBadges(badgesId, (error, result) => {
+        if (error) {
+            fail(`error=${error}`);
+        } else if (result.displayName !== takenUsername) {
+            fail(`expected displayName=${takenUsername}, actual=${result.displayName}`);
+        } else if (result.badgesEarned.length !== 11) {
+            fail(`new challenger had ${result.badgesEarned.length} badges`);
+        } else {
+            pass('new challenger had 11 badges');
+        }
+
         cleanup();
     });
 }
@@ -270,7 +305,7 @@ function cleanup() {
  * TEST EXECUTION *
  ******************/
 db.dbReady.then(() => {
-    start(12);
+    start(14);
     getAllChallengersEast1();
 });
 
