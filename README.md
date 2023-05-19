@@ -37,6 +37,8 @@ This project is an API built to support the [PPL Webapp](https://github.com/lune
 
 If everything is correctly configured, you should see a few log statements appear indicating that the API is running. You can validate it by using curl, a simple web browser (for the GET requests), or another tool of your choice.
 
+[Back to top](#table-of-contents)
+
 # API Documentation
 
 **General note**: For all API paths detailed below, the `:id` param will **always** be a login ID (an 8-byte hex string), as will the `:challenger` param. The `:leader` param will **always** be a leader ID (a 6-byte hex string).
@@ -121,6 +123,8 @@ Logs out a user and clears their session from the local cache. If no `Authorizat
 ```json
 {}
 ```
+
+[Back to top](#table-of-contents)
 
 ## Challenger APIs
 
@@ -295,6 +299,8 @@ See: Response payload for [/challenger/:id (GET)](#challengerid-get).
 - HTTP 401 (UNAUTHORIZED) - Returned if the authentication header is omitted or malformed.
 - HTTP 404 (NOT FOUND) - Returned if either of the given IDs don't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
+
+[Back to top](#table-of-contents)
 
 ## Leader APIs
 
@@ -546,6 +552,8 @@ Retrieves a list of all challengers for the PPL event indicated by the request h
 - HTTP 401 (UNAUTHORIZED) - Returned if the authentication header is omitted or malformed.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
+[Back to top](#table-of-contents)
+
 ## Unauthenticated APIs
 
 #### /metrics (GET)
@@ -688,6 +696,8 @@ Writes an error-level log message to file. This path should only be sent plainte
 - HTTP 400 (BAD REQUEST) - Returned if the request body doesn't contain a message param.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
+[Back to top](#table-of-contents)
+
 ## Constants
 
 #### resultCode
@@ -742,6 +752,8 @@ These are used to identify what battle formats a leader supports. This constant 
 }
 ```
 
+[Back to top](#table-of-contents)
+
 # Tests
 
 This project currently contains five test suites in the /tests directory - three that run on the database module directly, and two that instantiate an instance of the API and run against that instead. While the coverage isn't 100% complete, these suites should cover *most* core functionality of the database and API modules and help to find bugs in both before they make it to production.
@@ -755,3 +767,5 @@ The five suites are:
 - [api-leader.js](tests/api-leader.js) - An API test suite covering leader-oriented API paths. This suite has roughly the same coverage as the db-leader.js suite.
 
 As documented at the top of each test suite file, they're all intended to be run with certain environment variables which modify the behavior of the logging module and what database tables the tests should be performed on. The tests are intended to work off of a separate set of database tables, suffixed with `_test`, and pre-populated with the queries found in [baseline.sql](tests/baseline.sql). While each suite is designed to perform cleanup of any database changes it makes, the test tables *can* get out of sync with the baseline if certain tests or cleanup steps fail, so rerunning the baseline may be necessary in case of unexpected errors.
+
+[Back to top](#table-of-contents)
