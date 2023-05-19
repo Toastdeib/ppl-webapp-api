@@ -1,3 +1,29 @@
+# PPL Webapp API
+
+This project is an API built to support the [PPL Webapp](https://github.com/lunemily/ppl-in-person) frontend. It's set up to present its public-facing API through Express and be driven off of a MySQL database, the expected schema of which can be found in a comment near the top of the [db.js](db.js) module. In order to set up a new instance, you need to:
+
+1. Clone the project and install all the dependencies with npm.
+2. Make a copy the [config.js.example](config.js.example) simply named config.js.
+3. Populate the API configs appropriately for your environment:
+    - The `debug` field indicates whether the node application should run in debug mode. Setting this to `true` will enable console input in the running application, as well as the `debugSave` function on the database module.
+    - The `port` field is the port that the API will listen on, and should be an open port on the machine running this node application.
+    - The `botApiPort` field is optional and only relevant for events that make use of the PPLBot project (link to come) for reporting updates to Discord.
+    - The `certPath` field is a local filepath to your cert file so the API can be served over HTTPS. If you don't have a cert set up, check out LetsEncrypt to get started.
+    - The `corsOrigin` field can be either a string or an array of strings, and each string should be a domain that's permitted to access the API.
+    - The `mysql...` fields configure the database connection, and will vary depending on how your system is set up.
+    - The `tableSuffix` field is optional and applies a suffix to all table names in the db.js module if specified. This is useful for setting up a staging environment with a separate set of tables from those used in production.
+4. Populate the event configs appropriately for your PPL event:
+    - The `...SurveyUrl` fields are links to surveys to be filled out by Hall of Fame entrants, challengers, and leaders respectively. The former is typically used for challengers to submit their winning teams, and the latter two are for general feedback.
+    - The `surveyStartDate` and `surveyDurationDays` fields define when the survey links should be sent down in API responses and for how long. The start date is typically the final day of a PPL event.
+    - The `trainerCardShowDate` field defines when the trainer card should start appearing in the webapp. It's typically the day of the champion reveal, so that leader names and art can be pre-loaded without challengers seeing them early.
+    - The `bingoBoardWidth` field defines the dimensions of the board used for the leader bingo side activity. It should typically be less than the square root of the number of leaders and elites combined (e.g. a 4x4 or 5x5 board for a pool of 30 total non-champion leaders).
+    - The `requiredBadges` and `requiredEmblems` fields define how many badges and emblems a challenger needs to face elites and the champion, respectively. If `requiredEmblems` is set to 0, `requiredBadges` will be used for the champion check as well as elites.
+    - The `maxQueueSize` field defines how many challengers a leader can have in their queue at a given time. This should typically be large for in-person events and more restricted during online events.
+    - The `maxQueuesPerChallenger` field defines how many leader queues a challenger can be in at once.
+5. Run `node startup.js`. **Note**: This *may* require `sudo` to run, depending on the permissions on the cert path.
+
+If everything is correctly configured, you should see a few log statements appear indicating that the API is running. You can validate it by using curl, a simple web browser (for the GET requests), or another tool of your choice.
+
 # API Documentation
 
 **General note**: For all API paths detailed below, the `:id` param will **always** be a login ID (an 8-byte hex string), as will the `:challenger` param. The `:leader` param will **always** be a leader ID (a 6-byte hex string).
@@ -36,6 +62,7 @@ Creates a new account with the provided username and password.
     "token": [string]
 }
 ```
+
 `id` and `loginId` will **always** be populated with the same value and should be used in the path for authenticated API calls. `token` should be used in an `Authorization` header for authenticated API calls.
 
 ##### Possible error responses:
@@ -67,6 +94,7 @@ Logs a user in with the provided username and password.
     "token": [string]
 }
 ```
+
 `id` and `loginId` will **always** be populated with the same value and should be used in the path for authenticated API calls. `token` should be used in an `Authorization` header for authenticated API calls.
 
 ##### Possible error responses:
@@ -708,3 +736,17 @@ These are used to identify what battle formats a leader supports. This constant 
     "special": 8
 }
 ```
+
+# Tests
+
+This project currently contains five test suites in the /tests directory - three that run on the database module directly, and two that instantiate an instance of the API and run against that instead. While the coverage isn't 100% complete, these suites should cover *most* core functionality of the database and API modules and help to find bugs in both before they make it to production.
+
+The five suites are:
+
+- db-general.js - A database test suite covering general database functions, such as registration, login, and pulling down the list of challengers for a given event.
+- db-challenger.js - A database test suite covering challenger-oriented database functions, such as modifying the display name and joining leader queues.
+- db-leader.js - A database test suite covering leader-oriented database functions, such as opening/closing the queue, adding challengers, and reporting match results.
+- api-challenger.js - An API test suite covering challenger-oriented API paths. This suite has roughly the same coverage as the db-challenger.js suite.g match results.
+- api-leader.js - An API test suite covering leader-oriented API paths. This suite has roughly the same coverage as the db-leader.js suite.
+
+As documented at the top of each test suite file, they're all intended to be run with certain environment variables which modify the behavior of the logging module and what database tables the tests should be performed on. The tests are intended to work off of a separate set of database tables, suffixed with `_test`, and pre-populated with the queries found in [baseline.sql](tests/baseline.sql). While each suite is designed to perform cleanup of any database changes it makes, the test tables *can* get out of sync with the baseline if certain tests or cleanup steps fail, so rerunning the baseline may be necessary in case of unexpected errors.
