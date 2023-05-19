@@ -3,7 +3,7 @@
 This project is an API built to support the [PPL Webapp](https://github.com/lunemily/ppl-in-person) frontend. It's set up to present its public-facing API through Express and be driven off of a MySQL database, the expected schema of which can be found in a comment near the top of the [db.js](db.js) module. In order to set up a new instance, you need to:
 
 1. Clone the project and install all the dependencies with npm.
-2. Make a copy the [config.js.example](config.js.example) simply named config.js.
+2. Make a copy of the [config.js.example](config.js.example) simply named config.js.
 3. Populate the API configs appropriately for your environment:
     - The `debug` field indicates whether the node application should run in debug mode. Setting this to `true` will enable console input in the running application, as well as the `debugSave` function on the database module.
     - The `port` field is the port that the API will listen on, and should be an open port on the machine running this node application.
@@ -743,10 +743,10 @@ This project currently contains five test suites in the /tests directory - three
 
 The five suites are:
 
-- db-general.js - A database test suite covering general database functions, such as registration, login, and pulling down the list of challengers for a given event.
-- db-challenger.js - A database test suite covering challenger-oriented database functions, such as modifying the display name and joining leader queues.
-- db-leader.js - A database test suite covering leader-oriented database functions, such as opening/closing the queue, adding challengers, and reporting match results.
-- api-challenger.js - An API test suite covering challenger-oriented API paths. This suite has roughly the same coverage as the db-challenger.js suite.g match results.
-- api-leader.js - An API test suite covering leader-oriented API paths. This suite has roughly the same coverage as the db-leader.js suite.
+- [db-general.js](tests/db-general.js) - A database test suite covering general database functions, such as registration, login, and pulling down the list of challengers for a given event.
+- [db-challenger.js](tests/db-challenger.js) - A database test suite covering challenger-oriented database functions, such as modifying the display name and joining leader queues.
+- [db-leader.js](tests/db-leader.js) - A database test suite covering leader-oriented database functions, such as opening/closing the queue, adding challengers, and reporting match results.
+- [api-challenger.js](tests/api-challenger.js) - An API test suite covering challenger-oriented API paths. This suite has roughly the same coverage as the db-challenger.js suite.g match results.
+- [api-leader.js](tests/api-leader.js) - An API test suite covering leader-oriented API paths. This suite has roughly the same coverage as the db-leader.js suite.
 
 As documented at the top of each test suite file, they're all intended to be run with certain environment variables which modify the behavior of the logging module and what database tables the tests should be performed on. The tests are intended to work off of a separate set of database tables, suffixed with `_test`, and pre-populated with the queries found in [baseline.sql](tests/baseline.sql). While each suite is designed to perform cleanup of any database changes it makes, the test tables *can* get out of sync with the baseline if certain tests or cleanup steps fail, so rerunning the baseline may be necessary in case of unexpected errors.
