@@ -33,6 +33,7 @@ This project is an API built to support the [PPL Webapp](https://github.com/lune
     - The `requiredBadges` and `requiredEmblems` fields define how many badges and emblems a challenger needs to face elites and the champion, respectively. If `requiredEmblems` is set to 0, `requiredBadges` will be used for the champion check as well as elites.
     - The `maxQueueSize` field defines how many challengers a leader can have in their queue at a given time. This should typically be large for in-person events and more restricted during online events.
     - The `maxQueuesPerChallenger` field defines how many leader queues a challenger can be in at once.
+    - The `excludedBingoIds` field is an array of leader ID strings that defines what, if any, leaders should be excluded when constructing new bingo boards. This should be used in cases where multiple leaders have the same ace/Tera and you want to avoid collisions.
 5. Run `node startup.js`. **Note**: This *may* require `sudo` to run, depending on the permissions on the cert path.
 
 If everything is correctly configured, you should see a few log statements appear indicating that the API is running. You can validate it by using curl, a simple web browser (for the GET requests), or another tool of your choice.
