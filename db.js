@@ -21,9 +21,6 @@ const BINGO_SPACE_COUNT = config.bingoBoardWidth * config.bingoBoardWidth;
 const BINGO_ID_COUNT = BINGO_SPACE_COUNT - (config.bingoBoardWidth % 2);
 const INCLUDE_FREE_SPACE = config.bingoBoardWidth % 2 === 1;
 
-// Excluding Sal and Aidan due to overlap (Garganacl and Roaring Moon, respectively)
-const EXCLUDED_BINGO_IDS = ['3ffb37c301b4', 'f27c016d37c9'];
-
 // Challenger/leader survey dates
 const SURVEY_START_DATE = new Date(config.surveyStartDate);
 // eslint-disable-next-line no-magic-numbers
@@ -160,7 +157,7 @@ function generateBingoBoard() {
     while (ids.length < BINGO_ID_COUNT && leaderCopy.length > 0) {
         const index = Math.floor(Math.random() * leaderCopy.length);
         const id = leaderCopy.splice(index, 1)[0];
-        if (EXCLUDED_BINGO_IDS.indexOf(id) === -1) {
+        if (config.excludedBingoIds.indexOf(id) === -1) {
             ids.push(id);
         }
     }
@@ -169,7 +166,7 @@ function generateBingoBoard() {
     while (ids.length < BINGO_ID_COUNT && eliteCopy.length > 0) {
         const index = Math.floor(Math.random() * eliteCopy.length);
         const id = eliteCopy.splice(index, 1)[0];
-        if (EXCLUDED_BINGO_IDS.indexOf(id) === -1) {
+        if (config.excludedBingoIds.indexOf(id) === -1) {
             ids.push(id);
         }
     }
