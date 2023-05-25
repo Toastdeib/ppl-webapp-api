@@ -18,9 +18,9 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
     process.exit();
 }
 
-import { leaderType } from '../constants.js';
 import { clearCache, encodeCredentials, init, sendRequest } from './base-api-test.js';
 import { fail, finish, name, pass, start } from './test-logger.js';
+import { httpStatus, leaderType } from '../constants.js';
 
 /****************
  * TESTING DATA *
@@ -39,7 +39,7 @@ const challengerId = '5ae3d0f7ea736bda';
 function login() {
     name(1, 'Log in with stored credentials');
     sendRequest('/login', 'POST', {}, credentials, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}, aborting test run`);
             finish();
             process.exit();
@@ -62,7 +62,7 @@ function login() {
 function openQueue() {
     name(2, 'Open the queue');
     sendRequest(`${basePath}/openqueue`, 'POST', {}, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -80,7 +80,7 @@ function openQueue() {
 function goLive() {
     name(3, 'Notify that the leader is live on Twitch');
     sendRequest(`${basePath}/live`, 'POST', {}, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             pass('successfully notified that the leader is live');
@@ -93,7 +93,7 @@ function goLive() {
 function enqueueChallenger1() {
     name(4, 'Add a challenger to the queue');
     sendRequest(`${basePath}/enqueue/${challengerId}`, 'POST', { battleDifficulty: leaderType.casual }, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -112,7 +112,7 @@ function enqueueChallenger1() {
 function holdChallenger() {
     name(5, 'Place the challenger on hold');
     sendRequest(`${basePath}/hold/${challengerId}`, 'POST', {}, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -131,7 +131,7 @@ function holdChallenger() {
 function unholdChallenger() {
     name(6, 'Return the challenger from being on hold');
     sendRequest(`${basePath}/unhold/${challengerId}`, 'POST', { placeAtFront: false }, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -150,7 +150,7 @@ function unholdChallenger() {
 function dequeueChallenger() {
     name(7, 'Remove the challenger from queue');
     sendRequest(`${basePath}/dequeue/${challengerId}`, 'POST', {}, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -168,7 +168,7 @@ function dequeueChallenger() {
 function enqueueChallenger2() {
     name(8, 'Add a challenger to queue (again)');
     sendRequest(`${basePath}/enqueue/${challengerId}`, 'POST', { battleDifficulty: leaderType.intermediate }, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -187,7 +187,7 @@ function enqueueChallenger2() {
 function reportResult() {
     name(9, 'Report a match result');
     sendRequest(`${basePath}/report/${challengerId}`, 'POST', { challengerWin: false, badgeAwarded: false }, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -207,7 +207,7 @@ function reportResult() {
 function closeQueue() {
     name(10, 'Close the queue');
     sendRequest(`${basePath}/closequeue`, 'POST', {}, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);

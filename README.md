@@ -757,13 +757,14 @@ These are used to identify what battle formats a leader supports. This constant 
 
 # Tests
 
-This project currently contains five test suites in the /tests directory - three that run on the database module directly, and two that instantiate an instance of the API and run against that instead. While the coverage isn't 100% complete, these suites should cover *most* core functionality of the database and API modules and help to find bugs in both before they make it to production.
+This project currently contains six test suites in the /tests directory - three that run on the database module directly, and three that instantiate an instance of the API and run against that instead. While the coverage isn't 100% complete, these suites should cover *most* core functionality of the database and API modules and help to find bugs in both before they make it to production.
 
-The five suites are:
+The six suites are:
 
 - [db-general.js](tests/db-general.js) - A database test suite covering general database functions, such as registration, login, and pulling down the list of challengers for a given event.
 - [db-challenger.js](tests/db-challenger.js) - A database test suite covering challenger-oriented database functions, such as modifying the display name and joining leader queues.
 - [db-leader.js](tests/db-leader.js) - A database test suite covering leader-oriented database functions, such as opening/closing the queue, adding challengers, and reporting match results.
+- [api-general.js](tests/api-general.js) - An API test suite covering general, unauthenticated API paths. This suite covers mostly covers API paths that don't interact with the database.
 - [api-challenger.js](tests/api-challenger.js) - An API test suite covering challenger-oriented API paths. This suite has roughly the same coverage as the db-challenger.js suite.g match results.
 - [api-leader.js](tests/api-leader.js) - An API test suite covering leader-oriented API paths. This suite has roughly the same coverage as the db-leader.js suite.
 

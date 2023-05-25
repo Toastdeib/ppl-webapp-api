@@ -20,7 +20,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 
 import { clearCache, encodeCredentials, init, sendRequest } from './base-api-test.js';
 import { debug, fail, finish, name, pass, start } from './test-logger.js';
-import { leaderType, resultCode } from '../constants.js';
+import { httpStatus, leaderType, resultCode } from '../constants.js';
 
 /****************
  * TESTING DATA *
@@ -40,7 +40,7 @@ const leaderId = 'd08cde9beddd';
 function login() {
     name(1, 'Log in with stored credentials');
     sendRequest('/login', 'POST', {}, credentials, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}, aborting test run`);
             finish();
             process.exit();
@@ -63,7 +63,7 @@ function login() {
 function setDisplayName() {
     name(2, 'Update display name');
     sendRequest(basePath, 'POST', { displayName: newName }, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -81,7 +81,7 @@ function setDisplayName() {
 function getBingoBoard() {
     name(3, 'Fetch and validate bingo board');
     sendRequest(`${basePath}/bingoboard`, 'GET', {}, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -99,7 +99,7 @@ function getBingoBoard() {
 function joinQueue1() {
     name(4, 'Join a leader queue');
     sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: leaderType.casual }, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -118,11 +118,11 @@ function joinQueue1() {
 function joinQueue2() {
     name(5, 'Attempt to join a leader queue the challenger is already in');
     sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: leaderType.casual }, token, (result) => {
-        if (result.status === 200) {
+        if (result.status === httpStatus.ok) {
             fail('successfully joined the leader queue');
         } else {
             const data = JSON.parse(result.body);
-            if (result.status !== 400 || data.code !== resultCode.alreadyInQueue) {
+            if (result.status !== httpStatus.badRequest || data.code !== resultCode.alreadyInQueue) {
                 fail(`failed to join the leader queue with unexpected HTTP status code ${result.status} and/or error code ${data.code}`);
             } else {
                 pass(`failed to join the leader queue with HTTP status code ${result.status} and error code ${data.code}`);
@@ -136,7 +136,7 @@ function joinQueue2() {
 function leaveQueue1() {
     name(6, 'Leave the leader queue');
     sendRequest(`${basePath}/dequeue/${leaderId}`, 'POST', {}, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -154,7 +154,7 @@ function leaveQueue1() {
 function joinQueue3() {
     name(7, 'Join a leader queue (again)');
     sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: leaderType.veteran }, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -173,7 +173,7 @@ function joinQueue3() {
 function hold() {
     name(8, 'Go on hold in the queue');
     sendRequest(`${basePath}/hold/${leaderId}`, 'POST', {}, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -192,7 +192,7 @@ function hold() {
 function leaveQueue2() {
     name(9, 'Leave the queue while on hold');
     sendRequest(`${basePath}/dequeue/${leaderId}`, 'POST', {}, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
             const data = JSON.parse(result.body);
@@ -210,7 +210,7 @@ function leaveQueue2() {
 function cleanup() {
     finish();
     sendRequest(basePath, 'POST', { displayName: 'toastchallenger' }, token, (result) => {
-        if (result.status !== 200) {
+        if (result.status !== httpStatus.ok) {
             debug(`Unable to revert display name, response came back with status=${result.status}`);
             process.exit();
         }
