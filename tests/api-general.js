@@ -33,18 +33,18 @@ const queueStatuses = {
     '7729e38c3f7d': false,
     'bcc6f08242fb': false
 };
-
 const challengerWithoutBadges = {
     id: '5ae3d0f7ea736bda',
     displayName: 'testchallenger7',
     badgeCount: 0
 };
-
 const challengerWithBadges = {
     id: 'efaa0cdd1cbd165b',
     displayName: 'testchallenger1',
     badgeCount: 11
 };
+const leaderCount = 28;
+const metricsCount = 12;
 
 /******************
  * TEST FUNCTIONS *
@@ -198,9 +198,45 @@ function logErrorWithStackTrace() {
             pass('request returned with a valid HTTP status');
         }
 
-        cleanup();
+        getAllLeaderData();
     });
 
+}
+
+function getAllLeaderData() {
+    name(10, 'Fetch all leader data');
+    sendRequest('/allleaderdata', 'GET', {}, {}, (result) => {
+        if (result.status !== httpStatus.ok) {
+            fail(`received HTTP status code ${result.status}`);
+        } else {
+            const data = JSON.parse(result.body);
+            if (Object.keys(data).length !== leaderCount) {
+                fail(`leader count=${Object.keys(data).length}, expected=${leaderCount}`);
+            } else {
+                pass('successfully fetched leader data');
+            }
+        }
+
+        getLeaderMetrics();
+    });
+}
+
+function getLeaderMetrics() {
+    name(11, 'Fetch leader metrics');
+    sendRequest('/metrics', 'GET', {}, {}, (result) => {
+        if (result.status !== httpStatus.ok) {
+            fail(`received HTTP status code ${result.status}`);
+        } else {
+            const data = JSON.parse(result.body);
+            if (Object.keys(data).length !== metricsCount) {
+                fail(`leader count=${Object.keys(data).length}, expected=${metricsCount}`);
+            } else {
+                pass('successfully fetched leader metrics');
+            }
+        }
+
+        cleanup();
+    });
 }
 
 function cleanup() {
@@ -211,6 +247,6 @@ function cleanup() {
 }
 
 init(() => {
-    start(9);
+    start(11);
     getAppSettings();
 });

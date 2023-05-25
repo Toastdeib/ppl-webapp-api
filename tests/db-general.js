@@ -72,7 +72,7 @@ const leaderInfo = {
     tagline: 'Also test post, also please ignore.'
 };
 const metricsInfo = {
-    count: 11, // Not the full count because leaders with no recorded match results aren't included in the payload
+    count: 12, // Not the full count because leaders with no recorded match results aren't included in the payload
     id: '6a9406eedec6',
     name: 'Test Leader, the Testable',
     wins: 2,

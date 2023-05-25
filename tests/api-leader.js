@@ -28,17 +28,23 @@ import { httpStatus, leaderType } from '../constants.js';
 const username = 'toastleader';
 const password = 'password1';
 const credentials = { Authorization: encodeCredentials(username, password) };
+const pplEvent = { 'PPL-Event': 'online' };
 const token = {};
 let basePath;
+let logoutPath;
 
 const challengerId = '5ae3d0f7ea736bda';
+const allChallengers = {
+    count: 1,
+    id: '77959f8b9e892345'
+};
 
 /******************
  * TEST FUNCTIONS *
  ******************/
 function login() {
     name(1, 'Log in with stored credentials');
-    sendRequest('/login', 'POST', {}, credentials, (result) => {
+    sendRequest('/login', 'POST', {}, { ...credentials, ...pplEvent }, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}, aborting test run`);
             finish();
@@ -53,6 +59,7 @@ function login() {
                 pass('successfully logged in');
                 token.Authorization = `Bearer ${data.token}`;
                 basePath = `/leader/${data.id}`;
+                logoutPath = `/logout/${data.id}`;
                 openQueue();
             }
         }
@@ -218,6 +225,52 @@ function closeQueue() {
             }
         }
 
+        getAllChallengers();
+    });
+}
+
+function getAllChallengers() {
+    name(11, 'Fetch and validate the challenger list');
+    sendRequest(`${basePath}/allchallengers`, 'GET', {}, { ...token, ...pplEvent }, (result) => {
+        if (result.status !== httpStatus.ok) {
+            fail(`received HTTP status code ${result.status}`);
+        } else {
+            const data = JSON.parse(result.body);
+            if (data.length !== allChallengers.count) {
+                fail(`challenger count=${data.length}, expected=${allChallengers.count}`);
+            } else if (data[0].id !== allChallengers.id) {
+                fail(`challenger list contained id=${data[0].id}, expected=${allChallengers.id}`);
+            } else {
+                pass('successfully got challenger list');
+            }
+        }
+
+        logout();
+    });
+}
+
+function logout() {
+    name(12, 'Log out and end the session');
+    sendRequest(logoutPath, 'POST', {}, token, (result) => {
+        if (result.status !== httpStatus.ok) {
+            fail(`received HTTP status code ${result.status}`);
+        } else {
+            pass('successfully logged out');
+        }
+
+        getLeaderInfo();
+    });
+}
+
+function getLeaderInfo() {
+    name(13, 'Attempt to fetch leader info after logging out');
+    sendRequest(basePath, 'GET', {}, token, (result) => {
+        if (result.status !== httpStatus.unauthorized) {
+            fail(`received HTTP status code ${result.status}`);
+        } else {
+            pass('received unauthorized HTTP status code');
+        }
+
         cleanup();
     });
 }
@@ -230,6 +283,6 @@ function cleanup() {
 }
 
 init(() => {
-    start(10);
+    start(13);
     login();
 });

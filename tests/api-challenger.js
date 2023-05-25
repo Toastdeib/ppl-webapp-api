@@ -27,7 +27,10 @@ import { httpStatus, leaderType, resultCode } from '../constants.js';
  ****************/
 const username = 'toastchallenger';
 const password = 'password1';
-const credentials = { Authorization: encodeCredentials(username, password) };
+const credentials = {
+    Authorization: encodeCredentials(username, password),
+    'PPL-Event': 'online'
+};
 const token = {};
 let basePath;
 
