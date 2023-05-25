@@ -56,7 +56,7 @@ const champQueue = {
  * TEST FUNCTIONS *
  ******************/
 function verifyBaseline() {
-    name(0, 'Verifying challenger info baseline');
+    name(0, 'Verify challenger info baseline');
     db.challenger.getInfo(challengerId, (error, result) => {
         let baselineValid = true;
         if (error) {
@@ -105,7 +105,7 @@ function verifyBaseline() {
 }
 
 function setDisplayName() {
-    name(1, 'Setting display name');
+    name(1, 'Set display name');
     db.challenger.setDisplayName(challengerId, newName, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -208,7 +208,7 @@ function joinUnsupportedQueue() {
 }
 
 function joinOpenQueue() {
-    name(8, 'Attempt to join an open leader queue');
+    name(8, 'Join an open leader queue');
     db.queue.enqueue(leaderIds.open, challengerId, leaderType.casual, (error) => {
         if (error) {
             fail(`error=${error}`);

@@ -46,11 +46,39 @@ const idCounts = {
         }
     }
 };
+
 const takenUsername = 'testchallenger1';
 const newUsername = 'newtestchallenger1';
 const password = 'password1';
 const badPassword = 'password2';
 const badgesId = 'efaa0cdd1cbd165b';
+const badgesCount = 11;
+const queueStatuses = {
+    'd08cde9beddd': true,
+    'dc43670ce8bc': true,
+    '737644fef008': true,
+    '6a9406eedec6': false,
+    '7729e38c3f7d': false,
+    'bcc6f08242fb': false
+};
+const leaderInfo = {
+    count: 28,
+    id: '6a9406eedec6',
+    name: 'Test Leader, the Testable',
+    leaderType: 7,
+    battleFormat: 3,
+    badgeName: 'Test Badge',
+    bio: 'Test post, please ignore.',
+    tagline: 'Also test post, also please ignore.'
+};
+const metricsInfo = {
+    count: 11, // Not the full count because leaders with no recorded match results aren't included in the payload
+    id: '6a9406eedec6',
+    name: 'Test Leader, the Testable',
+    wins: 2,
+    losses: 2,
+    badgesAwarded: 2
+};
 
 let id;
 
@@ -264,10 +292,84 @@ function getBadges2() {
             fail(`error=${error}`);
         } else if (result.displayName !== takenUsername) {
             fail(`expected displayName=${takenUsername}, actual=${result.displayName}`);
-        } else if (result.badgesEarned.length !== 11) {
+        } else if (result.badgesEarned.length !== badgesCount) {
             fail(`new challenger had ${result.badgesEarned.length} badges`);
         } else {
-            pass('new challenger had 11 badges');
+            pass(`new challenger had ${badgesCount} badges`);
+        }
+
+        getOpenQueues();
+    });
+}
+
+function getOpenQueues() {
+    name(15, 'Get and validate a list of open leader queues');
+    db.getOpenQueues((error, result) => {
+        if (error) {
+            fail(`error=${error}`);
+        } else {
+            let mismatches = 0;
+            for (const key of Object.keys(queueStatuses)) {
+                if (queueStatuses[key] !== result[key]) {
+                    mismatches++;
+                }
+            }
+
+            if (mismatches > 0) {
+                fail(`${mismatches} leader(s) had queue statuses that didn't match the expected values`);
+            } else {
+                pass('all checked queue statuses matched the expected values');
+            }
+        }
+
+        getAllLeaderData();
+    });
+}
+
+function getAllLeaderData() {
+    name(16, 'Get and validate leader data');
+    db.getAllLeaderData((error, result) => {
+        if (error) {
+            fail(`error=${error}`);
+        } else if (Object.keys(result).length !== leaderInfo.count) {
+            fail(`leader count=${Object.keys(result).length}, expected=${leaderInfo.count}`);
+        } else if (result[leaderInfo.id].name !== leaderInfo.name) {
+            fail(`name=${result[leaderInfo.id].name}, expected=${leaderInfo.name}`);
+        } else if (result[leaderInfo.id].leaderType !== leaderInfo.leaderType) {
+            fail(`leaderType=${result[leaderInfo.id].leaderType}, expected=${leaderInfo.name}`);
+        } else if (result[leaderInfo.id].battleFormat !== leaderInfo.battleFormat) {
+            fail(`battleFormat=${result[leaderInfo.id].battleFormat}, expected=${leaderInfo.battleFormat}`);
+        } else if (result[leaderInfo.id].badgeName !== leaderInfo.badgeName) {
+            fail(`badgeName=${result[leaderInfo.id].badgeName}, expected=${leaderInfo.badgeName}`);
+        } else if (result[leaderInfo.id].bio !== leaderInfo.bio) {
+            fail(`bio=${result[leaderInfo.id].bio}, expected=${leaderInfo.bio}`);
+        } else if (result[leaderInfo.id].tagline !== leaderInfo.tagline) {
+            fail(`tagline=${result[leaderInfo.id].tagline}, expected=${leaderInfo.tagline}`);
+        } else {
+            pass('leader data was correct');
+        }
+
+        getLeaderMetrics();
+    });
+}
+
+function getLeaderMetrics() {
+    name(17, 'Get and validate leader metrics');
+    db.leader.metrics((error, result) => {
+        if (error) {
+            fail(`error=${error}`);
+        } else if (Object.keys(result).length !== metricsInfo.count) {
+            fail(`leader count=${Object.keys(result).length}, expected=${metricsInfo.count}`);
+        } else if (result[metricsInfo.id].name !== metricsInfo.name) {
+            fail(`name=${result[metricsInfo.id].name}, expected=${metricsInfo.name}`);
+        } else if (result[metricsInfo.id].wins !== metricsInfo.wins) {
+            fail(`wins=${result[metricsInfo.id].wins}, expected=${metricsInfo.name}`);
+        } else if (result[metricsInfo.id].losses !== metricsInfo.losses) {
+            fail(`losses=${result[metricsInfo.id].losses}, expected=${metricsInfo.losses}`);
+        } else if (result[metricsInfo.id].badgesAwarded !== metricsInfo.badgesAwarded) {
+            fail(`badgesAwarded=${result[metricsInfo.id].badgesAwarded}, expected=${metricsInfo.badgesAwarded}`);
+        } else {
+            pass('metrics data was correct');
         }
 
         cleanup();
@@ -305,9 +407,6 @@ function cleanup() {
  * TEST EXECUTION *
  ******************/
 db.dbReady.then(() => {
-    start(14);
+    start(17);
     getAllChallengersEast1();
 });
-
-// Additional cases to cover:
-//   - Leader metrics (length, values)

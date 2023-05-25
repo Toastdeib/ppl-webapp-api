@@ -757,7 +757,7 @@ These are used to identify what battle formats a leader supports. This constant 
 
 # Tests
 
-This project currently contains six test suites in the /tests directory - three that run on the database module directly, and three that instantiate an instance of the API and run against that instead. While the coverage isn't 100% complete, these suites should cover *most* core functionality of the database and API modules and help to find bugs in both before they make it to production.
+This project currently contains six test suites in the /tests directory - three that run on the database module directly, and three that instantiate an instance of the API and run against that instead. The database test suites currently have full coverage of *all* functions exposed by the module, although the API test suites don't yet cover all the paths and their possible responses. However, coverage should be sufficient to help find bugs in both the API and database modules before they make it to production.
 
 The six suites are:
 

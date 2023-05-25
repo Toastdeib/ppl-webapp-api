@@ -72,7 +72,7 @@ const queueStats = {
  * TEST FUNCTIONS *
  ******************/
 function verifyBaseline() {
-    name(0, 'Verifying leader info baseline');
+    name(0, 'Verify leader info baseline');
     db.leader.getInfo(leaderId, (error, result) => {
         let baselineValid = true;
         if (error) {

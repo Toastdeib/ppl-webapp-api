@@ -65,36 +65,36 @@ INSERT INTO ppl_webapp_challengers_test (id, display_name, bingo_board) VALUES (
 -- ppl_webapp_leaders_test
 DELETE FROM ppl_webapp_leaders_test;
 -- Leaders
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open, twitch_handle) VALUES ('6a9406eedec6', 'Test Leader, the Testable', 7, 'Test Badge', 'Test post, please ignore.', 'Also test post, also please ignore.', 0, 'testleader1');
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('7729e38c3f7d', '', 1, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('bcc6f08242fb', '', 2, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('7e8ab2c43c76', '', 4, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('1ed127c44156', '', 4, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('74fe35c10ba6', '', 3, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('68e65518c4d6', '', 5, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('d08cde9beddd', '', 7, '', '', '', 1);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('f54af38b4829', '', 6, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('dc43670ce8bc', '', 1, '', '', '', 1);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('737644fef008', '', 1, '', '', '', 1);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('be9f6bfff045', '', 2, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('9353f3d1262e', '', 1, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('d0cceeaf006a', '', 4, '', '', '', 1);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('b3363dd19ce8', '', 3, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('4b2fecf8bc74', '', 6, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('68ac4029d846', '', 7, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('93ff6484633d', '', 4, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('02f7564a033c', '', 4, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('15721dcb512b', '', 2, '', '', '', 1);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open, queue_open_text, queue_close_text, twitch_handle) VALUES ('8bb2ddda0a3c', 'Toastdeib, the Toasty Boi', 7, 'Toast Badge', '', '', 0, '{name} is toasting up some trouble!', '{name} is burnt and needs a break.', 'toastdeib');
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open, twitch_handle) VALUES ('6a9406eedec6', 'Test Leader, the Testable', 7, 3, 'Test Badge', 'Test post, please ignore.', 'Also test post, also please ignore.', 0, 'testleader1');
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('7729e38c3f7d', '', 1, 2, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('bcc6f08242fb', '', 2, 1, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('7e8ab2c43c76', '', 4, 4, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('1ed127c44156', '', 4, 2, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('74fe35c10ba6', '', 3, 3, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('68e65518c4d6', '', 5, 1, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('d08cde9beddd', '', 7, 1, '', '', '', 1);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('f54af38b4829', '', 6, 8, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('dc43670ce8bc', '', 1, 9, '', '', '', 1);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('737644fef008', '', 1, 10, '', '', '', 1);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('be9f6bfff045', '', 2, 1, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('9353f3d1262e', '', 1, 3, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('d0cceeaf006a', '', 4, 2, '', '', '', 1);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('b3363dd19ce8', '', 3, 1, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('4b2fecf8bc74', '', 6, 1, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('68ac4029d846', '', 7, 2, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('93ff6484633d', '', 4, 1, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('02f7564a033c', '', 4, 1, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('15721dcb512b', '', 2, 1, '', '', '', 1);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open, queue_open_text, queue_close_text, twitch_handle) VALUES ('8bb2ddda0a3c', 'Toastdeib, the Toasty Boi', 7, 3, 'Toast Badge', '', '', 0, '{name} is toasting up some trouble!', '{name} is burnt and needs a break.', 'toastdeib');
 -- Elites
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open, twitch_handle) VALUES ('b6857070a317', 'Test Elite, the Testable', 8, 'Test Emblem', 'Pest toast, please ignore.', 'Also pest toast, also please ignore.', 0, 'testelite1');
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('1194829fc135', '', 8, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('be90adcbbe2f', '', 8, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('bc95c2fc3f1a', '', 8, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('987597dc6aa2', '', 8, '', '', '', 0);
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('64750eab176f', '', 8, '', '', '', 1);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open, twitch_handle) VALUES ('b6857070a317', 'Test Elite, the Testable', 8, 2, 'Test Emblem', 'Pest toast, please ignore.', 'Also pest toast, also please ignore.', 0, 'testelite1');
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('1194829fc135', '', 8, 1, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('be90adcbbe2f', '', 8, 9, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('bc95c2fc3f1a', '', 8, 1, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('987597dc6aa2', '', 8, 1, '', '', '', 0);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('64750eab176f', '', 8, 1, '', '', '', 1);
 -- Champ
-INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('5f22dc234543', '', 16, '', '', '', 1);
+INSERT INTO ppl_webapp_leaders_test (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES ('5f22dc234543', '', 16, 2, '', '', '', 1);
 
 -- ppl_webapp_matches_test
 DELETE FROM ppl_webapp_matches_test;
