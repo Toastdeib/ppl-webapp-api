@@ -19,8 +19,8 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 }
 
 import db from '../db.js';
+import { battleFormat, leaderType, matchStatus, resultCode } from '../constants.js';
 import { debug, fail, finish, name, pass, start } from './test-logger.js';
-import { leaderType, matchStatus, resultCode } from '../constants.js';
 
 /****************
  * TESTING DATA *
@@ -149,7 +149,7 @@ function getBingoBoard() {
 
 function joinClosedQueue() {
     name(4, 'Attempt to join a closed leader queue');
-    db.queue.enqueue(leaderIds.closed, challengerId, leaderType.veteran, (error) => {
+    db.queue.enqueue(leaderIds.closed, challengerId, leaderType.veteran, battleFormat.special, (error) => {
         if (error === resultCode.queueIsClosed) {
             pass('failed to join with result code queueIsClosed');
         } else if (error) {
@@ -164,7 +164,7 @@ function joinClosedQueue() {
 
 function joinJoinedQueue() {
     name(5, 'Attempt to join a queue the challenger is already in');
-    db.queue.enqueue(leaderIds.joined, challengerId, leaderType.veteran, (error) => {
+    db.queue.enqueue(leaderIds.joined, challengerId, leaderType.veteran, battleFormat.doubles, (error) => {
         if (error === resultCode.alreadyInQueue) {
             pass('failed to join with result code alreadyInQueue');
         } else if (error) {
@@ -179,7 +179,7 @@ function joinJoinedQueue() {
 
 function joinDefeatedQueue() {
     name(6, 'Attempt to join the queue for a previously defeated leader');
-    db.queue.enqueue(leaderIds.defeated, challengerId, leaderType.veteran, (error) => {
+    db.queue.enqueue(leaderIds.defeated, challengerId, leaderType.veteran, battleFormat.singles, (error) => {
         if (error === resultCode.alreadyWon) {
             pass('failed to join with result code alreadyWon');
         } else if (error) {
@@ -188,13 +188,13 @@ function joinDefeatedQueue() {
             fail('successfully joined a defeated leader\'s queue');
         }
 
-        joinUnsupportedQueue();
+        joinUnsupportedTypeQueue();
     });
 }
 
-function joinUnsupportedQueue() {
+function joinUnsupportedTypeQueue() {
     name(7, 'Attempt to join a queue with an unsupported battle difficulty');
-    db.queue.enqueue(leaderIds.open, challengerId, leaderType.veteran, (error) => {
+    db.queue.enqueue(leaderIds.open, challengerId, leaderType.veteran, battleFormat.singles, (error) => {
         if (error === resultCode.unsupportedDifficulty) {
             pass('failed to join with result code unsupportedDifficulty');
         } else if (error) {
@@ -203,13 +203,28 @@ function joinUnsupportedQueue() {
             fail('successfully joined a queue with an unsupported battle difficulty');
         }
 
+        joinUnsupportedFormatQueue();
+    });
+}
+
+function joinUnsupportedFormatQueue() {
+    name(8, 'Attempt to join a queue with an unsupported battle format');
+    db.queue.enqueue(leaderIds.open, challengerId, leaderType.casual, battleFormat.doubles, (error) => {
+        if (error === resultCode.unsupportedFormat) {
+            pass('failed to join with result code unsupportedFormat');
+        } else if (error) {
+            fail(`error=${error}`);
+        } else {
+            fail('successfully joined a queue with an unsupported battle format');
+        }
+
         joinOpenQueue();
     });
 }
 
 function joinOpenQueue() {
-    name(8, 'Join an open leader queue');
-    db.queue.enqueue(leaderIds.open, challengerId, leaderType.casual, (error) => {
+    name(9, 'Join an open leader queue');
+    db.queue.enqueue(leaderIds.open, challengerId, leaderType.casual, battleFormat.singles, (error) => {
         if (error) {
             fail(`error=${error}`);
         } else {
@@ -221,7 +236,7 @@ function joinOpenQueue() {
 }
 
 function verifyNewQueue1() {
-    name(9, 'Verify queue count and position in the new queue');
+    name(10, 'Verify queue count and position in the new queue');
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -241,8 +256,8 @@ function verifyNewQueue1() {
 }
 
 function joinFullQueue() {
-    name(10, 'Attempt to join the queue while in the maximum allowed number');
-    db.queue.enqueue(leaderIds.full, challengerId, leaderType.casual, (error) => {
+    name(11, 'Attempt to join the queue while in the maximum allowed number');
+    db.queue.enqueue(leaderIds.full, challengerId, leaderType.casual, battleFormat.doubles, (error) => {
         if (error === resultCode.tooManyChallenges) {
             pass('failed to join with result code tooManyChallenges');
         } else if (error) {
@@ -256,8 +271,8 @@ function joinFullQueue() {
 }
 
 function joinRestrictedQueue() {
-    name(11, 'Attempt to join the champ queue without enough emblems');
-    db.queue.enqueue(leaderIds.champ, challengerId, leaderType.champion, (error) => {
+    name(12, 'Attempt to join the champ queue without enough emblems');
+    db.queue.enqueue(leaderIds.champ, challengerId, leaderType.champion, battleFormat.doubles, (error) => {
         if (error === resultCode.notEnoughEmblems) {
             pass('failed to join with result code notEnoughEmblems');
         } else if (error) {
@@ -271,7 +286,7 @@ function joinRestrictedQueue() {
 }
 
 function recordLeaderWin() {
-    name(12, 'Record a win against a leader');
+    name(13, 'Record a win against a leader');
     db.leader.reportResult(leaderIds.open, challengerId, true, true, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -286,7 +301,7 @@ function recordLeaderWin() {
 }
 
 function verifyBadgeCount1() {
-    name(13, 'Verify badge count after defeating a leader');
+    name(14, 'Verify badge count after defeating a leader');
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -301,7 +316,7 @@ function verifyBadgeCount1() {
 }
 
 function recordEliteWin() {
-    name(14, 'Record a win against an elite');
+    name(15, 'Record a win against an elite');
     db.leader.reportResult(leaderIds.elite, challengerId, true, true, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -316,7 +331,7 @@ function recordEliteWin() {
 }
 
 function verifyBadgeCount2() {
-    name(15, 'Verify badge count after defeating an elite');
+    name(16, 'Verify badge count after defeating an elite');
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -331,8 +346,8 @@ function verifyBadgeCount2() {
 }
 
 function joinChampQueue() {
-    name(16, 'Attempt to join the champ queue');
-    db.queue.enqueue(leaderIds.champ, challengerId, leaderType.champion, (error) => {
+    name(17, 'Attempt to join the champ queue');
+    db.queue.enqueue(leaderIds.champ, challengerId, leaderType.champion, battleFormat.doubles, (error) => {
         if (error) {
             fail(`error=${error}`);
         } else {
@@ -344,7 +359,7 @@ function joinChampQueue() {
 }
 
 function verifyNewQueue2() {
-    name(17, 'Verify queue count and position in the new queue');
+    name(18, 'Verify queue count and position in the new queue');
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -364,7 +379,7 @@ function verifyNewQueue2() {
 }
 
 function recordChampWin() {
-    name(18, 'Record a win against the champ');
+    name(19, 'Record a win against the champ');
     db.leader.reportResult(leaderIds.champ, challengerId, true, true, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -379,7 +394,7 @@ function recordChampWin() {
 }
 
 function verifyChampFlag() {
-    name(19, 'Verify the championDefeated flag');
+    name(20, 'Verify the championDefeated flag');
     db.challenger.getInfo(challengerId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -427,6 +442,6 @@ function cleanup() {
  * TEST EXECUTION *
  ******************/
 db.dbReady.then(() => {
-    start(19);
+    start(20);
     verifyBaseline();
 });

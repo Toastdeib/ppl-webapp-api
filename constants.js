@@ -14,7 +14,8 @@ export const resultCode = {
     queueIsClosed: 12,
     notEnoughBadges: 13,
     notEnoughEmblems: 14,
-    unsupportedDifficulty: 15
+    unsupportedDifficulty: 15,
+    unsupportedFormat: 16
 };
 
 export const leaderType = {

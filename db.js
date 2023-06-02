@@ -2,7 +2,7 @@ import config from './config.js';
 import crypto from 'crypto';
 import logger from './logger.js';
 import sql from 'mysql';
-import { leaderType, matchStatus, pplEvent, queueStatus, resultCode } from './constants.js';
+import { battleFormat, leaderType, matchStatus, pplEvent, queueStatus, resultCode } from './constants.js';
 
 const TABLE_SUFFIX = process.env.TABLE_SUFFIX || config.tableSuffix;
 const LOGINS_TABLE = 'ppl_webapp_logins' + TABLE_SUFFIX;
@@ -66,6 +66,7 @@ const linkCodeCache = {};
  * - leader_id: VARCHAR(16)
  * - challenger_id: VARCHAR(16)
  * - battle_difficulty: TINYINT(4)
+ * - battle_format: TINYINT(4)
  * - status: TINYINT(3)
  * - timestamp: TIMESTAMP
  */
@@ -472,7 +473,7 @@ async function getChallengerInfo(id, callback) {
     };
 
     // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    result = await fetch(`SELECT m.leader_id, l.leader_name, m.challenger_id, m.battle_difficulty FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) AND timestamp <= (SELECT timestamp FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?)`, [matchStatus.inQueue, id, matchStatus.inQueue, id, matchStatus.inQueue]);
+    result = await fetch(`SELECT m.leader_id, l.leader_name, m.challenger_id, m.battle_difficulty, m.battle_format FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) AND timestamp <= (SELECT timestamp FROM ${MATCHES_TABLE} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?)`, [matchStatus.inQueue, id, matchStatus.inQueue, id, matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -486,17 +487,19 @@ async function getChallengerInfo(id, callback) {
                 leaderName: row.leader_name,
                 position: 0, // Start this at 0, increment if we have additional rows for the leader ID
                 linkCode: getLinkCode(row.leader_id, id),
-                difficulty: row.battle_difficulty // Default to the new row, clobber it if we get another one
+                difficulty: row.battle_difficulty, // Default to the new row, clobber it if we get another one
+                format: row.battle_format // Same logic here as with difficulty
             });
         } else {
             match.position++;
             if (row.challenger_id === id) {
                 match.difficulty = row.battle_difficulty;
+                match.format = row.battle_format;
             }
         }
     }
 
-    result = await fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name, m.battle_difficulty, m.status FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?, ?)`, [id, matchStatus.onHold, matchStatus.win, matchStatus.ash]);
+    result = await fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name, m.battle_difficulty, m.battle_format, m.status FROM ${MATCHES_TABLE} m INNER JOIN ${LEADERS_TABLE} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?, ?)`, [id, matchStatus.onHold, matchStatus.win, matchStatus.ash]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -508,7 +511,8 @@ async function getChallengerInfo(id, callback) {
             retval.queuesOnHold.push({
                 leaderId: row.leader_id,
                 leaderName: row.leader_name,
-                difficulty: row.battle_difficulty
+                difficulty: row.battle_difficulty,
+                format: row.battle_format
             });
         } else {
             retval.badgesEarned.push({
@@ -598,7 +602,7 @@ async function getLeaderInfo(id, callback) {
         onHold: []
     };
 
-    result = await fetch(`SELECT m.challenger_id, c.display_name, m.status, m.battle_difficulty FROM ${MATCHES_TABLE} m INNER JOIN ${CHALLENGERS_TABLE} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.timestamp ASC`, [id, matchStatus.inQueue, matchStatus.onHold]);
+    result = await fetch(`SELECT m.challenger_id, c.display_name, m.status, m.battle_difficulty, m.battle_format FROM ${MATCHES_TABLE} m INNER JOIN ${CHALLENGERS_TABLE} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.timestamp ASC`, [id, matchStatus.inQueue, matchStatus.onHold]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -612,7 +616,8 @@ async function getLeaderInfo(id, callback) {
                 displayName: row.display_name,
                 position: position++,
                 linkCode: getLinkCode(id, row.challenger_id),
-                difficulty: row.battle_difficulty
+                difficulty: row.battle_difficulty,
+                format: row.battle_format
             });
         } else {
             retval.onHold.push({
@@ -622,21 +627,40 @@ async function getLeaderInfo(id, callback) {
         }
     }
 
-    result = await fetch(`SELECT status, COUNT(challenger_id) count FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status NOT IN (?, ?) GROUP BY status`, [id, matchStatus.inQueue, matchStatus.onHold]);
+    result = await fetch(`SELECT status, battle_format, challenger_id FROM ${MATCHES_TABLE} WHERE leader_id = ? AND status NOT IN (?, ?)`, [id, matchStatus.inQueue, matchStatus.onHold]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
-    // Win/loss is from the challenger perspective, so it's inverted here
-    const wins = (result.rows.find(row => row.status === matchStatus.loss) || { count: 0 }).count;
-    const losses = (result.rows.find(row => row.status === matchStatus.win) || { count: 0 }).count;
-    const ash = (result.rows.find(row => row.status === matchStatus.ash) || { count: 0 }).count;
-    const gary = (result.rows.find(row => row.status === matchStatus.gary) || { count: 0 }).count;
-
-    retval.winCount = wins + ash;
-    retval.lossCount = losses + gary;
-    retval.badgesAwarded = losses + ash;
+    for (const row of result.rows) {
+        // Win/loss is from the challenger perspective, so it's inverted here
+        const isSpecial = row.battle_format === battleFormat.special;
+        switch (row.status) {
+            case matchStatus.loss:
+                if (!isSpecial) {
+                    retval.winCount++;
+                }
+                break;
+            case matchStatus.win:
+                retval.badgesAwarded++;
+                if (!isSpecial) {
+                    retval.lossCount++;
+                }
+                break;
+            case matchStatus.ash:
+                retval.badgesAwarded++;
+                if (!isSpecial) {
+                    retval.winCount++;
+                }
+                break;
+            case matchStatus.gary:
+                if (!isSpecial) {
+                    retval.lossCount++;
+                }
+                break;
+        }
+    }
 
     if (shouldIncludeFeedbackSurvey()) {
         retval.feedbackSurveyUrl = config.leaderSurveyUrl;
@@ -660,16 +684,16 @@ async function updateQueueStatus(id, open, callback) {
     callback(resultCode.success, {});
 }
 
-async function enqueue(leaderId, challengerId, difficulty, callback) {
+async function enqueue(leaderId, challengerId, difficulty, format, callback) {
     // This is still disgusting and I still hate it, and now it's even worse than the clusterfuck in the bot.
     // Checks, in order, are:
     // 1. Leader's queue is open
-    // 2. Leader supports the requested battle difficulty
+    // 2. Leader supports the requested battle difficulty and format
     // 3. Challenger has enough badges/emblems to challenge
     // 4. Challenger isn't already in this leader's queue and hasn't already beaten them (0 matches with status <> 2)
     // 5. Leader has room in the queue (<20 matches with status in [0, 1])
     // 6. Challenger isn't in too many queues (<3 matches with status in [0, 1] across all leaders)
-    let result = await fetch(`SELECT leader_type, queue_open FROM ${LEADERS_TABLE} WHERE id = ?`, [leaderId]);
+    let result = await fetch(`SELECT leader_type, battle_format, queue_open FROM ${LEADERS_TABLE} WHERE id = ?`, [leaderId]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -688,6 +712,11 @@ async function enqueue(leaderId, challengerId, difficulty, callback) {
     const type = result.rows[0].leader_type;
     if (!(type & difficulty)) {
         callback(resultCode.unsupportedDifficulty);
+        return;
+    }
+
+    if (!(result.rows[0].battle_format & format)) {
+        callback(resultCode.unsupportedFormat);
         return;
     }
 
@@ -748,7 +777,7 @@ async function enqueue(leaderId, challengerId, difficulty, callback) {
         return;
     }
 
-    result = await save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, battle_difficulty, status, timestamp) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP())`, [leaderId, challengerId, difficulty, matchStatus.inQueue]);
+    result = await save(`INSERT INTO ${MATCHES_TABLE} (leader_id, challenger_id, battle_difficulty, battle_format, status, timestamp) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP())`, [leaderId, challengerId, difficulty, format, matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -871,7 +900,7 @@ async function getAllChallengers(eventString, callback) {
 }
 
 async function getLeaderMetrics(callback) {
-    const result = await fetch(`SELECT l.id, l.leader_name, m.status FROM ${MATCHES_TABLE} AS m INNER JOIN ${LEADERS_TABLE} AS l ON l.id = m.leader_id WHERE m.status NOT IN (?, ?)`, [matchStatus.inQueue, matchStatus.onHold]);
+    const result = await fetch(`SELECT l.id, l.leader_name, m.status, m.battle_format FROM ${MATCHES_TABLE} AS m INNER JOIN ${LEADERS_TABLE} AS l ON l.id = m.leader_id WHERE m.status NOT IN (?, ?)`, [matchStatus.inQueue, matchStatus.onHold]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -888,14 +917,30 @@ async function getLeaderMetrics(callback) {
             };
         }
 
-        if (row.status === matchStatus.loss || row.status === matchStatus.ash) {
-            retval[row.id].wins++;
-        } else {
-            retval[row.id].losses++;
-        }
-
-        if (row.status === matchStatus.win || row.status === matchStatus.ash) {
-            retval[row.id].badgesAwarded++;
+        const isSpecial = row.battle_format === battleFormat.special;
+        switch (row.status) {
+            case matchStatus.loss:
+                if (!isSpecial) {
+                    retval[row.id].wins++;
+                }
+                break;
+            case matchStatus.win:
+                retval[row.id].badgesAwarded++;
+                if (!isSpecial) {
+                    retval[row.id].losses++;
+                }
+                break;
+            case matchStatus.ash:
+                retval[row.id].badgesAwarded++;
+                if (!isSpecial) {
+                    retval[row.id].wins++;
+                }
+                break;
+            case matchStatus.gary:
+                if (!isSpecial) {
+                    retval[row.id].losses++;
+                }
+                break;
         }
     }
 

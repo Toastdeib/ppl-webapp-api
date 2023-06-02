@@ -19,8 +19,8 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 }
 
 import db from '../db.js';
+import { battleFormat, leaderType, matchStatus, resultCode } from '../constants.js';
 import { debug, fail, finish, name, pass, start } from './test-logger.js';
-import { leaderType, matchStatus, resultCode } from '../constants.js';
 
 /****************
  * TESTING DATA *
@@ -146,7 +146,7 @@ function verifyBaseline() {
 
 function addToClosedQueue() {
     name(1, 'Attempt to add a challenger to a closed queue');
-    db.queue.enqueue(leaderId, challengerIds.add, leaderType.casual, (error) => {
+    db.queue.enqueue(leaderId, challengerIds.add, leaderType.casual, battleFormat.singles, (error) => {
         if (error === resultCode.queueIsClosed) {
             pass('failed to add with result code queueIsClosed');
         } else if (error) {
@@ -189,7 +189,7 @@ function verifyQueueStatus1() {
 
 function addExistingChallenger() {
     name(4, 'Attempt to add a challenger who is already in queue');
-    db.queue.enqueue(leaderId, challengerIds.hold, leaderType.casual, (error) => {
+    db.queue.enqueue(leaderId, challengerIds.hold, leaderType.casual, battleFormat.singles, (error) => {
         if (error === resultCode.alreadyInQueue) {
             pass('failed to add with result code alreadyInQueue');
         } else if (error) {
@@ -205,7 +205,7 @@ function addExistingChallenger() {
 
 function addNewChallenger() {
     name(5, 'Add a new challenger to the queue');
-    db.queue.enqueue(leaderId, challengerIds.add, leaderType.casual, (error) => {
+    db.queue.enqueue(leaderId, challengerIds.add, leaderType.casual, battleFormat.singles, (error) => {
         if (error) {
             fail(`error=${error}`);
         } else {
@@ -489,7 +489,7 @@ function verifyQueueStatus2() {
 
 function addWithoutEnoughBadges() {
     name(24, 'Attempt to add a challenger with fewer than 8 badges to an elite queue');
-    db.queue.enqueue(eliteId, challengerIds.add, leaderType.elite, (error) => {
+    db.queue.enqueue(eliteId, challengerIds.add, leaderType.elite, battleFormat.singles, (error) => {
         if (error === resultCode.notEnoughBadges) {
             pass('failed to add with result code notEnoughBadges');
         } else if (error) {
@@ -504,7 +504,7 @@ function addWithoutEnoughBadges() {
 
 function addWithEnoughBadges() {
     name(25, 'Add a challenger to an elite queue');
-    db.queue.enqueue(eliteId, challengerIds.elite, leaderType.elite, (error) => {
+    db.queue.enqueue(eliteId, challengerIds.elite, leaderType.elite, battleFormat.singles, (error) => {
         if (error) {
             fail(`error=${error}`);
         } else {

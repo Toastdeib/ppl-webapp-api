@@ -149,7 +149,8 @@ Retrieves information about the challenger with the given ID.
             "leaderName": [string],
             "position": [int, 0-indexed]
             "linkCode": [string],
-            "difficulty": [int, uses the leaderType constant]
+            "difficulty": [int, uses the leaderType constant],
+            "format": [int, uses the battleFormat constant]
         },
         ...
     ],
@@ -157,7 +158,8 @@ Retrieves information about the challenger with the given ID.
         {
             "leaderId": [string],
             "leaderName": [string],
-            "difficulty": [int, uses the leaderType constant]
+            "difficulty": [int, uses the leaderType constant],
+            "format": [int, uses the battleFormat constant]
         },
         ...
     ],
@@ -243,6 +245,7 @@ Adds the challenger to the given leader's queue. This request performs a number 
 ##### Body params:
 
 - `battleDifficulty` - The battle difficulty, as one of the [`leaderType` constant values](#leadertype).
+- `battleFormat` - The battle format, as one of the [`battleFormat` constant values](#battleformat).
 
 ##### Response payload:
 
@@ -333,7 +336,8 @@ Retrieves information about the leader with the given ID.
             "displayName": [string],
             "position": [int, 0-indexed],
             "linkCode": [string],
-            "difficulty": [int, uses the leaderType constant]
+            "difficulty": [int, uses the leaderType constant],
+            "format": [int, uses the battleFormat constant]
         },
         ...
     ],
@@ -400,6 +404,7 @@ Adds the given challenger to the leader's queue. This request performs a number 
 ##### Body params:
 
 - `battleDifficulty` - The battle difficulty, as one of the [`leaderType` constant values](#leadertype).
+- `battleFormat` - The battle format, as one of the [`battleFormat` constant values](#battleformat).
 
 ##### Response payload:
 
@@ -722,7 +727,8 @@ These codes will be returned in **most** error payloads alongside an error strin
     "queueIsClosed": 12,
     "notEnoughBadges": 13,
     "notEnoughEmblems": 14,
-    "unsupportedDifficulty": 15
+    "unsupportedDifficulty": 15,
+    "unsupportedFormat": 16
 }
 ```
 

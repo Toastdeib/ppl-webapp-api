@@ -18,9 +18,9 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
     process.exit();
 }
 
+import { battleFormat, httpStatus, leaderType } from '../constants.js';
 import { clearCache, encodeCredentials, init, sendRequest } from './base-api-test.js';
 import { fail, finish, name, pass, start } from './test-logger.js';
-import { httpStatus, leaderType } from '../constants.js';
 
 /****************
  * TESTING DATA *
@@ -99,7 +99,7 @@ function goLive() {
 
 function enqueueChallenger1() {
     name(4, 'Add a challenger to the queue');
-    sendRequest(`${basePath}/enqueue/${challengerId}`, 'POST', { battleDifficulty: leaderType.casual }, token, (result) => {
+    sendRequest(`${basePath}/enqueue/${challengerId}`, 'POST', { battleDifficulty: leaderType.casual, battleFormat: battleFormat.singles }, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -174,7 +174,7 @@ function dequeueChallenger() {
 
 function enqueueChallenger2() {
     name(8, 'Add a challenger to queue (again)');
-    sendRequest(`${basePath}/enqueue/${challengerId}`, 'POST', { battleDifficulty: leaderType.intermediate }, token, (result) => {
+    sendRequest(`${basePath}/enqueue/${challengerId}`, 'POST', { battleDifficulty: leaderType.intermediate, battleFormat: battleFormat.doubles }, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {

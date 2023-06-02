@@ -18,9 +18,9 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
     process.exit();
 }
 
+import { battleFormat, httpStatus, leaderType, resultCode } from '../constants.js';
 import { clearCache, encodeCredentials, init, sendRequest } from './base-api-test.js';
 import { debug, fail, finish, name, pass, start } from './test-logger.js';
-import { httpStatus, leaderType, resultCode } from '../constants.js';
 
 /****************
  * TESTING DATA *
@@ -101,7 +101,7 @@ function getBingoBoard() {
 
 function joinQueue1() {
     name(4, 'Join a leader queue');
-    sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: leaderType.casual }, token, (result) => {
+    sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: leaderType.casual, battleFormat: battleFormat.singles }, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -120,7 +120,7 @@ function joinQueue1() {
 
 function joinQueue2() {
     name(5, 'Attempt to join a leader queue the challenger is already in');
-    sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: leaderType.casual }, token, (result) => {
+    sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: leaderType.casual, battleFormat: battleFormat.singles }, token, (result) => {
         if (result.status === httpStatus.ok) {
             fail('successfully joined the leader queue');
         } else {
@@ -156,7 +156,7 @@ function leaveQueue1() {
 
 function joinQueue3() {
     name(7, 'Join a leader queue (again)');
-    sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: leaderType.veteran }, token, (result) => {
+    sendRequest(`${basePath}/enqueue/${leaderId}`, 'POST', { battleDifficulty: leaderType.veteran, battleFormat: battleFormat.singles }, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {

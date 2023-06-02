@@ -80,6 +80,11 @@ export const challengerErrors = {
         userMessage: 'That leader doesn\'t support that battle difficulty.',
         statusCode: 400
     },
+    [resultCode.unsupportedFormat]: {
+        logMessage: 'Unsupported battle format',
+        userMessage: 'That leader doesn\'t support that battle format.',
+        statusCode: 400
+    },
     ...genericErrors
 };
 
@@ -127,6 +132,11 @@ export const leaderErrors = {
     [resultCode.unsupportedDifficulty]: {
         logMessage: 'Unsupported battle difficulty',
         userMessage: 'Your leader type doesn\'t support that battle difficulty.',
+        statusCode: 400
+    },
+    [resultCode.unsupportedFormat]: {
+        logMessage: 'Unsupported battle format',
+        userMessage: 'You don\'t support that battle format.',
         statusCode: 400
     },
     ...genericErrors

@@ -443,15 +443,16 @@ api.post('/challenger/:id/enqueue/:leader', (req, res) => {
     }
 
     const difficulty = Number(req.body.battleDifficulty);
-    if (!difficulty) {
+    const format = Number(req.body.battleFormat);
+    if (!difficulty || !format) {
         // Missing or invalid parameter
-        logger.api.warn(`loginId=${req.params.id} attempted to join queue with invalid battleDifficulty=${req.body.battleDifficulty}`);
-        res.status(httpStatus.badRequest).json({ error: 'That battle difficulty is invalid.' });
+        logger.api.warn(`loginId=${req.params.id} attempted to join queue with invalid params; battleDifficulty=${req.body.battleDifficulty}, battleFormat=${req.body.battleFormat}`);
+        res.status(httpStatus.badRequest).json({ error: 'That battle difficulty and/or battle format is invalid.' });
         return;
     }
 
-    logger.api.info(`loginId=${req.params.id} joining leaderId=${req.params.leader}'s queue`);
-    db.queue.enqueue(req.params.leader, req.params.id, difficulty, (error) => {
+    logger.api.info(`loginId=${req.params.id} joining leaderId=${req.params.leader}'s queue with battleDifficulty=${difficulty} and battleFormat=${format}`);
+    db.queue.enqueue(req.params.leader, req.params.id, difficulty, format, (error) => {
         if (error) {
             handleDbError(challengerErrors, error, res);
         } else {
@@ -550,15 +551,16 @@ api.post('/leader/:id/enqueue/:challenger', (req, res) => {
     }
 
     const difficulty = Number(req.body.battleDifficulty);
-    if (!difficulty) {
+    const format = Number(req.body.battleFormat);
+    if (!difficulty || !format) {
         // Missing or invalid parameter
-        logger.api.warn(`loginId=${req.params.id} attempted to join queue with invalid battleDifficulty=${req.body.battleDifficulty}`);
-        res.status(httpStatus.badRequest).json({ error: 'That battle difficulty is invalid.' });
+        logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to enqueue a challenger with invalid params; battleDifficulty=${req.body.battleDifficulty}, battleFormat=${req.body.battleFormat}`);
+        res.status(httpStatus.badRequest).json({ error: 'That battle difficulty and/or battle format is invalid.' });
         return;
     }
 
-    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} adding challengerId=${req.params.challenger} to queue`);
-    db.queue.enqueue(req.leaderId, req.params.challenger, difficulty, (error) => {
+    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} adding challengerId=${req.params.challenger} to queue with battleDifficulty=${difficulty} and battleFormat=${format}`);
+    db.queue.enqueue(req.leaderId, req.params.challenger, difficulty, format, (error) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {

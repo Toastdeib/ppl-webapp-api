@@ -336,7 +336,7 @@ function getAllLeaderData() {
         } else if (result[leaderInfo.id].name !== leaderInfo.name) {
             fail(`name=${result[leaderInfo.id].name}, expected=${leaderInfo.name}`);
         } else if (result[leaderInfo.id].leaderType !== leaderInfo.leaderType) {
-            fail(`leaderType=${result[leaderInfo.id].leaderType}, expected=${leaderInfo.name}`);
+            fail(`leaderType=${result[leaderInfo.id].leaderType}, expected=${leaderInfo.leaderType}`);
         } else if (result[leaderInfo.id].battleFormat !== leaderInfo.battleFormat) {
             fail(`battleFormat=${result[leaderInfo.id].battleFormat}, expected=${leaderInfo.battleFormat}`);
         } else if (result[leaderInfo.id].badgeName !== leaderInfo.badgeName) {
@@ -363,7 +363,7 @@ function getLeaderMetrics() {
         } else if (result[metricsInfo.id].name !== metricsInfo.name) {
             fail(`name=${result[metricsInfo.id].name}, expected=${metricsInfo.name}`);
         } else if (result[metricsInfo.id].wins !== metricsInfo.wins) {
-            fail(`wins=${result[metricsInfo.id].wins}, expected=${metricsInfo.name}`);
+            fail(`wins=${result[metricsInfo.id].wins}, expected=${metricsInfo.wins}`);
         } else if (result[metricsInfo.id].losses !== metricsInfo.losses) {
             fail(`losses=${result[metricsInfo.id].losses}, expected=${metricsInfo.losses}`);
         } else if (result[metricsInfo.id].badgesAwarded !== metricsInfo.badgesAwarded) {
