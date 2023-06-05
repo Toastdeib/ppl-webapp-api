@@ -18,7 +18,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
     process.exit();
 }
 
-import db from '../db.js';
+import db from '../db/db.js';
 import { battleFormat, leaderType, matchStatus, resultCode } from '../constants.js';
 import { debug, fail, finish, name, pass, start } from './test-logger.js';
 
