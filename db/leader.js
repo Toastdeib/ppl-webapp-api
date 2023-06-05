@@ -1,5 +1,6 @@
 /******************************************************
  *                  LEADER DB MODULE                  *
+ *                                                    *
  * This module uses the core db module to expose APIs *
  * for the leader-related tasks.                      *
  *                                                    *
@@ -11,7 +12,9 @@ import config from '../config.js';
 import { battleFormat, leaderType, matchStatus, queueStatus, resultCode } from '../constants.js';
 import { clearLinkCode, fetch, getLinkCode, pplEventToBitmask, save, shouldIncludeFeedbackSurvey, tables } from './core.js';
 
-// Public API
+/***************
+ * Public APIs *
+ ***************/
 export async function getLeaderInfo(id, callback) {
     let result = await fetch(`SELECT leader_name, leader_type, badge_name, queue_open, twitch_handle FROM ${tables.leaders} WHERE id = ?`, [id]);
     if (result.resultCode) {

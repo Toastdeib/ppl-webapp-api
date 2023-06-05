@@ -1,5 +1,6 @@
 /******************************************************
  *                CHALLENGER DB MODULE                *
+ *                                                    *
  * This module uses the core db module to expose APIs *
  * for the for challenger-related tasks.              *
  *                                                    *
@@ -11,7 +12,9 @@ import logger from '../logger.js';
 import { fetch, generateBingoBoard, getLinkCode, inflateBingoBoard, save, shouldIncludeFeedbackSurvey, tables } from './core.js';
 import { leaderType, matchStatus, resultCode } from '../constants.js';
 
-// Public API
+/***************
+ * Public APIs *
+ ***************/
 export async function getChallengerInfo(id, callback) {
     let result = await fetch(`SELECT display_name, bingo_board FROM ${tables.challengers} WHERE id = ?`, [id]);
     if (result.resultCode) {

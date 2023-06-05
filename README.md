@@ -13,7 +13,7 @@
 
 # Overview
 
-This project is an API built to support the [PPL Webapp](https://github.com/lunemily/ppl-in-person) frontend. It's set up to present its public-facing API through Express and be driven off of a MySQL database, the expected schema of which can be found in a comment near the top of the [db.js](db.js) module. In order to set up a new instance, you need to:
+This project is an API built to support the [PPL Webapp](https://github.com/lunemily/ppl-in-person) frontend. It's set up to present its public-facing API through Express and be driven off of a MySQL database, the expected schema of which can be found in a comment near the top of the [db/core.js](core.js) database module. In order to set up a new instance, you need to:
 
 1. Clone the project and install all the dependencies with npm.
 2. Make a copy of the [config.js.example](config.js.example) simply named config.js.
@@ -24,7 +24,7 @@ This project is an API built to support the [PPL Webapp](https://github.com/lune
     - The `certPath` field is a local filepath to your cert file so the API can be served over HTTPS. If you don't have a cert set up, check out LetsEncrypt to get started.
     - The `corsOrigin` field can be either a string or an array of strings, and each string should be a domain that's permitted to access the API.
     - The `mysql...` fields configure the database connection, and will vary depending on how your system is set up.
-    - The `tableSuffix` field is optional and applies a suffix to all table names in the db.js module if specified. This is useful for setting up a staging environment with a separate set of tables from those used in production.
+    - The `tableSuffix` field is optional and applies a suffix to all table names queried by the database module if specified. This is useful for setting up a staging environment with a separate set of tables from those used in production.
 4. Populate the event configs appropriately for your PPL event:
     - The `...SurveyUrl` fields are links to surveys to be filled out by Hall of Fame entrants, challengers, and leaders respectively. The former is typically used for challengers to submit their winning teams, and the latter two are for general feedback.
     - The `surveyStartDate` and `surveyDurationDays` fields define when the survey links should be sent down in API responses and for how long. The start date is typically the final day of a PPL event.

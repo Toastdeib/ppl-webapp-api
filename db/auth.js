@@ -1,5 +1,6 @@
 /******************************************************
  *                   AUTH DB MODULE                   *
+ *                                                    *
  * This module uses the core db module to expose auth *
  * APIs for the login system.                         *
  *                                                    *
@@ -13,7 +14,9 @@ import { fetch, generateBingoBoard, pplEventToBitmask, save, tables } from './co
 const SALT_HEX_LENGTH = 16;
 const LOGIN_ID_HEX_LENGTH = 8;
 
-// Private util
+/******************
+ * Util functions *
+ ******************/
 function hashWithSalt(password, salt) {
     const hash = crypto.createHash('sha256');
     hash.update(password);
@@ -21,7 +24,9 @@ function hashWithSalt(password, salt) {
     return hash.digest('hex');
 }
 
-// Public API
+/***************
+ * Public APIs *
+ ***************/
 export async function register(username, password, eventString, callback) {
     let result = await fetch(`SELECT 1 FROM ${tables.logins} WHERE username = ?`, [username]);
     if (result.resultCode) {

@@ -1,5 +1,6 @@
 /******************************************************
                    GENERAL DB MODULE                  *
+ *                                                    *
  * This module uses the core db module to expose APIs *
  * for the general unauthenticated tasks.             *
  *                                                    *
@@ -10,6 +11,9 @@
 import { fetch, tables } from './core.js';
 import { matchStatus, queueStatus, resultCode } from '../constants.js';
 
+/***************
+ * Public APIs *
+ ***************/
 export async function getAllIds(callback) {
     const retval = {};
     let result = await fetch(`SELECT id FROM ${tables.challengers}`, []);

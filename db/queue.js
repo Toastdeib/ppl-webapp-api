@@ -1,5 +1,6 @@
 /******************************************************
  *                  QUEUE DB MODULE                   *
+ *                                                    *
  * This module uses the core db module to expose APIs *
  * for the queue-management-related tasks.            *
  *                                                    *
@@ -10,7 +11,9 @@ import config from '../config.js';
 import { clearLinkCode, fetch, save, tables } from './core.js';
 import { leaderType, matchStatus, resultCode } from '../constants.js';
 
-// Public APIs
+/***************
+ * Public APIs *
+ ***************/
 export async function enqueue(leaderId, challengerId, difficulty, format, callback) {
     // This is still disgusting and I still hate it, and now it's even worse than the clusterfuck in the bot.
     // Checks, in order, are:

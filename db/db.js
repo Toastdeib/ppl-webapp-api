@@ -1,3 +1,12 @@
+/******************************************************
+ *                   MAIN DB MODULE                   *
+ *                                                    *
+ * This module aggregates the db functions in all of  *
+ * the submodules so they can be exposed with a       *
+ * single import. Modules using any db functionality  *
+ * should import this one rather than the individual  *
+ * submodules.                                        *
+ ******************************************************/
 import { dbReady, debugSave, tables } from './core.js';
 import { dequeue, enqueue, hold, unhold } from './queue.js';
 import { generateHex, login, register } from './auth.js';

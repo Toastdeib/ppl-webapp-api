@@ -1,5 +1,6 @@
 /******************************************************
  *                   CORE DB MODULE                   *
+ *                                                    *
  * This module provides a wrapper for the mysql node  *
  * module and contains core db functionality that's   *
  * shared across the other db modules in this folder. *
@@ -87,7 +88,9 @@ const sqlDb = sql.createPool({
     connectionLimit: 5
 });
 
-// Private util
+/******************
+ * Util functions *
+ ******************/
 function zeroPad(value, length) {
     let result = `${value}`;
     while (result.length < length) {
@@ -129,7 +132,9 @@ async function fetchBingoIds(callback) {
     callback();
 }
 
-// Public API
+/***************
+ * Public APIs *
+ ***************/
 export function fetch(query, params) {
     return new Promise((resolve) => {
         sqlDb.query(query, params, (error, result) => {

@@ -1,3 +1,14 @@
+/******************************************************
+ *                     API MODULE                     *
+ *                                                    *
+ * This module defines all of the public-facing web   *
+ * API paths exposed by the server. The paths are     *
+ * split up into sections for clarity - auth, leader, *
+ * challenger, unauthenticated, and logging. The      *
+ * module exports the express app so it can be        *
+ * instantiated for actual use as well as for use in  *
+ * the API test suites.                               *
+ ******************************************************/
 import bodyParser from 'body-parser';
 import config from './config.js';
 import cors from 'cors';
@@ -663,6 +674,9 @@ api.get('/leader/:id/allchallengers', (req, res) => {
     });
 });
 
+/************************
+ * Unauthenticated APIs *
+ ************************/
 api.get('/metrics', (req, res) => {
     logger.api.info('Returning leader metrics');
     db.leader.metrics((error, result) => {
@@ -701,6 +715,9 @@ api.get('/badges/:id', (req, res) => {
     });
 });
 
+/****************
+ * Logging APIs *
+ ****************/
 api.get('/logview', (req, res) => {
     generateLogviewResponse(res, 0);
 });
