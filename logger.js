@@ -1,3 +1,15 @@
+/******************************************************
+ *                   LOGGING MODULE                   *
+ *                                                    *
+ * This module defines a logger for use by all other  *
+ * modules in the project. It uses the winston log    *
+ * library to format and write messages to a rotating *
+ * log file, which runs on a 14d expiration. It also  *
+ * supports a special logging mode for the test       *
+ * suites which prints log messages to the console    *
+ * with color formatting for clarity, so as to avoid  *
+ * clogging the real logs with dummy data.            *
+ ******************************************************/
 import winston from 'winston';
 import 'winston-daily-rotate-file';
 
