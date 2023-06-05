@@ -8,7 +8,7 @@
  * This module exports the following functions:       *
  *   fetch, save, getLinkCode, clearLinkCode,         *
  *   pplEventToBitmask, shouldIncludeFeedbackSurvey,  *
- *   generateBingoBoard, inflateBingoBoard            *
+ *   generateBingoBoard, inflateBingoBoard, debugSave *
  * It also exports the following constants:           *
  *   tables, dbReady                                  *
  ******************************************************/
