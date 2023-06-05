@@ -392,13 +392,13 @@ api.use('/challenger/:id', (req, res, next) => {
     const token = req.get(AUTH_HEADER);
     if (!token) {
         logger.api.warn(`Challenger endpoint request for loginId=${req.params.id} with missing auth header`);
-        res.status(httpStatus.unauthorized).json({});
+        res.status(httpStatus.unauthorized).json({ error: 'All logged-in requests must include an \'Authorization\' header.' });
         return;
     }
 
     if (!validateSession(token, req.params.id, false)) {
         logger.api.warn(`Challenger endpoint request for loginId=${req.params.id} with invalid auth header`);
-        res.status(httpStatus.unauthorized).json({});
+        res.status(httpStatus.unauthorized).json({ error: 'The \'Authorization\' header in your request was invalid or malformed.' });
         return;
     }
 
@@ -502,14 +502,14 @@ api.use('/leader/:id', (req, res, next) => {
     const token = req.get(AUTH_HEADER);
     if (!token) {
         logger.api.error(`Leader endpoint request for loginId=${req.params.id} with missing auth header`);
-        res.status(httpStatus.unauthorized).json({});
+        res.status(httpStatus.unauthorized).json({ error: 'All logged-in requests must include an \'Authorization\' header.' });
         return;
     }
 
     const session = validateSession(token, req.params.id, true);
     if (!session) {
         logger.api.error(`Leader endpoint request for loginId=${req.params.id} with invalid auth header`);
-        res.status(httpStatus.unauthorized).json({});
+        res.status(httpStatus.unauthorized).json({ error: 'The \'Authorization\' header in your request was invalid or malformed.' });
         return;
     }
 
