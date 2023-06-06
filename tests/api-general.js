@@ -18,7 +18,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
     process.exit();
 }
 
-import { httpStatus } from '../constants.js';
+import { httpStatus } from '../util/constants.js';
 import { clearCache, init, sendRequest } from './base-api-test.js';
 import { fail, finish, name, pass, start } from './test-logger.js';
 

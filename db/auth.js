@@ -8,7 +8,7 @@
  *   register, login, generateHex                     *
  ******************************************************/
 import crypto from 'crypto';
-import { resultCode } from '../constants.js';
+import { resultCode } from '../util/constants.js';
 import { fetch, generateBingoBoard, pplEventToBitmask, save, tables } from './core.js';
 
 const SALT_HEX_LENGTH = 16;

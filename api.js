@@ -10,16 +10,16 @@
  * the API test suites.                               *
  ******************************************************/
 import bodyParser from 'body-parser';
-import config from './config.js';
+import config from './config/config.js';
 import cors from 'cors';
 import db from './db/db.js';
 import express from 'express';
 import fs from 'fs';
 import http from 'http';
-import logger from './logger.js';
+import logger from './util/logger.js';
 import sanitize from 'sanitize-html';
-import { challengerErrors, leaderErrors } from './errors.js';
-import { httpStatus, pplEvent } from './constants.js';
+import { challengerErrors, leaderErrors } from './util/errors.js';
+import { httpStatus, pplEvent } from './util/constants.js';
 
 const api = express();
 api.use(cors({ origin: config.corsOrigin }));

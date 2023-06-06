@@ -9,7 +9,7 @@
  *   getBadges                                        *
  ******************************************************/
 import { fetch, tables } from './core.js';
-import { matchStatus, queueStatus, resultCode } from '../constants.js';
+import { matchStatus, queueStatus, resultCode } from '../util/constants.js';
 
 /***************
  * Public APIs *

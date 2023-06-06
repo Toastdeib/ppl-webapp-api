@@ -7,10 +7,10 @@
  * This module exports the following functions:       *
  *   getChallengerInfo, setDisplayName, getBingoBoard *
  ******************************************************/
-import config from '../config.js';
-import logger from '../logger.js';
+import config from '../config/config.js';
+import logger from '../util/logger.js';
 import { fetch, generateBingoBoard, getLinkCode, inflateBingoBoard, save, shouldIncludeFeedbackSurvey, tables } from './core.js';
-import { leaderType, matchStatus, resultCode } from '../constants.js';
+import { leaderType, matchStatus, resultCode } from '../util/constants.js';
 
 /***************
  * Public APIs *

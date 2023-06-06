@@ -8,8 +8,8 @@
  *   getLeaderInfo, updateQueueStatus, reportResult,  *
  *   getAllChallengers, getLeaderMetrics              *
  ******************************************************/
-import config from '../config.js';
-import { battleFormat, leaderType, matchStatus, queueStatus, resultCode } from '../constants.js';
+import config from '../config/config.js';
+import { battleFormat, leaderType, matchStatus, queueStatus, resultCode } from '../util/constants.js';
 import { clearLinkCode, fetch, getLinkCode, pplEventToBitmask, save, shouldIncludeFeedbackSurvey, tables } from './core.js';
 
 /***************

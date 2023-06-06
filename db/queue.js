@@ -7,9 +7,9 @@
  * This module exports the following functions:       *
  *   enqueue, dequeue, hold, unhold                   *
  ******************************************************/
-import config from '../config.js';
+import config from '../config/config.js';
 import { clearLinkCode, fetch, save, tables } from './core.js';
-import { leaderType, matchStatus, resultCode } from '../constants.js';
+import { leaderType, matchStatus, resultCode } from '../util/constants.js';
 
 /***************
  * Public APIs *

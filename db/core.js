@@ -12,10 +12,10 @@
  * It also exports the following constants:           *
  *   tables, dbReady                                  *
  ******************************************************/
-import config from '../config.js';
-import logger from '../logger.js';
+import config from '../config/config.js';
+import logger from '../util/logger.js';
 import sql from 'mysql';
-import { leaderType, pplEvent, resultCode } from '../constants.js';
+import { leaderType, pplEvent, resultCode } from '../util/constants.js';
 
 const TABLE_SUFFIX = process.env.TABLE_SUFFIX || config.tableSuffix;
 const LOGINS_TABLE = 'ppl_webapp_logins' + TABLE_SUFFIX;

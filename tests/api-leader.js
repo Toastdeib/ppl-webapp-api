@@ -18,7 +18,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
     process.exit();
 }
 
-import { battleFormat, httpStatus, leaderType } from '../constants.js';
+import { battleFormat, httpStatus, leaderType } from '../util/constants.js';
 import { clearCache, encodeCredentials, init, sendRequest } from './base-api-test.js';
 import { fail, finish, name, pass, start } from './test-logger.js';
 

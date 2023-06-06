@@ -10,7 +10,7 @@
  * Usage:                                               *
  * node db-reset.js                                     *
  ********************************************************/
-import config from '../config.js';
+import config from '../config/config.js';
 import fs from 'fs';
 import sql from 'mysql';
 

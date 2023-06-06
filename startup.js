@@ -1,8 +1,8 @@
 import api from './api.js';
-import config from './config.js';
+import config from './config/config.js';
 import fs from 'fs';
 import https from 'https';
-import logger from './logger.js';
+import logger from './util/logger.js';
 
 // Certificate
 const privateKey = fs.readFileSync(config.certPath + 'privkey.pem', 'utf8');
