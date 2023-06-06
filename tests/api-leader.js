@@ -25,9 +25,7 @@ import { fail, finish, name, pass, start } from './test-logger.js';
 /****************
  * TESTING DATA *
  ****************/
-const username = 'toastleader';
-const password = 'password1';
-const credentials = { Authorization: encodeCredentials(username, password) };
+const credentials = { Authorization: encodeCredentials('toastleader', 'password1') };
 const pplEvent = { 'PPL-Event': 'online' };
 const token = {};
 let basePath;

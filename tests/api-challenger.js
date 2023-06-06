@@ -25,12 +25,9 @@ import { debug, fail, finish, name, pass, start } from './test-logger.js';
 /****************
  * TESTING DATA *
  ****************/
-const username = 'toastchallenger';
-const password = 'password1';
-const credentials = {
-    Authorization: encodeCredentials(username, password),
-    'PPL-Event': 'online'
-};
+const credentials = { Authorization: encodeCredentials('toastchallenger', 'password1') };
+const badCredentials = { Authorization: encodeCredentials('toastchallenger', 'password2') };
+const pplEvent = { 'PPL-Event': 'online' };
 const token = {};
 let basePath;
 
@@ -42,7 +39,7 @@ const leaderId = 'd08cde9beddd';
  ******************/
 function login() {
     name(1, 'Log in with stored credentials');
-    sendRequest('/login', 'POST', {}, credentials, (result) => {
+    sendRequest('/login', 'POST', {}, { ...credentials, ...pplEvent }, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}, aborting test run`);
             finish();
@@ -206,6 +203,51 @@ function leaveQueue2() {
             }
         }
 
+        badLogin1();
+    });
+}
+
+function badLogin1() {
+    name(10, 'Attempt to log in without a PPL-Event header');
+    sendRequest('/login', 'POST', {}, credentials, (result) => {
+        if (result.status === httpStatus.ok) {
+            fail('logged in successfully with a missing header');
+        } else if (result.status !== httpStatus.badRequest) {
+            fail(`received HTTP status code ${result.status}`);
+        } else {
+            pass(`failed to log in with HTTP status code ${result.status}`);
+        }
+
+        badLogin2();
+    });
+}
+
+function badLogin2() {
+    name(11, 'Attempt to log in without an Authorization header');
+    sendRequest('/login', 'POST', {}, pplEvent, (result) => {
+        if (result.status === httpStatus.ok) {
+            fail('logged in successfully with a missing header');
+        } else if (result.status !== httpStatus.badRequest) {
+            fail(`received HTTP status code ${result.status}`);
+        } else {
+            pass(`failed to log in with HTTP status code ${result.status}`);
+        }
+
+        badLogin3();
+    });
+}
+
+function badLogin3() {
+    name(12, 'Attempt to log in with invalid credentials');
+    sendRequest('/login', 'POST', {}, { ...badCredentials, ...pplEvent }, (result) => {
+        if (result.status === httpStatus.ok) {
+            fail('logged in successfully with invalid credentials');
+        } else if (result.status !== httpStatus.unauthorized) {
+            fail(`received HTTP status code ${result.status}`);
+        } else {
+            pass(`failed to log in with HTTP status code ${result.status}`);
+        }
+
         cleanup();
     });
 }
@@ -225,6 +267,6 @@ function cleanup() {
 }
 
 init(() => {
-    start(9);
+    start(12);
     login();
 });
