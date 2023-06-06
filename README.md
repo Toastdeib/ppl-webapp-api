@@ -16,7 +16,7 @@
 This project is an API built to support the [PPL Webapp](https://github.com/lunemily/ppl-in-person) frontend. It's set up to present its public-facing API through Express and be driven off of a MySQL database, the expected schema of which can be found in a comment near the top of the [db/core.js](core.js) database module. In order to set up a new instance, you need to:
 
 1. Clone the project and install all the dependencies with npm.
-2. Make a copy of the [config.js.example](config.js.example) simply named config.js.
+2. Make a copy of the [config/config.js.example](config.js.example) simply named config.js.
 3. Populate the API configs appropriately for your environment:
     - The `debug` field indicates whether the node application should run in debug mode. Setting this to `true` will enable console input in the running application, as well as the `debugSave` function on the database module.
     - The `port` field is the port that the API will listen on, and should be an open port on the machine running this node application.
@@ -706,6 +706,8 @@ Writes an error-level log message to file. This path should only be sent plainte
 
 ## Constants
 
+The [util/constants.js](constants.js) file contains the following constant definitions:
+
 #### resultCode
 
 These codes will be returned in **most** error payloads alongside an error string, to provide additional context around the nature of the error.
@@ -734,7 +736,7 @@ These codes will be returned in **most** error payloads alongside an error strin
 
 #### leaderType
 
-These are used to identify what battle difficulties a leader supports. While this constant is used as a bitmask, only the first **three** values (`casual`, `intermediate`, `veteran`) will ever be masked together; `elite` and `champion` should never be combined with other values.
+These are used to identify what battle difficulties a leader supports, and will both be returned in some payloads and expected as parameters in some requests. While this constant is a bitmask, only the first **three** values (`casual`, `intermediate`, `veteran`) will ever be masked together; `elite` and `champion` should never be combined with other values.
 
 ```json
 {
@@ -748,7 +750,7 @@ These are used to identify what battle difficulties a leader supports. While thi
 
 #### battleFormat
 
-These are used to identify what battle formats a leader supports. This constant is used as a bitmask, as leaders can support multiple battle formats.
+These are used to identify what battle formats a leader supports, and will both be returned in some payloads and expected as parameters in some requests. This constant is a bitmask, as leaders can support multiple battle formats.
 
 ```json
 {
@@ -756,6 +758,58 @@ These are used to identify what battle formats a leader supports. This constant 
     "doubles": 2,
     "multi": 4,
     "special": 8
+}
+```
+
+#### matchStatus
+
+These are used to identify the current status of a match in the matches database table, and are only used **internally** to the API. Results are from the **challenger perspective** - `loss` refers to a challenger loss, and `win` a challenger win. `ash` and `gary` are special results for when a match is lost but a badge is awarded, or a match is won but a badge is **not** awarded (e.g. due to bad sportsmanship), respectively.
+
+```json
+{
+    "inQueue": 0,
+    "onHold": 1,
+    "loss": 2,
+    "win": 3,
+    "ash": 4,
+    "gary": 5
+}
+```
+
+#### queueStatus
+
+These are used to identify the current status of a leader's queue, and are only used **internally** to the API. While far from necessary, this constant helps keep the code more readable.
+
+```json
+{
+    "closed": 0,
+    "open": 1
+}
+```
+
+#### pplEvent
+
+These are used to identify what PAX event(s) a login is associated with, and are only used **internally** to the API. This constant is a bitmask, as users can and often do attend multiple events. It's mapped to the string values passed in the PPL-Event header expected in some requests.
+
+```json
+{
+    "east": 1,
+    "west": 2,
+    "aus": 4,
+    "online": 8
+}
+```
+
+#### httpStatus
+
+These are used as a mapping for the subset of HTTP status codes that can be returned, and are only used **internally** to the API. This mapping should be expanded if any additional status codes are ever used.
+
+```json
+{
+    "ok": 200,
+    "badRequest": 400,
+    "unauthorized": 401,
+    "serverError": 500
 }
 ```
 
