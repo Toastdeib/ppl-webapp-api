@@ -9,7 +9,7 @@
  ******************************************************/
 import crypto from 'crypto';
 import { resultCode } from '../util/constants.js';
-import { fetch, generateBingoBoard, pplEventToBitmask, save, tables } from './core.js';
+import { fetch, generateBingoBoard, save, tables } from './core.js';
 
 const SALT_HEX_LENGTH = 16;
 const LOGIN_ID_HEX_LENGTH = 8;
@@ -27,7 +27,7 @@ function hashWithSalt(password, salt) {
 /***************
  * Public APIs *
  ***************/
-export async function register(username, password, eventString, callback) {
+export async function register(username, password, eventMask, callback) {
     let result = await fetch(`SELECT 1 FROM ${tables.logins} WHERE username = ?`, [username]);
     if (result.resultCode) {
         callback(result.resultCode);
@@ -42,7 +42,6 @@ export async function register(username, password, eventString, callback) {
     const salt = generateHex(SALT_HEX_LENGTH);
     const hash = hashWithSalt(password, salt);
     const id = generateHex(LOGIN_ID_HEX_LENGTH);
-    const eventMask = pplEventToBitmask(eventString);
     result = await save(`INSERT INTO ${tables.logins} (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES (?, ?, ?, ?, 0, NULL)`, [id, username, `${hash}:${salt}`, eventMask]);
     if (result.resultCode) {
         callback(result.resultCode);
@@ -74,7 +73,7 @@ export async function register(username, password, eventString, callback) {
     });
 }
 
-export async function login(username, password, eventString, callback) {
+export async function login(username, password, eventMask, callback) {
     let result = await fetch(`SELECT id, password_hash, ppl_events, is_leader, leader_id FROM ${tables.logins} WHERE username = ?`, [username]);
     if (result.resultCode) {
         callback(result.resultCode);
@@ -95,8 +94,6 @@ export async function login(username, password, eventString, callback) {
     }
 
     const oldMask = row.ppl_events;
-    const eventMask = pplEventToBitmask(eventString);
-
     result = await save(`UPDATE ${tables.logins} SET ppl_events = ?, last_used_date = CURRENT_TIMESTAMP() WHERE username = ?`, [oldMask | eventMask, username]);
     if (result.resultCode) {
         callback(result.resultCode);

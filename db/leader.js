@@ -10,7 +10,7 @@
  ******************************************************/
 import config from '../config/config.js';
 import { battleFormat, leaderType, matchStatus, queueStatus, resultCode } from '../util/constants.js';
-import { clearLinkCode, fetch, getLinkCode, pplEventToBitmask, save, shouldIncludeFeedbackSurvey, tables } from './core.js';
+import { clearLinkCode, fetch, getLinkCode, save, shouldIncludeFeedbackSurvey, tables } from './core.js';
 
 /***************
  * Public APIs *
@@ -158,8 +158,7 @@ export async function reportResult(leaderId, challengerId, challengerWin, badgeA
     callback(resultCode.success, { hof: hof });
 }
 
-export async function getAllChallengers(eventString, callback) {
-    const eventMask = pplEventToBitmask(eventString);
+export async function getAllChallengers(eventMask, callback) {
     const result = await fetch(`SELECT c.id, c.display_name FROM ${tables.challengers} c INNER JOIN ${tables.logins} l ON l.id = c.id WHERE l.ppl_events & ? <> 0 AND l.is_leader = 0`, [eventMask]);
     if (result.resultCode) {
         callback(result.resultCode);

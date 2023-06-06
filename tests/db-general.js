@@ -19,8 +19,8 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 }
 
 import db from '../db/db.js';
-import { resultCode } from '../util/constants.js';
 import { debug, fail, finish, name, pass, start } from './test-logger.js';
+import { pplEvent, resultCode } from '../util/constants.js';
 
 /****************
  * TESTING DATA *
@@ -87,7 +87,7 @@ let id;
  ******************/
 function getAllChallengersEast1() {
     name(1, 'Get all challenger IDs for east (before registration)');
-    db.leader.getAllChallengers('east', (error, result) => {
+    db.leader.getAllChallengers(pplEvent.east, (error, result) => {
         if (error) {
             fail(`error=${error}`);
         } else if (result.length !== idCounts.east.first) {
@@ -102,7 +102,7 @@ function getAllChallengersEast1() {
 
 function getAllChallengersWest1() {
     name(2, 'Get all challenger IDs for west (before registration)');
-    db.leader.getAllChallengers('west', (error, result) => {
+    db.leader.getAllChallengers(pplEvent.west, (error, result) => {
         if (error) {
             fail(`error=${error}`);
         } else if (result.length !== idCounts.west.first) {
@@ -134,7 +134,7 @@ function getAllIds1() {
 
 function registerWithTakenUsername() {
     name(4, 'Register with a taken username');
-    db.auth.register(takenUsername, password, 'east', (error) => {
+    db.auth.register(takenUsername, password, pplEvent.east, (error) => {
         if (error === resultCode.usernameTaken) {
             pass('registration failed with usernameTaken result code');
         } else if (error) {
@@ -149,7 +149,7 @@ function registerWithTakenUsername() {
 
 function registerWithNewUsername() {
     name(5, 'Register with a new username');
-    db.auth.register(newUsername, password, 'east', (error, result) => {
+    db.auth.register(newUsername, password, pplEvent.east, (error, result) => {
         if (error) {
             fail(`error=${error}`);
         } else {
@@ -163,7 +163,7 @@ function registerWithNewUsername() {
 
 function loginWithGoodCredentials() {
     name(6, 'Login with valid credentials');
-    db.auth.login(newUsername, password, 'east', (error, result) => {
+    db.auth.login(newUsername, password, pplEvent.east, (error, result) => {
         if (error) {
             fail(`error=${error}`);
         } else if (result.id !== id) {
@@ -178,7 +178,7 @@ function loginWithGoodCredentials() {
 
 function loginWithBadCredentials() {
     name(7, 'Login with invalid credentials');
-    db.auth.login(newUsername, badPassword, 'east', (error) => {
+    db.auth.login(newUsername, badPassword, pplEvent.east, (error) => {
         if (error === resultCode.badCredentials) {
             pass('login failed with badCredentials result code');
         } else if (error) {
@@ -193,7 +193,7 @@ function loginWithBadCredentials() {
 
 function getAllChallengersEast2() {
     name(8, 'Get all challenger IDs for east (after registration)');
-    db.leader.getAllChallengers('east', (error, result) => {
+    db.leader.getAllChallengers(pplEvent.east, (error, result) => {
         if (error) {
             fail(`error=${error}`);
         } else if (result.length !== idCounts.east.second) {
@@ -208,7 +208,7 @@ function getAllChallengersEast2() {
 
 function getAllChallengersWest2() {
     name(9, 'Get all challenger IDs for west (after registration)');
-    db.leader.getAllChallengers('west', (error, result) => {
+    db.leader.getAllChallengers(pplEvent.west, (error, result) => {
         if (error) {
             fail(`error=${error}`);
         } else if (result.length !== idCounts.west.second) {
@@ -240,7 +240,7 @@ function getAllIds2() {
 
 function loginForWest() {
     name(11, 'Login for west');
-    db.auth.login(newUsername, password, 'west', (error, result) => {
+    db.auth.login(newUsername, password, pplEvent.west, (error, result) => {
         if (error) {
             fail(`error=${error}`);
         } else if (result.id !== id) {
@@ -255,7 +255,7 @@ function loginForWest() {
 
 function getAllChallengersWest3() {
     name(12, 'Get all challenger IDs for west (after second login)');
-    db.leader.getAllChallengers('west', (error, result) => {
+    db.leader.getAllChallengers(pplEvent.west, (error, result) => {
         if (error) {
             fail(`error=${error}`);
         } else if (result.length !== idCounts.west.third) {

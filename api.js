@@ -29,9 +29,8 @@ api.set('view engine', 'pug');
 // eslint-disable-next-line no-magic-numbers
 const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
 // eslint-disable-next-line no-magic-numbers
-const SESSION_EXPIRATION_MILLIS = 4 * 24 * 60 * 60 * 1000; // 4 days in ms
-// eslint-disable-next-line no-magic-numbers
-const PRUNE_INTERVAL_MILLIS = 24 * 60 * 60 * 1000; // 1 day in ms
+const SESSION_EXPIRATION_MILLIS = 4 * ONE_DAY_MILLIS; // 4 days in ms
+const PRUNE_INTERVAL_MILLIS = ONE_DAY_MILLIS;
 const SESSION_TOKEN_HEX_LENGTH = 16;
 const CACHE_FILE = 'cache.json';
 let sessionCache;
@@ -164,6 +163,19 @@ function validateSession(token, id, leaderRequest) {
 
     session.lastUsed = now;
     return session;
+}
+
+function pplEventToBitmask(eventString) {
+    if (!eventString) {
+        return 0;
+    }
+
+    eventString = eventString.toLowerCase();
+    if (!pplEvent[eventString]) {
+        return false;
+    }
+
+    return pplEvent[eventString];
 }
 
 function validateChallengerId(id) {
@@ -315,7 +327,14 @@ api.post('/register', (req, res) => {
         return;
     }
 
-    db.auth.register(parts[0], parts[1], eventString, (error, result) => {
+    const eventMask = pplEventToBitmask(eventString);
+    if (!eventMask) {
+        logger.api.warn(`Registration attempt with unexpected PPL event header value=${eventString}`);
+        res.status(httpStatus.badRequest).json({ error: 'The \'PPL-Event\' header in your request was either missing or invalid.' });
+        return;
+    }
+
+    db.auth.register(parts[0], parts[1], eventMask, (error, result) => {
         if (error) {
             handleDbError(challengerErrors, error, res);
         } else {
@@ -354,7 +373,14 @@ api.post('/login', (req, res) => {
         return;
     }
 
-    db.auth.login(parts[0], parts[1], eventString, (error, result) => {
+    const eventMask = pplEventToBitmask(eventString);
+    if (!eventMask) {
+        logger.api.warn(`Login attempt with unexpected PPL event header value=${eventString}`);
+        res.status(httpStatus.badRequest).json({ error: 'The \'PPL-Event\' header in your request was either missing or invalid.' });
+        return;
+    }
+
+    db.auth.login(parts[0], parts[1], eventMask, (error, result) => {
         if (error) {
             handleDbError(challengerErrors, error, res);
         } else {
@@ -664,8 +690,15 @@ api.post('/leader/:id/live', (req, res) => {
 
 api.get('/leader/:id/allchallengers', (req, res) => {
     const eventString = req.get(PPL_EVENT_HEADER);
+    const eventMask = pplEventToBitmask(eventString);
+    if (!eventMask) {
+        logger.api.warn(`Get all challengers attempt with unexpected PPL event header value=${eventString}`);
+        res.status(httpStatus.badRequest).json({ error: 'The \'PPL-Event\' header in your request was either missing or invalid.' });
+        return;
+    }
+
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} fetching all challengers`);
-    db.leader.getAllChallengers(eventString, (error, result) => {
+    db.leader.getAllChallengers(eventMask, (error, result) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {

@@ -7,15 +7,15 @@
  *                                                    *
  * This module exports the following functions:       *
  *   fetch, save, getLinkCode, clearLinkCode,         *
- *   pplEventToBitmask, shouldIncludeFeedbackSurvey,  *
- *   generateBingoBoard, inflateBingoBoard, debugSave *
+ *   shouldIncludeFeedbackSurvey, generateBingoBoard  *
+ *   inflateBingoBoard, debugSave                     *
  * It also exports the following constants:           *
  *   tables, dbReady                                  *
  ******************************************************/
 import config from '../config/config.js';
 import logger from '../util/logger.js';
 import sql from 'mysql';
-import { leaderType, pplEvent, resultCode } from '../util/constants.js';
+import { leaderType, resultCode } from '../util/constants.js';
 
 const TABLE_SUFFIX = process.env.TABLE_SUFFIX || config.tableSuffix;
 const LOGINS_TABLE = 'ppl_webapp_logins' + TABLE_SUFFIX;
@@ -180,20 +180,6 @@ export function getLinkCode(leaderId, challengerId) {
 
 export function clearLinkCode(leaderId, challengerId) {
     delete linkCodeCache[createLinkCodeKey(leaderId, challengerId)];
-}
-
-export function pplEventToBitmask(eventString) {
-    if (!eventString) {
-        return 0;
-    }
-
-    eventString = eventString.toLowerCase();
-    if (!pplEvent[eventString]) {
-        logger.api.warn(`Unexpected PPL event header value: ${eventString}`);
-        return 0;
-    }
-
-    return pplEvent[eventString];
 }
 
 export function shouldIncludeFeedbackSurvey() {
