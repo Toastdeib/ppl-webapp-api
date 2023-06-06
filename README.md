@@ -13,10 +13,10 @@
 
 # Overview
 
-This project is an API built to support the [PPL Webapp](https://github.com/lunemily/ppl-in-person) frontend. It's set up to present its public-facing API through Express and be driven off of a MySQL database, the expected schema of which can be found in a comment near the top of the [db/core.js](core.js) database module. In order to set up a new instance, you need to:
+This project is an API built to support the [PPL Webapp](https://github.com/lunemily/ppl-in-person) frontend. It's set up to present its public-facing API through Express and be driven off of a MySQL database, the expected schema of which can be found in a comment near the top of the [core.js](db/core.js) database module. In order to set up a new instance, you need to:
 
 1. Clone the project and install all the dependencies with npm.
-2. Make a copy of the [config/config.js.example](config.js.example) simply named config.js.
+2. Make a copy of the [config.js.example](config/config.js.example) simply named config.js.
 3. Populate the API configs appropriately for your environment:
     - The `debug` field indicates whether the node application should run in debug mode. Setting this to `true` will enable console input in the running application, as well as the `debugSave` function on the database module.
     - The `port` field is the port that the API will listen on, and should be an open port on the machine running this node application.
@@ -706,7 +706,7 @@ Writes an error-level log message to file. This path should only be sent plainte
 
 ## Constants
 
-The [util/constants.js](constants.js) file contains the following constant definitions:
+The [constants.js](util/constants.js) file contains the following constant definitions:
 
 #### resultCode
 
