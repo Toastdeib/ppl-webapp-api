@@ -452,10 +452,10 @@ Reports a match result for the given challenger. This path tracks the battle res
 
 - `Authorization` - Authentication header following the [Bearer scheme](https://www.rfc-editor.org/rfc/rfc6750#section-2.1).
 
-##### Require body params:
+##### Body params:
 
-- challengerWin - A boolean flag indicating whether the challenger won the match.
-- badgeAwarded - A boolean flag indicating whether the challenger was awarded a badge.
+- `challengerWin` - A boolean flag indicating whether the challenger won the match.
+- `badgeAwarded` - A boolean flag indicating whether the challenger was awarded a badge.
 
 ##### Response payload:
 
