@@ -9,8 +9,9 @@
  *   getAllChallengers, getLeaderMetrics              *
  ******************************************************/
 import config from '../config/config.js';
+import { sendPush } from '../push/push.js';
 import { battleFormat, leaderType, matchStatus, queueStatus, resultCode } from '../util/constants.js';
-import { clearLinkCode, fetch, getLinkCode, save, shouldIncludeFeedbackSurvey, tables } from './core.js';
+import { clearLinkCode, fetch, getLinkCode, getPushTokens, save, shouldIncludeFeedbackSurvey, tables } from './core.js';
 
 /***************
  * Public APIs *
@@ -155,6 +156,14 @@ export async function reportResult(leaderId, challengerId, challengerWin, badgeA
     }
 
     clearLinkCode(leaderId, challengerId);
+
+    result = await fetch(`SELECT challenger_id FROM ${tables.matches} WHERE leader_id = ? AND status = ? ORDER BY timestamp ASC LIMIT 1`, [leaderId, matchStatus.inQueue]);
+    if (!result.resultCode && result.rows.length > 0) {
+        // We have at least one challenger in queue, so send a push to the whoever is up next
+        const pushMsg = 'Hey champ in making, it\'s time for your next battle! Check your queues in the app!';
+        sendPush(pushMsg, getPushTokens(result.rows[0].challenger_id));
+    }
+
     callback(resultCode.success, { hof: hof });
 }
 

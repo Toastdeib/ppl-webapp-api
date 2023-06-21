@@ -8,7 +8,8 @@
  *   enqueue, dequeue, hold, unhold                   *
  ******************************************************/
 import config from '../config/config.js';
-import { clearLinkCode, fetch, save, tables } from './core.js';
+import { sendPush } from '../push/push.js';
+import { clearLinkCode, fetch, getPushTokens, save, tables } from './core.js';
 import { leaderType, matchStatus, resultCode } from '../util/constants.js';
 
 /***************
@@ -96,6 +97,8 @@ export async function enqueue(leaderId, challengerId, difficulty, format, callba
         return;
     }
 
+    const queueWasEmpty = result.rows.length === 0;
+
     result = await fetch(`SELECT 1 FROM ${tables.matches} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, matchStatus.inQueue, matchStatus.onHold]);
     if (result.resultCode) {
         callback(result.resultCode);
@@ -113,11 +116,17 @@ export async function enqueue(leaderId, challengerId, difficulty, format, callba
         return;
     }
 
+    if (queueWasEmpty) {
+        // Notify the challenger that it's their turn to battle, since they're the only one in queue
+        const pushMsg = 'Hey champ in making, it\'s time for your next battle! Check your queues in the app!';
+        sendPush(pushMsg, getPushTokens(challengerId));
+    }
+
     callback(resultCode.success);
 }
 
 export async function dequeue(leaderId, challengerId, callback) {
-    const result = await save(`DELETE FROM ${tables.matches} WHERE leader_id = ? AND challenger_id = ? AND status IN (?, ?)`, [leaderId, challengerId, matchStatus.inQueue, matchStatus.onHold]);
+    let result = await save(`DELETE FROM ${tables.matches} WHERE leader_id = ? AND challenger_id = ? AND status IN (?, ?)`, [leaderId, challengerId, matchStatus.inQueue, matchStatus.onHold]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -129,11 +138,19 @@ export async function dequeue(leaderId, challengerId, callback) {
     }
 
     clearLinkCode(leaderId, challengerId);
+
+    result = await fetch(`SELECT challenger_id FROM ${tables.matches} WHERE leader_id = ? AND status = ? ORDER BY timestamp ASC LIMIT 1`, [leaderId, matchStatus.inQueue]);
+    if (!result.resultCode && result.rows.length > 0) {
+        // We have at least one challenger in queue, so send a push to the whoever is up next
+        const pushMsg = 'Hey champ in making, it\'s time for your next battle! Check your queues in the app!';
+        sendPush(pushMsg, getPushTokens(result.rows[0].challenger_id));
+    }
+
     callback(resultCode.success);
 }
 
 export async function hold(leaderId, challengerId, callback) {
-    const result = await save(`UPDATE ${tables.matches} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchStatus.onHold, leaderId, challengerId, matchStatus.inQueue]);
+    let result = await save(`UPDATE ${tables.matches} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchStatus.onHold, leaderId, challengerId, matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -142,6 +159,13 @@ export async function hold(leaderId, challengerId, callback) {
     if (result.rowCount === 0) {
         callback(resultCode.notInQueue);
         return;
+    }
+
+    result = await fetch(`SELECT challenger_id FROM ${tables.matches} WHERE leader_id = ? AND status = ? ORDER BY timestamp ASC LIMIT 1`, [leaderId, matchStatus.inQueue]);
+    if (!result.resultCode && result.rows.length > 0) {
+        // We have at least one challenger in queue, so send a push to the whoever is up next
+        const pushMsg = 'Hey champ in making, it\'s time for your next battle! Check your queues in the app!';
+        sendPush(pushMsg, getPushTokens(result.rows[0].challenger_id));
     }
 
     callback(resultCode.success);
@@ -172,6 +196,12 @@ export async function unhold(leaderId, challengerId, placeAtFront, callback) {
     if (result.rowCount === 0) {
         callback(resultCode.notInQueue);
         return;
+    }
+
+    if (placeAtFront) {
+        // We have at least one challenger in queue, so send a push to the whoever is up next
+        const pushMsg = 'Hey champ in making, it\'s time for your next battle! Check your queues in the app!';
+        sendPush(pushMsg, getPushTokens(challengerId));
     }
 
     callback(resultCode.success);

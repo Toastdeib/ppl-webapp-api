@@ -730,7 +730,10 @@ These codes will be returned in **most** error payloads alongside an error strin
     "notEnoughBadges": 13,
     "notEnoughEmblems": 14,
     "unsupportedDifficulty": 15,
-    "unsupportedFormat": 16
+    "unsupportedFormat": 16,
+    "unsupportedPushPlatform": 17,
+    "tokenAlreadyRegistered": 18,
+    "tokenNotRegistered": 19
 }
 ```
 
@@ -809,7 +812,33 @@ These are used as a mapping for the subset of HTTP status codes that can be retu
     "ok": 200,
     "badRequest": 400,
     "unauthorized": 401,
+    "notFound": 404,
     "serverError": 500
+}
+```
+
+#### requestType
+
+These are used to identify the type of request for permissioning when validating a session. Requests with type `challenger` will be rejected for leader logins, requests with type `leader` will be rejected for challenger logins, and requests with type `universal` will be allowed for both login types.
+
+```json
+{
+    "challenger": 0,
+    "leader": 1,
+    "universal": 2
+}
+```
+
+#### platformType
+
+These are used to identify the platform a request is coming from. They're mapped from the `Platform` header in login and register requests, with `none` being used if the header is missing or an invalid value is provided.
+
+```json
+{
+    "none": -1,
+    "web": 0,
+    "android": 1,
+    "ios": 2
 }
 ```
 

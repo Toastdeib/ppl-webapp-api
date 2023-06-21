@@ -19,12 +19,13 @@ import http from 'http';
 import logger from './util/logger.js';
 import sanitize from 'sanitize-html';
 import { challengerErrors, leaderErrors } from './util/errors.js';
-import { httpStatus, pplEvent } from './util/constants.js';
+import { httpStatus, platformType, pplEvent, requestType } from './util/constants.js';
 
 const api = express();
 api.use(cors({ origin: config.corsOrigin }));
 api.use(bodyParser.json());
 api.set('view engine', 'pug');
+api.use('/static', express.static('static'));
 
 // eslint-disable-next-line no-magic-numbers
 const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
@@ -38,6 +39,7 @@ let idCache;
 
 const AUTH_HEADER = 'Authorization';
 const PPL_EVENT_HEADER = 'PPL-Event';
+const PLATFORM_HEADER = 'Platform';
 
 /******************
  * Util functions *
@@ -92,13 +94,14 @@ function decodeCredentials(credentials) {
     return atob(parts[1]).split(':');
 }
 
-function createSession(id, isLeader, leaderId) {
+function createSession(id, isLeader, leaderId, platform) {
     const token = db.generateHex(SESSION_TOKEN_HEX_LENGTH);
     sessionCache[token] = {
         id: id,
         lastUsed: new Date().getTime(),
         isLeader: isLeader,
-        leaderId: leaderId
+        leaderId: leaderId,
+        platform: platform
     };
 
     saveCache();
@@ -126,16 +129,24 @@ function clearSession(token, id) {
     saveCache();
 }
 
-function validateSession(token, id, leaderRequest) {
+function validateSession(token, id, type) {
+    if (!token) {
+        // Missing token header
+        logger.api.warn(`loginId=${id} attempted to make an API request with a missing auth header`);
+        return false;
+    }
+
     const parts = token.split(' ');
     if (parts[0] !== 'Bearer') {
         // Malformed token header
+        logger.api.warn(`loginId=${id} attempted to make an API request with with a malformed auth header`);
         return false;
     }
 
     const session = sessionCache[parts[1]];
     if (!session) {
         // No session found for the provided access token
+        logger.api.warn(`loginId=${id} attempted to make an API request with with an invalid token`);
         return false;
     }
 
@@ -145,7 +156,7 @@ function validateSession(token, id, leaderRequest) {
         return false;
     }
 
-    if (session.isLeader !== leaderRequest) {
+    if ((type === requestType.challenger && session.isLeader) || (type === requestType.leader && session.isChallenger)) {
         // Disallow API requests from the wrong user type
         logger.api.warn(`loginId=${id} attempted to make an API request for the incorrect user type`);
         return false;
@@ -167,7 +178,7 @@ function validateSession(token, id, leaderRequest) {
 
 function pplEventToBitmask(eventString) {
     if (!eventString) {
-        return 0;
+        return false;
     }
 
     eventString = eventString.toLowerCase();
@@ -176,6 +187,19 @@ function pplEventToBitmask(eventString) {
     }
 
     return pplEvent[eventString];
+}
+
+function platformToEnum(platformString) {
+    if (!platformString) {
+        return platformType.none;
+    }
+
+    platformString = platformString.toLowerCase();
+    if (!platformType[platformString]) {
+        return platformType.none;
+    }
+
+    return platformType[platformString];
 }
 
 function validateChallengerId(id) {
@@ -313,6 +337,7 @@ function sendHttpBotRequest(path, params) {
 api.post('/register', (req, res) => {
     const credentials = req.get(AUTH_HEADER);
     const eventString = req.get(PPL_EVENT_HEADER);
+    const platformString = req.get(PLATFORM_HEADER);
 
     if (!credentials) {
         logger.api.warn('Registration attempt with missing auth header');
@@ -339,7 +364,7 @@ api.post('/register', (req, res) => {
             handleDbError(challengerErrors, error, res);
         } else {
             logger.api.info(`Registered loginId=${result.id} with username=${parts[0]}`);
-            const token = createSession(result.id, result.isLeader, result.leaderId);
+            const token = createSession(result.id, result.isLeader, result.leaderId, platformToEnum(platformString));
             idCache.challengers.push(result.id);
             if (result.pplEvent === pplEvent.online) {
                 sendHttpBotRequest('/challengerregistered', {});
@@ -359,6 +384,7 @@ api.post('/register', (req, res) => {
 api.post('/login', (req, res) => {
     const credentials = req.get(AUTH_HEADER);
     const eventString = req.get(PPL_EVENT_HEADER);
+    const platformString = req.get(PLATFORM_HEADER);
 
     if (!credentials) {
         logger.api.warn('Login attempt with missing auth header');
@@ -385,7 +411,9 @@ api.post('/login', (req, res) => {
             handleDbError(challengerErrors, error, res);
         } else {
             logger.api.info(`Logged in loginId=${result.id} with username=${parts[0]}`);
-            const token = createSession(result.id, result.isLeader, result.leaderId);
+            // Only populate an existing push token in the session info if the login platform matches the push type
+            const platform = platformToEnum(platformString);
+            const token = createSession(result.id, result.isLeader, result.leaderId, platform);
             if (result.newEvent === pplEvent.online) {
                 sendHttpBotRequest('/challengerregistered', {});
             }
@@ -426,16 +454,9 @@ api.get('/allleaderdata', (req, res) => {
  * Challenger APIs *
  *******************/
 api.use('/challenger/:id', (req, res, next) => {
-    const token = req.get(AUTH_HEADER);
-    if (!token) {
-        logger.api.warn(`Challenger endpoint request for loginId=${req.params.id} with missing auth header`);
-        res.status(httpStatus.unauthorized).json({ error: 'All logged-in requests must include an \'Authorization\' header.' });
-        return;
-    }
-
-    if (!validateSession(token, req.params.id, false)) {
-        logger.api.warn(`Challenger endpoint request for loginId=${req.params.id} with invalid auth header`);
-        res.status(httpStatus.unauthorized).json({ error: 'The \'Authorization\' header in your request was invalid or malformed.' });
+    logger.api.info(`Validating token for challenger endpoint request for loginId=${req.params.id}`);
+    if (!validateSession(req.get(AUTH_HEADER), req.params.id, requestType.challenger)) {
+        res.status(httpStatus.unauthorized).json({ error: 'The \'Authorization\' header in your request was missing, invalid, or malformed.' });
         return;
     }
 
@@ -536,17 +557,10 @@ api.post('/challenger/:id/hold/:leader', (req, res) => {
  * Leader APIs *
  ***************/
 api.use('/leader/:id', (req, res, next) => {
-    const token = req.get(AUTH_HEADER);
-    if (!token) {
-        logger.api.error(`Leader endpoint request for loginId=${req.params.id} with missing auth header`);
-        res.status(httpStatus.unauthorized).json({ error: 'All logged-in requests must include an \'Authorization\' header.' });
-        return;
-    }
-
-    const session = validateSession(token, req.params.id, true);
+    logger.api.info(`Validating token for leader endpoint request for loginId=${req.params.id}`);
+    const session = validateSession(req.get(AUTH_HEADER), req.params.id, requestType.leader);
     if (!session) {
-        logger.api.error(`Leader endpoint request for loginId=${req.params.id} with invalid auth header`);
-        res.status(httpStatus.unauthorized).json({ error: 'The \'Authorization\' header in your request was invalid or malformed.' });
+        res.status(httpStatus.unauthorized).json({ error: 'The \'Authorization\' header in your request was missing, invalid, or malformed.' });
         return;
     }
 
@@ -703,6 +717,53 @@ api.get('/leader/:id/allchallengers', (req, res) => {
             handleDbError(leaderErrors, error, res);
         } else {
             res.json(result);
+        }
+    });
+});
+
+/*************
+ * Push APIs *
+ *************/
+api.use('/push/:id', (req, res, next) => {
+    logger.api.info(`Validating token for push endpoint request for loginId=${req.params.id}`);
+    const session = validateSession(req.get(AUTH_HEADER), req.params.id, requestType.universal);
+    if (!session) {
+        res.status(httpStatus.unauthorized).json({ error: 'The \'Authorization\' header in your request was missing, invalid, or malformed.' });
+        return;
+    }
+
+    if (!req.body.pushToken) {
+        logger.api.warn(`loginId=${req.params.id} attempted to enable push without a push token`);
+        res.status(httpStatus.badRequest).json({ error: 'The JSON body for requests to this endpoint must include a \'pushToken\' property.' });
+        return;
+    }
+
+    req.session = session;
+    next();
+});
+
+// TODO - UNTESTED
+api.post('/push/:id/enable', (req, res) => {
+    logger.api.info(`loginId=${req.params.id} enabling push for platformType=${req.session.platform}`);
+    db.push.enable(req.params.id, req.session.platform, req.body.pushToken, (error) => {
+        if (error) {
+            handleDbError(challengerErrors, error, res);
+        } else {
+            req.session.pushToken = req.body.pushToken;
+            res.json({}); // TODO - Maybe add something to the response payload?
+        }
+    });
+});
+
+// TODO - UNTESTED
+api.post('/push/:id/disable', (req, res) => {
+    logger.api.info(`loginId=${req.params.id} disabling push for platformType=${req.session.platform}`);
+    db.push.disable(req.params.id, req.session.platform, req.body.pushToken, (error) => {
+        if (error) {
+            handleDbError(challengerErrors, error, res);
+        } else {
+            req.session.pushToken = null;
+            res.json({}); // TODO - Maybe add something to the response payload?
         }
     });
 });

@@ -9,6 +9,7 @@
  ******************************************************/
 import { dbReady, debugSave, tables } from './core.js';
 import { dequeue, enqueue, hold, unhold } from './queue.js';
+import { disable, enable } from './push.js';
 import { generateHex, login, register } from './auth.js';
 import { getAllChallengers, getLeaderInfo, getLeaderMetrics, reportResult, updateQueueStatus } from './leader.js';
 import { getAllIds, getAllLeaderData, getBadges, getOpenQueues } from './general.js';
@@ -36,6 +37,10 @@ const db = {
     auth: {
         register: register,
         login: login
+    },
+    push: {
+        enable: enable,
+        disable: disable
     },
     generateHex: generateHex,
     getAllIds: getAllIds,

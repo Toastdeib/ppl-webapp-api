@@ -15,7 +15,10 @@ export const resultCode = {
     notEnoughBadges: 13,
     notEnoughEmblems: 14,
     unsupportedDifficulty: 15,
-    unsupportedFormat: 16
+    unsupportedFormat: 16,
+    unsupportedPushPlatform: 17,
+    tokenAlreadyRegistered: 18,
+    tokenNotRegistered: 19
 };
 
 export const leaderType = {
@@ -64,5 +67,19 @@ export const httpStatus = {
     ok: 200,
     badRequest: 400,
     unauthorized: 401,
+    notFound: 404,
     serverError: 500
+};
+
+export const requestType = {
+    challenger: 0,
+    leader: 1,
+    universal: 2
+};
+
+export const platformType = {
+    none: -1,
+    web: 0,
+    android: 1,
+    ios: 2
 };

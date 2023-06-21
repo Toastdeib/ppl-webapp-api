@@ -8,7 +8,8 @@
  * This module exports the following functions:       *
  *   fetch, save, getLinkCode, clearLinkCode,         *
  *   shouldIncludeFeedbackSurvey, generateBingoBoard  *
- *   inflateBingoBoard, debugSave                     *
+ *   inflateBingoBoard, debugSave, cachePushToken,    *
+ *   uncachePushToken                                 *
  * It also exports the following constants:           *
  *   tables, dbReady                                  *
  ******************************************************/
@@ -19,6 +20,7 @@ import { leaderType, resultCode } from '../util/constants.js';
 
 const TABLE_SUFFIX = process.env.TABLE_SUFFIX || config.tableSuffix;
 const LOGINS_TABLE = 'ppl_webapp_logins' + TABLE_SUFFIX;
+const TOKENS_TABLE = 'ppl_webapp_push_tokens' + TABLE_SUFFIX;
 const CHALLENGERS_TABLE = 'ppl_webapp_challengers' + TABLE_SUFFIX;
 const LEADERS_TABLE = 'ppl_webapp_leaders' + TABLE_SUFFIX;
 const MATCHES_TABLE = 'ppl_webapp_matches' + TABLE_SUFFIX;
@@ -37,6 +39,7 @@ const SURVEY_START_DATE = new Date(config.surveyStartDate);
 const SURVEY_END_DATE = new Date(SURVEY_START_DATE.getTime() + (config.surveyDurationDays * 24 * 60 * 60 * 1000));
 
 const linkCodeCache = {};
+const pushTokenCache = {};
 let leaderIds, eliteIds;
 
 /* TABLE SCHEMA *
@@ -49,6 +52,12 @@ let leaderIds, eliteIds;
  * - leader_id: VARCHAR(8)
  * - registered_date: TIMESTAMP
  * - last_used_date: TIMESTAMP
+ *
+ * ppl_webapp_push_tokens
+ * - id: VARCHAR(16)
+ * - device_id: VARCHAR(100) TODO - May not be needed?
+ * - push_type: TINYINT(4)
+ * - push_token: VARCHAR(300) TODO - May need embiggening
  *
  * ppl_webapp_challengers
  * - id: VARCHAR(16)
@@ -104,8 +113,8 @@ function createLinkCodeKey(leaderId, challengerId) {
     return `${leaderId}:${challengerId}`;
 }
 
-async function fetchBingoIds(callback) {
-    const result = await fetch(`SELECT id, leader_type FROM ${LEADERS_TABLE} WHERE leader_type <> ?`, [leaderType.champion]);
+async function initCaches(callback) {
+    let result = await fetch(`SELECT id, leader_type FROM ${tables.leaders} WHERE leader_type <> ?`, [leaderType.champion]);
     if (result.resultCode) {
         logger.api.error('Couldn\'t populate IDs for bingo boards due to a DB error');
         callback();
@@ -128,8 +137,63 @@ async function fetchBingoIds(callback) {
         }
     }
 
-    logger.api.info(`Bingo board IDs successfully populated with ${leaderIds.length} leader(s) and ${eliteIds.length} elite(s)`);
+    logger.api.debug('Skipping token cache init');
+    result = await fetch(`SELECT id, push_type, push_token FROM ${tables.tokens}`, []);
+    if (result.resultCode) {
+        logger.api.error('Couldn\'t populate push token cache due to a DB error');
+        callback();
+        return;
+    }
+
+    for (const row of result.rows) {
+        cachePushToken(row.id, row.push_type, row.push_token);
+    }
+
+    logger.api.info(`Caches successfully populated with ${leaderIds.length} leader(s), ${eliteIds.length} elite(s), and ${result.rows.length} push token(s)`);
     callback();
+}
+
+/*****************
+ * Internal APIs *
+ *****************/
+export function cachePushToken(id, platform, token) {
+    if (!pushTokenCache[id]) {
+        pushTokenCache[id] = {};
+    }
+
+    if (!pushTokenCache[id][platform]) {
+        pushTokenCache[id][platform] = [];
+    }
+
+    pushTokenCache[id][platform].push(token);
+}
+
+export function uncachePushToken(id, platform, token) {
+    if (!pushTokenCache[id]) {
+        return;
+    }
+
+    if (!pushTokenCache[id][platform]) {
+        return;
+    }
+
+    const index = pushTokenCache[id][platform].indexOf(token);
+    if (index === -1) {
+        return;
+    }
+
+    pushTokenCache[id][platform].splice(index, 1);
+    if (pushTokenCache[id][platform].length === 0) {
+        delete pushTokenCache[id][platform];
+    }
+}
+
+export function getPushTokens(id) {
+    if (!pushTokenCache[id]) {
+        return {};
+    }
+
+    return pushTokenCache[id];
 }
 
 /***************
@@ -265,13 +329,14 @@ export async function debugSave(query, params, callback) {
 
 export const tables = {
     logins: LOGINS_TABLE,
+    tokens: TOKENS_TABLE,
     challengers: CHALLENGERS_TABLE,
     leaders: LEADERS_TABLE,
     matches: MATCHES_TABLE
 };
 
 export const dbReady = new Promise((resolve) => {
-    fetchBingoIds(() => {
+    initCaches(() => {
         resolve();
     });
 });
