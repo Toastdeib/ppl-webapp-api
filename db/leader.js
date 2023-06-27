@@ -109,14 +109,14 @@ export async function getLeaderInfo(id, callback) {
 }
 
 export async function updateQueueStatus(id, open, callback) {
-    const result = await save(`UPDATE ${tables.leaders} SET queue_open = ? WHERE id = ?`, [open ? queueStatus.open : queueStatus.closed, id]);
+    const result = await save(`UPDATE ${tables.leaders} SET queue_open = ? WHERE id = ? AND queue_open = ?`, [open ? queueStatus.open : queueStatus.closed, id, open ? queueStatus.closed : queueStatus.open]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
     if (result.rowCount === 0) {
-        callback(resultCode.notFound);
+        callback(open ? resultCode.queueAlreadyOpen : resultCode.queueAlreadyClosed);
         return;
     }
 

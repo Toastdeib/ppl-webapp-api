@@ -18,7 +18,9 @@ export const resultCode = {
     unsupportedFormat: 16,
     unsupportedPushPlatform: 17,
     tokenAlreadyRegistered: 18,
-    tokenNotRegistered: 19
+    tokenNotRegistered: 19,
+    queueAlreadyOpen: 20,
+    queueAlreadyClosed: 21
 };
 
 export const leaderType = {
