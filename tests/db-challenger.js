@@ -20,7 +20,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 
 import db from '../db/db.js';
 import { battleFormat, leaderType, matchStatus, resultCode } from '../util/constants.js';
-import { debug, fail, finish, name, pass, start } from './test-logger.js';
+import { debug, fail, finish, name, next, pass, start } from './test-logger.js';
 
 /****************
  * TESTING DATA *
@@ -96,7 +96,7 @@ function verifyBaseline() {
 
         if (baselineValid) {
             debug('Baseline is valid, beginning test run');
-            setDisplayName();
+            next(setDisplayName);
         } else {
             debug('One or more baseline checks were incorrect, aborting test run, please verify db integrity and try again');
             process.exit();
@@ -113,7 +113,7 @@ function setDisplayName() {
             pass('display name updated without error');
         }
 
-        verifyDisplayName();
+        next(verifyDisplayName);
     });
 }
 
@@ -128,7 +128,7 @@ function verifyDisplayName() {
             pass('updated display name was correct');
         }
 
-        getBingoBoard();
+        next(getBingoBoard);
     });
 }
 
@@ -143,7 +143,7 @@ function getBingoBoard() {
             pass('bingo board inflated successfully');
         }
 
-        joinClosedQueue();
+        next(joinClosedQueue);
     });
 }
 
@@ -158,7 +158,7 @@ function joinClosedQueue() {
             fail('successfully joined a closed queue');
         }
 
-        joinJoinedQueue();
+        next(joinJoinedQueue);
     });
 }
 
@@ -173,7 +173,7 @@ function joinJoinedQueue() {
             fail('successfully joined a queue the challenger is already in');
         }
 
-        joinDefeatedQueue();
+        next(joinDefeatedQueue);
     });
 }
 
@@ -188,7 +188,7 @@ function joinDefeatedQueue() {
             fail('successfully joined a defeated leader\'s queue');
         }
 
-        joinUnsupportedTypeQueue();
+        next(joinUnsupportedTypeQueue);
     });
 }
 
@@ -203,7 +203,7 @@ function joinUnsupportedTypeQueue() {
             fail('successfully joined a queue with an unsupported battle difficulty');
         }
 
-        joinUnsupportedFormatQueue();
+        next(joinUnsupportedFormatQueue);
     });
 }
 
@@ -218,7 +218,7 @@ function joinUnsupportedFormatQueue() {
             fail('successfully joined a queue with an unsupported battle format');
         }
 
-        joinOpenQueue();
+        next(joinOpenQueue);
     });
 }
 
@@ -231,7 +231,7 @@ function joinOpenQueue() {
             pass('successfully joined an open queue');
         }
 
-        verifyNewQueue1();
+        next(verifyNewQueue1);
     });
 }
 
@@ -251,7 +251,7 @@ function verifyNewQueue1() {
             }
         }
 
-        joinFullQueue();
+        next(joinFullQueue);
     });
 }
 
@@ -266,7 +266,7 @@ function joinFullQueue() {
             fail('successfully joined a queue while already in the maximum allowed number');
         }
 
-        joinRestrictedQueue();
+        next(joinRestrictedQueue);
     });
 }
 
@@ -281,7 +281,7 @@ function joinRestrictedQueue() {
             fail('successfully joined the champ queue without enough emblems');
         }
 
-        recordLeaderWin();
+        next(recordLeaderWin);
     });
 }
 
@@ -296,7 +296,7 @@ function recordLeaderWin() {
             pass('match result recorded successfully');
         }
 
-        verifyBadgeCount1();
+        next(verifyBadgeCount1);
     });
 }
 
@@ -311,7 +311,7 @@ function verifyBadgeCount1() {
             pass('badge count was correct');
         }
 
-        recordEliteWin();
+        next(recordEliteWin);
     });
 }
 
@@ -326,7 +326,7 @@ function recordEliteWin() {
             pass('match result recorded successfully');
         }
 
-        verifyBadgeCount2();
+        next(verifyBadgeCount2);
     });
 }
 
@@ -341,12 +341,12 @@ function verifyBadgeCount2() {
             pass('badge count was correct');
         }
 
-        joinChampQueue();
+        next(joinChampQueue);
     });
 }
 
 function joinChampQueue() {
-    name(17, 'Attempt to join the champ queue');
+    name(17, 'Join the champ queue');
     db.queue.enqueue(leaderIds.champ, challengerId, leaderType.champion, battleFormat.doubles, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -354,7 +354,7 @@ function joinChampQueue() {
             pass('successfully joined the champ queue');
         }
 
-        verifyNewQueue2();
+        next(verifyNewQueue2);
     });
 }
 
@@ -374,7 +374,7 @@ function verifyNewQueue2() {
             }
         }
 
-        recordChampWin();
+        next(recordChampWin);
     });
 }
 
@@ -389,7 +389,7 @@ function recordChampWin() {
             pass('match result recorded successfully');
         }
 
-        verifyChampFlag();
+        next(verifyChampFlag);
     });
 }
 
@@ -404,7 +404,7 @@ function verifyChampFlag() {
             pass('championDefeated flag was true');
         }
 
-        cleanup();
+        next(cleanup);
     });
 }
 

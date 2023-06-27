@@ -20,7 +20,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 
 import { battleFormat, httpStatus, leaderType } from '../util/constants.js';
 import { clearCache, encodeCredentials, init, sendRequest } from './base-api-test.js';
-import { fail, finish, name, pass, start } from './test-logger.js';
+import { fail, finish, name, next, pass, start } from './test-logger.js';
 
 /****************
  * TESTING DATA *
@@ -58,7 +58,7 @@ function login() {
                 token.Authorization = `Bearer ${data.token}`;
                 basePath = `/api/v2/leader/${data.id}`;
                 logoutPath = `/api/v2/logout/${data.id}`;
-                openQueue();
+                next(openQueue);
             }
         }
     });
@@ -78,7 +78,7 @@ function openQueue() {
             }
         }
 
-        goLive();
+        next(goLive);
     });
 }
 
@@ -91,7 +91,7 @@ function goLive() {
             pass('successfully notified that the leader is live');
         }
 
-        enqueueChallenger1();
+        next(enqueueChallenger1);
     });
 }
 
@@ -110,7 +110,7 @@ function enqueueChallenger1() {
             }
         }
 
-        holdChallenger();
+        next(holdChallenger);
     });
 }
 
@@ -129,7 +129,7 @@ function holdChallenger() {
             }
         }
 
-        unholdChallenger();
+        next(unholdChallenger);
     });
 }
 
@@ -148,7 +148,7 @@ function unholdChallenger() {
             }
         }
 
-        dequeueChallenger();
+        next(dequeueChallenger);
     });
 }
 
@@ -166,7 +166,7 @@ function dequeueChallenger() {
             }
         }
 
-        enqueueChallenger2();
+        next(enqueueChallenger2);
     });
 }
 
@@ -185,7 +185,7 @@ function enqueueChallenger2() {
             }
         }
 
-        reportResult();
+        next(reportResult);
     });
 }
 
@@ -205,7 +205,7 @@ function reportResult() {
             }
         }
 
-        closeQueue();
+        next(closeQueue);
     });
 }
 
@@ -223,7 +223,7 @@ function closeQueue() {
             }
         }
 
-        getAllChallengers();
+        next(getAllChallengers);
     });
 }
 
@@ -243,7 +243,7 @@ function getAllChallengers() {
             }
         }
 
-        logout();
+        next(logout);
     });
 }
 
@@ -256,7 +256,7 @@ function logout() {
             pass('successfully logged out');
         }
 
-        getLeaderInfo();
+        next(getLeaderInfo);
     });
 }
 
@@ -269,7 +269,7 @@ function getLeaderInfo() {
             pass('received unauthorized HTTP status code');
         }
 
-        cleanup();
+        next(cleanup);
     });
 }
 

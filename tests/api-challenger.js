@@ -20,7 +20,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 
 import { battleFormat, httpStatus, leaderType, resultCode } from '../util/constants.js';
 import { clearCache, encodeCredentials, init, sendRequest } from './base-api-test.js';
-import { debug, fail, finish, name, pass, start } from './test-logger.js';
+import { debug, fail, finish, name, next, pass, start } from './test-logger.js';
 
 /****************
  * TESTING DATA *
@@ -54,7 +54,7 @@ function login() {
                 pass('successfully logged in');
                 token.Authorization = `Bearer ${data.token}`;
                 basePath = `/api/v2/challenger/${data.id}`;
-                setDisplayName();
+                next(setDisplayName);
             }
         }
     });
@@ -74,7 +74,7 @@ function setDisplayName() {
             }
         }
 
-        getBingoBoard();
+        next(getBingoBoard);
     });
 }
 
@@ -92,7 +92,7 @@ function getBingoBoard() {
             }
         }
 
-        joinQueue1();
+        next(joinQueue1);
     });
 }
 
@@ -111,7 +111,7 @@ function joinQueue1() {
             }
         }
 
-        joinQueue2();
+        next(joinQueue2);
     });
 }
 
@@ -129,7 +129,7 @@ function joinQueue2() {
             }
         }
 
-        leaveQueue1();
+        next(leaveQueue1);
     });
 }
 
@@ -147,7 +147,7 @@ function leaveQueue1() {
             }
         }
 
-        joinQueue3();
+        next(joinQueue3);
     });
 }
 
@@ -166,7 +166,7 @@ function joinQueue3() {
             }
         }
 
-        hold();
+        next(hold);
     });
 }
 
@@ -185,7 +185,7 @@ function hold() {
             }
         }
 
-        leaveQueue2();
+        next(leaveQueue2);
     });
 }
 
@@ -203,7 +203,7 @@ function leaveQueue2() {
             }
         }
 
-        badLogin1();
+        next(badLogin1);
     });
 }
 
@@ -218,7 +218,7 @@ function badLogin1() {
             pass(`failed to log in with HTTP status code ${result.status}`);
         }
 
-        badLogin2();
+        next(badLogin2);
     });
 }
 
@@ -233,7 +233,7 @@ function badLogin2() {
             pass(`failed to log in with HTTP status code ${result.status}`);
         }
 
-        badLogin3();
+        next(badLogin3);
     });
 }
 
@@ -248,7 +248,7 @@ function badLogin3() {
             pass(`failed to log in with HTTP status code ${result.status}`);
         }
 
-        cleanup();
+        next(cleanup);
     });
 }
 

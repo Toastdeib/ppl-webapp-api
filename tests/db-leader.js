@@ -20,7 +20,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 
 import db from '../db/db.js';
 import { battleFormat, leaderType, matchStatus, resultCode } from '../util/constants.js';
-import { debug, fail, finish, name, pass, start } from './test-logger.js';
+import { debug, fail, finish, name, next, pass, start } from './test-logger.js';
 
 /****************
  * TESTING DATA *
@@ -136,7 +136,7 @@ function verifyBaseline() {
 
         if (baselineValid) {
             debug('Baseline is valid, beginning test run');
-            addToClosedQueue();
+            next(addToClosedQueue);
         } else {
             debug('One or more baseline checks were incorrect, aborting test run, please verify db integrity and try again');
             process.exit();
@@ -155,7 +155,7 @@ function addToClosedQueue() {
             fail('successfully added to a closed queue');
         }
 
-        openQueue();
+        next(openQueue);
     });
 }
 
@@ -168,7 +168,7 @@ function openQueue() {
             pass('successfully opened the queue');
         }
 
-        verifyQueueStatus1();
+        next(verifyQueueStatus1);
     });
 }
 
@@ -183,7 +183,7 @@ function verifyQueueStatus1() {
             pass('queue is flagged as open');
         }
 
-        reopenQueue();
+        next(reopenQueue);
     });
 }
 
@@ -196,7 +196,7 @@ function reopenQueue() {
             fail('successfully opened the queue');
         }
 
-        addExistingChallenger();
+        next(addExistingChallenger);
     });
 }
 
@@ -211,7 +211,7 @@ function addExistingChallenger() {
             fail('successfully added a repeat challenger to the queue');
         }
 
-        addNewChallenger();
+        next(addNewChallenger);
     });
 
 }
@@ -225,7 +225,7 @@ function addNewChallenger() {
             pass('successfully added a new challenger to the queue');
         }
 
-        verifyQueue1();
+        next(verifyQueue1);
     });
 }
 
@@ -245,7 +245,7 @@ function verifyQueue1() {
             }
         }
 
-        holdChallenger1();
+        next(holdChallenger1);
     });
 }
 
@@ -258,7 +258,7 @@ function holdChallenger1() {
             pass('successfully placed a challenger on hold');
         }
 
-        verifyQueue2();
+        next(verifyQueue2);
     });
 }
 
@@ -273,7 +273,7 @@ function verifyQueue2() {
             pass('queue count was correct');
         }
 
-        unholdChallenger1();
+        next(unholdChallenger1);
     });
 }
 
@@ -286,7 +286,7 @@ function unholdChallenger1() {
             pass('successfully returned a challenger from hold');
         }
 
-        verifyQueue3();
+        next(verifyQueue3);
     });
 }
 
@@ -306,7 +306,7 @@ function verifyQueue3() {
             }
         }
 
-        holdChallenger2();
+        next(holdChallenger2);
     });
 }
 
@@ -319,7 +319,7 @@ function holdChallenger2() {
             pass('successfully placed a challenger on hold');
         }
 
-        verifyQueue4();
+        next(verifyQueue4);
     });
 }
 
@@ -334,7 +334,7 @@ function verifyQueue4() {
             pass('queue count was correct');
         }
 
-        unholdChallenger2();
+        next(unholdChallenger2);
     });
 }
 
@@ -347,7 +347,7 @@ function unholdChallenger2() {
             pass('successfully returned a challenger from hold');
         }
 
-        verifyQueue5();
+        next(verifyQueue5);
     });
 }
 
@@ -367,7 +367,7 @@ function verifyQueue5() {
             }
         }
 
-        dequeueChallenger();
+        next(dequeueChallenger);
     });
 }
 
@@ -380,7 +380,7 @@ function dequeueChallenger() {
             pass('successfully removed a challenger from the queue');
         }
 
-        verifyQueue6();
+        next(verifyQueue6);
     });
 }
 
@@ -395,7 +395,7 @@ function verifyQueue6() {
             pass('queue count was correct');
         }
 
-        reportWin();
+        next(reportWin);
     });
 }
 
@@ -408,7 +408,7 @@ function reportWin() {
             pass('match result reported successfully');
         }
 
-        verifyQueue7();
+        next(verifyQueue7);
     });
 }
 
@@ -423,7 +423,7 @@ function verifyQueue7() {
             pass('queue count was correct');
         }
 
-        badDequeue();
+        next(badDequeue);
     });
 }
 
@@ -438,7 +438,7 @@ function badDequeue() {
             fail('successfully removed a challenger from the queue');
         }
 
-        badHold();
+        next(badHold);
     });
 }
 
@@ -453,7 +453,7 @@ function badHold() {
             fail('successfully placed a challenger on hold');
         }
 
-        badUnhold();
+        next(badUnhold);
     });
 }
 
@@ -468,7 +468,7 @@ function badUnhold() {
             fail('successfully returned a challenger from hold');
         }
 
-        closeQueue();
+        next(closeQueue);
     });
 }
 
@@ -481,7 +481,7 @@ function closeQueue() {
             pass('successfully closed the queue');
         }
 
-        recloseQueue();
+        next(recloseQueue);
     });
 }
 
@@ -494,7 +494,7 @@ function recloseQueue() {
             fail('successfully closed the queue');
         }
 
-        verifyQueueStatus2();
+        next(verifyQueueStatus2);
     });
 }
 
@@ -509,7 +509,7 @@ function verifyQueueStatus2() {
             pass('queue is flagged as closed');
         }
 
-        addWithoutEnoughBadges();
+        next(addWithoutEnoughBadges);
     });
 }
 
@@ -524,7 +524,7 @@ function addWithoutEnoughBadges() {
             fail('successfully added to an elite queue');
         }
 
-        addWithEnoughBadges();
+        next(addWithEnoughBadges);
     });
 }
 
@@ -537,7 +537,7 @@ function addWithEnoughBadges() {
             pass('successfully added a new challenger to the queue');
         }
 
-        cleanup();
+        next(cleanup);
     });
 }
 

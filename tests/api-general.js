@@ -20,7 +20,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 
 import { httpStatus } from '../util/constants.js';
 import { clearCache, init, sendRequest } from './base-api-test.js';
-import { fail, finish, name, pass, start } from './test-logger.js';
+import { fail, finish, name, next, pass, start } from './test-logger.js';
 
 /****************
  * TESTING DATA *
@@ -63,7 +63,7 @@ function getAppSettings() {
             }
         }
 
-        getOpenQueues();
+        next(getOpenQueues);
     });
 }
 
@@ -88,7 +88,7 @@ function getOpenQueues() {
             }
         }
 
-        getBadges1();
+        next(getBadges1);
     });
 }
 
@@ -108,7 +108,7 @@ function getBadges1() {
             }
         }
 
-        getBadges2();
+        next(getBadges2);
     });
 }
 
@@ -128,7 +128,7 @@ function getBadges2() {
             }
         }
 
-        logInfo();
+        next(logInfo);
     });
 
 }
@@ -142,7 +142,7 @@ function logInfo() {
             pass('request returned with a valid HTTP status');
         }
 
-        logInfoWithoutMessage();
+        next(logInfoWithoutMessage);
     });
 
 }
@@ -156,7 +156,7 @@ function logInfoWithoutMessage() {
             pass('request was rejected as a bad request');
         }
 
-        logWarning();
+        next(logWarning);
     });
 
 }
@@ -170,7 +170,7 @@ function logWarning() {
             pass('request returned with a valid HTTP status');
         }
 
-        logError();
+        next(logError);
     });
 
 }
@@ -184,7 +184,7 @@ function logError() {
             pass('request returned with a valid HTTP status');
         }
 
-        logErrorWithStackTrace();
+        next(logErrorWithStackTrace);
     });
 
 }
@@ -198,7 +198,7 @@ function logErrorWithStackTrace() {
             pass('request returned with a valid HTTP status');
         }
 
-        getAllLeaderData();
+        next(getAllLeaderData);
     });
 
 }
@@ -217,7 +217,7 @@ function getAllLeaderData() {
             }
         }
 
-        getLeaderMetrics();
+        next(getLeaderMetrics);
     });
 }
 
@@ -235,7 +235,7 @@ function getLeaderMetrics() {
             }
         }
 
-        cleanup();
+        next(cleanup);
     });
 }
 

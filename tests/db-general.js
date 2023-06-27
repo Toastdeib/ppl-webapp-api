@@ -19,7 +19,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 }
 
 import db from '../db/db.js';
-import { debug, fail, finish, name, pass, start } from './test-logger.js';
+import { debug, fail, finish, name, next, pass, start } from './test-logger.js';
 import { pplEvent, resultCode } from '../util/constants.js';
 
 /****************
@@ -96,7 +96,7 @@ function getAllChallengersEast1() {
             pass('challenger count for east was correct');
         }
 
-        getAllChallengersWest1();
+        next(getAllChallengersWest1);
     });
 }
 
@@ -111,7 +111,7 @@ function getAllChallengersWest1() {
             pass('challenger count for west was correct');
         }
 
-        getAllIds1();
+        next(getAllIds1);
     });
 }
 
@@ -128,7 +128,7 @@ function getAllIds1() {
             pass('ID counts were correct');
         }
 
-        registerWithTakenUsername();
+        next(registerWithTakenUsername);
     });
 }
 
@@ -143,7 +143,7 @@ function registerWithTakenUsername() {
             fail('registration was successful');
         }
 
-        registerWithNewUsername();
+        next(registerWithNewUsername);
     });
 }
 
@@ -157,7 +157,7 @@ function registerWithNewUsername() {
             id = result.id;
         }
 
-        loginWithGoodCredentials();
+        next(loginWithGoodCredentials);
     });
 }
 
@@ -172,7 +172,7 @@ function loginWithGoodCredentials() {
             pass('login was successful');
         }
 
-        loginWithBadCredentials();
+        next(loginWithBadCredentials);
     });
 }
 
@@ -187,7 +187,7 @@ function loginWithBadCredentials() {
             fail('login was successful');
         }
 
-        getAllChallengersEast2();
+        next(getAllChallengersEast2);
     });
 }
 
@@ -202,7 +202,7 @@ function getAllChallengersEast2() {
             pass('challenger count for east was correct');
         }
 
-        getAllChallengersWest2();
+        next(getAllChallengersWest2);
     });
 }
 
@@ -217,7 +217,7 @@ function getAllChallengersWest2() {
             pass('challenger count for west was correct');
         }
 
-        getAllIds2();
+        next(getAllIds2);
     });
 }
 
@@ -234,7 +234,7 @@ function getAllIds2() {
             pass('ID counts were correct');
         }
 
-        loginForWest();
+        next(loginForWest);
     });
 }
 
@@ -249,7 +249,7 @@ function loginForWest() {
             pass('login was successful');
         }
 
-        getAllChallengersWest3();
+        next(getAllChallengersWest3);
     });
 }
 
@@ -264,7 +264,7 @@ function getAllChallengersWest3() {
             pass('challenger count for west was correct');
         }
 
-        getBadges1();
+        next(getBadges1);
     });
 }
 
@@ -281,7 +281,7 @@ function getBadges1() {
             pass('new challenger had 0 badges');
         }
 
-        getBadges2();
+        next(getBadges2);
     });
 }
 
@@ -298,7 +298,7 @@ function getBadges2() {
             pass(`new challenger had ${badgesCount} badges`);
         }
 
-        getOpenQueues();
+        next(getOpenQueues);
     });
 }
 
@@ -322,7 +322,7 @@ function getOpenQueues() {
             }
         }
 
-        getAllLeaderData();
+        next(getAllLeaderData);
     });
 }
 
@@ -349,7 +349,7 @@ function getAllLeaderData() {
             pass('leader data was correct');
         }
 
-        getLeaderMetrics();
+        next(getLeaderMetrics);
     });
 }
 
@@ -372,7 +372,7 @@ function getLeaderMetrics() {
             pass('metrics data was correct');
         }
 
-        cleanup();
+        next(cleanup);
     });
 }
 

@@ -1,12 +1,16 @@
 import logger from '../util/logger.js';
 
-let startTime;
+let suiteStartTime;
 let testCount;
+let testStartTime;
 let successCount = 0;
 let failureCount = 0;
 
+const longTestMs = 500;
+
 export function name(number, name) {
     logger.api.debug(`\x1b[36mTEST ${number}\x1b[0m: ${name}`);
+    testStartTime = new Date();
 }
 
 export function pass(msg) {
@@ -22,12 +26,21 @@ export function fail(msg) {
 }
 
 export function start(count) {
-    startTime = new Date();
+    suiteStartTime = new Date();
     testCount = count;
 }
 
+export function next(callback) {
+    const runtime = new Date() - testStartTime;
+    if (runtime > longTestMs) {
+        logger.api.warn(`Slow test; runtime was \x1b[36m${runtime}ms\x1b[0m`);
+    }
+
+    callback();
+}
+
 export function finish() {
-    logger.api.debug(`Test run completed in \x1b[36m${new Date() - startTime}ms\x1b[0m with \x1b[32m${successCount}\x1b[0m successful tests, \x1b[31m${failureCount}\x1b[0m failing tests, and \x1b[33m${testCount}\x1b[0m skipped tests`);
+    logger.api.debug(`Test run completed in \x1b[36m${new Date() - suiteStartTime}ms\x1b[0m with \x1b[32m${successCount}\x1b[0m successful tests, \x1b[31m${failureCount}\x1b[0m failing tests, and \x1b[33m${testCount}\x1b[0m skipped tests`);
 }
 
 export function debug(msg) {
