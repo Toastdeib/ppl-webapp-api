@@ -30,6 +30,7 @@ const eliteId = '64750eab176f';
 const baseline = {
     leaderName: 'Test Leader, the Testable',
     leaderType: 7,
+    battleFormat: 3,
     badgeName: 'Test Badge',
     queueOpen: false,
     twitchEnabled: true,
@@ -85,6 +86,10 @@ function verifyBaseline() {
             }
 
             if (result.leaderType !== baseline.leaderType) {
+                baselineValid = false;
+            }
+
+            if (result.battleFormat !== baseline.battleFormat) {
                 baselineValid = false;
             }
 

@@ -17,7 +17,7 @@ import { clearLinkCode, fetch, getLinkCode, getPushTokens, save, shouldIncludeFe
  * Public APIs *
  ***************/
 export async function getLeaderInfo(id, callback) {
-    let result = await fetch(`SELECT leader_name, leader_type, badge_name, queue_open, twitch_handle FROM ${tables.leaders} WHERE id = ?`, [id]);
+    let result = await fetch(`SELECT leader_name, leader_type, battle_format, badge_name, queue_open, twitch_handle FROM ${tables.leaders} WHERE id = ?`, [id]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -31,6 +31,7 @@ export async function getLeaderInfo(id, callback) {
     const retval = {
         leaderName: result.rows[0].leader_name,
         leaderType: result.rows[0].leader_type,
+        battleFormat: result.rows[0].battle_format,
         badgeName: result.rows[0].badge_name,
         queueOpen: result.rows[0].queue_open === queueStatus.open,
         twitchEnabled: !!result.rows[0].twitch_handle,

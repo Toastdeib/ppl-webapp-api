@@ -324,6 +324,7 @@ Retrieves information about the leader with the given ID.
     "leaderId": [string],
     "leaderName": [string],
     "leaderType": [int, uses the leaderType constant],
+    "battleFormat": [int, uses the battleFormat constant],
     "badgeName": [string],
     "queueOpen": [boolean],
     "twitchEnabled": [boolean],
