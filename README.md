@@ -733,7 +733,9 @@ These codes will be returned in **most** error payloads alongside an error strin
     "unsupportedFormat": 16,
     "unsupportedPushPlatform": 17,
     "tokenAlreadyRegistered": 18,
-    "tokenNotRegistered": 19
+    "tokenNotRegistered": 19,
+    "queueAlreadyOpen": 20,
+    "queueAlreadyClosed": 21
 }
 ```
 
