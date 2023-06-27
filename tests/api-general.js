@@ -51,7 +51,7 @@ const metricsCount = 12;
  ******************/
 function getAppSettings() {
     name(1, 'Fetch and validate app settings');
-    sendRequest('/appsettings', 'GET', {}, {}, (result) => {
+    sendRequest('/api/v2/appsettings', 'GET', {}, {}, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -69,7 +69,7 @@ function getAppSettings() {
 
 function getOpenQueues() {
     name(2, 'Fetch and validate a list of open leader queues');
-    sendRequest('/openqueues', 'GET', {}, {}, (result) => {
+    sendRequest('/api/v2/openqueues', 'GET', {}, {}, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -94,7 +94,7 @@ function getOpenQueues() {
 
 function getBadges1() {
     name(3, 'Fetch and validate an empty badge list');
-    sendRequest(`/badges/${challengerWithoutBadges.id}`, 'GET', {}, {}, (result) => {
+    sendRequest(`/api/v2/badges/${challengerWithoutBadges.id}`, 'GET', {}, {}, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -114,7 +114,7 @@ function getBadges1() {
 
 function getBadges2() {
     name(4, 'Fetch and validate a non-empty badge list');
-    sendRequest(`/badges/${challengerWithBadges.id}`, 'GET', {}, {}, (result) => {
+    sendRequest(`/api/v2/badges/${challengerWithBadges.id}`, 'GET', {}, {}, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -135,7 +135,7 @@ function getBadges2() {
 
 function logInfo() {
     name(5, 'Log an info-level message');
-    sendRequest('/loginfo', 'POST', { message: 'Test info log, please ignore' }, {}, (result) => {
+    sendRequest('/api/v2/loginfo', 'POST', { message: 'Test info log, please ignore' }, {}, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -149,7 +149,7 @@ function logInfo() {
 
 function logInfoWithoutMessage() {
     name(6, 'Attempt to log an info-level message without including a message in the body');
-    sendRequest('/loginfo', 'POST', {}, {}, (result) => {
+    sendRequest('/api/v2/loginfo', 'POST', {}, {}, (result) => {
         if (result.status !== httpStatus.badRequest) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -163,7 +163,7 @@ function logInfoWithoutMessage() {
 
 function logWarning() {
     name(7, 'Log a warning-level message');
-    sendRequest('/logwarning', 'POST', { message: 'Test warning log, please ignore' }, {}, (result) => {
+    sendRequest('/api/v2/logwarning', 'POST', { message: 'Test warning log, please ignore' }, {}, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -177,7 +177,7 @@ function logWarning() {
 
 function logError() {
     name(8, 'Log an error-level message');
-    sendRequest('/logerror', 'POST', { message: 'Test error log, please ignore' }, {}, (result) => {
+    sendRequest('/api/v2/logerror', 'POST', { message: 'Test error log, please ignore' }, {}, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -191,7 +191,7 @@ function logError() {
 
 function logErrorWithStackTrace() {
     name(9, 'Log an error-level message and stack trace');
-    sendRequest('/logerror', 'POST', { message: 'Test error log, please ignore', stackTrace: ' at tests/api-general.js line [number]' }, {}, (result) => {
+    sendRequest('/api/v2/logerror', 'POST', { message: 'Test error log, please ignore', stackTrace: ' at tests/api-general.js line [number]' }, {}, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -205,7 +205,7 @@ function logErrorWithStackTrace() {
 
 function getAllLeaderData() {
     name(10, 'Fetch all leader data');
-    sendRequest('/allleaderdata', 'GET', {}, {}, (result) => {
+    sendRequest('/api/v2/allleaderdata', 'GET', {}, {}, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -223,7 +223,7 @@ function getAllLeaderData() {
 
 function getLeaderMetrics() {
     name(11, 'Fetch leader metrics');
-    sendRequest('/metrics', 'GET', {}, {}, (result) => {
+    sendRequest('/api/v2/metrics', 'GET', {}, {}, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {

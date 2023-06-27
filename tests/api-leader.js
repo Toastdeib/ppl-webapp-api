@@ -42,7 +42,7 @@ const allChallengers = {
  ******************/
 function login() {
     name(1, 'Log in with stored credentials');
-    sendRequest('/login', 'POST', {}, { ...credentials, ...pplEvent }, (result) => {
+    sendRequest('/api/v2/login', 'POST', {}, { ...credentials, ...pplEvent }, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}, aborting test run`);
             finish();
@@ -56,8 +56,8 @@ function login() {
             } else {
                 pass('successfully logged in');
                 token.Authorization = `Bearer ${data.token}`;
-                basePath = `/leader/${data.id}`;
-                logoutPath = `/logout/${data.id}`;
+                basePath = `/api/v2/leader/${data.id}`;
+                logoutPath = `/api/v2/logout/${data.id}`;
                 openQueue();
             }
         }
@@ -154,7 +154,7 @@ function unholdChallenger() {
 
 function dequeueChallenger() {
     name(7, 'Remove the challenger from queue');
-    sendRequest(`${basePath}/dequeue/${challengerId}`, 'POST', {}, token, (result) => {
+    sendRequest(`${basePath}/dequeue/${challengerId}`, 'DELETE', {}, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {

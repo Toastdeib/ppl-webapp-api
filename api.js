@@ -334,7 +334,7 @@ function sendHttpBotRequest(path, params) {
 /***********************
  * Authentication APIs *
  ***********************/
-api.post('/register', (req, res) => {
+api.post('/api/v2/register', (req, res) => {
     const credentials = req.get(AUTH_HEADER);
     const eventString = req.get(PPL_EVENT_HEADER);
     const platformString = req.get(PLATFORM_HEADER);
@@ -381,7 +381,7 @@ api.post('/register', (req, res) => {
     });
 });
 
-api.post('/login', (req, res) => {
+api.post('/api/v2/login', (req, res) => {
     const credentials = req.get(AUTH_HEADER);
     const eventString = req.get(PPL_EVENT_HEADER);
     const platformString = req.get(PLATFORM_HEADER);
@@ -429,7 +429,7 @@ api.post('/login', (req, res) => {
     });
 });
 
-api.post('/logout/:id', (req, res) => {
+api.post('/api/v2/logout/:id', (req, res) => {
     logger.api.info(`Logged out loginId=${req.params.id}`);
     const token = req.get(AUTH_HEADER);
     if (token) {
@@ -439,7 +439,7 @@ api.post('/logout/:id', (req, res) => {
     res.json({});
 });
 
-api.get('/allleaderdata', (req, res) => {
+api.get('/api/v2/allleaderdata', (req, res) => {
     logger.api.info('Fetching all leader data');
     db.getAllLeaderData((error, result) => {
         if (error) {
@@ -453,7 +453,7 @@ api.get('/allleaderdata', (req, res) => {
 /*******************
  * Challenger APIs *
  *******************/
-api.use('/challenger/:id', (req, res, next) => {
+api.use('/api/v2/challenger/:id', (req, res, next) => {
     logger.api.info(`Validating token for challenger endpoint request for loginId=${req.params.id}`);
     if (!validateSession(req.get(AUTH_HEADER), req.params.id, requestType.challenger)) {
         res.status(httpStatus.unauthorized).json({ error: 'The \'Authorization\' header in your request was missing, invalid, or malformed.' });
@@ -463,9 +463,9 @@ api.use('/challenger/:id', (req, res, next) => {
     next();
 });
 
-api.get('/challenger/:id', getChallengerInfo);
+api.get('/api/v2/challenger/:id', getChallengerInfo);
 
-api.post('/challenger/:id', (req, res) => {
+api.put('/api/v2/challenger/:id', (req, res) => {
     const name = req.body.displayName;
     if (!name) {
         res.status(httpStatus.badRequest).json({ error: 'The JSON body for requests to this endpoint must include a \'displayName\' property.' });
@@ -482,7 +482,7 @@ api.post('/challenger/:id', (req, res) => {
     });
 });
 
-api.get('/challenger/:id/bingoboard', (req, res) => {
+api.get('/api/v2/challenger/:id/bingoboard', (req, res) => {
     logger.api.info(`Returning bingo board for loginId=${req.params.id}`);
     db.challenger.getBingoBoard(req.params.id, (error, result) => {
         if (error) {
@@ -493,7 +493,7 @@ api.get('/challenger/:id/bingoboard', (req, res) => {
     });
 });
 
-api.post('/challenger/:id/enqueue/:leader', (req, res) => {
+api.post('/api/v2/challenger/:id/enqueue/:leader', (req, res) => {
     if (!validateLeaderId(req.params.leader)) {
         logger.api.warn(`loginId=${req.params.id} attempted to join queue for invalid leaderId=${req.params.leader}`);
         res.status(httpStatus.badRequest).json({ error: 'That leader ID is invalid.' });
@@ -519,7 +519,7 @@ api.post('/challenger/:id/enqueue/:leader', (req, res) => {
     });
 });
 
-api.post('/challenger/:id/dequeue/:leader', (req, res) => {
+api.delete('/api/v2/challenger/:id/dequeue/:leader', (req, res) => {
     if (!validateLeaderId(req.params.leader)) {
         logger.api.warn(`loginId=${req.params.id} attempted to leave queue for invalid leaderId=${req.params.leader}`);
         res.status(httpStatus.badRequest).json({ error: 'That leader ID is invalid.' });
@@ -536,7 +536,7 @@ api.post('/challenger/:id/dequeue/:leader', (req, res) => {
     });
 });
 
-api.post('/challenger/:id/hold/:leader', (req, res) => {
+api.post('/api/v2/challenger/:id/hold/:leader', (req, res) => {
     if (!validateLeaderId(req.params.leader)) {
         logger.api.warn(`loginId=${req.params.id} attempted to go on hold for invalid leaderId=${req.params.leader}`);
         res.status(httpStatus.badRequest).json({ error: 'That leader ID is invalid.' });
@@ -556,7 +556,7 @@ api.post('/challenger/:id/hold/:leader', (req, res) => {
 /***************
  * Leader APIs *
  ***************/
-api.use('/leader/:id', (req, res, next) => {
+api.use('/api/v2/leader/:id', (req, res, next) => {
     logger.api.info(`Validating token for leader endpoint request for loginId=${req.params.id}`);
     const session = validateSession(req.get(AUTH_HEADER), req.params.id, requestType.leader);
     if (!session) {
@@ -568,9 +568,9 @@ api.use('/leader/:id', (req, res, next) => {
     next();
 });
 
-api.get('/leader/:id', getLeaderInfo);
+api.get('/api/v2/leader/:id', getLeaderInfo);
 
-api.post('/leader/:id/openqueue', (req, res) => {
+api.post('/api/v2/leader/:id/openqueue', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} opening queue`);
     db.leader.updateQueueStatus(req.leaderId, true, (error) => {
         if (error) {
@@ -582,7 +582,7 @@ api.post('/leader/:id/openqueue', (req, res) => {
     });
 });
 
-api.post('/leader/:id/closequeue', (req, res) => {
+api.post('/api/v2/leader/:id/closequeue', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} closing queue`);
     db.leader.updateQueueStatus(req.leaderId, false, (error) => {
         if (error) {
@@ -594,7 +594,7 @@ api.post('/leader/:id/closequeue', (req, res) => {
     });
 });
 
-api.post('/leader/:id/enqueue/:challenger', (req, res) => {
+api.post('/api/v2/leader/:id/enqueue/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to enqueue invalid challengerId=${req.params.challenger}`);
         res.status(httpStatus.badRequest).json({ error: 'That challenger ID is invalid.' });
@@ -620,7 +620,7 @@ api.post('/leader/:id/enqueue/:challenger', (req, res) => {
     });
 });
 
-api.post('/leader/:id/dequeue/:challenger', (req, res) => {
+api.delete('/api/v2/leader/:id/dequeue/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to dequeue invalid challengerId=${req.params.challenger}`);
         res.status(httpStatus.badRequest).json({ error: 'That challenger ID is invalid.' });
@@ -637,7 +637,7 @@ api.post('/leader/:id/dequeue/:challenger', (req, res) => {
     });
 });
 
-api.post('/leader/:id/report/:challenger', (req, res) => {
+api.post('/api/v2/leader/:id/report/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to report a match result for invalid challengerId=${req.params.challenger}`);
         res.status(httpStatus.badRequest).json({ error: 'That challenger ID is invalid.' });
@@ -662,7 +662,7 @@ api.post('/leader/:id/report/:challenger', (req, res) => {
     });
 });
 
-api.post('/leader/:id/hold/:challenger', (req, res) => {
+api.post('/api/v2/leader/:id/hold/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to hold invalid challengerId=${req.params.challenger}`);
         res.status(httpStatus.badRequest).json({ error: 'That challenger ID is invalid.' });
@@ -679,7 +679,7 @@ api.post('/leader/:id/hold/:challenger', (req, res) => {
     });
 });
 
-api.post('/leader/:id/unhold/:challenger', (req, res) => {
+api.post('/api/v2/leader/:id/unhold/:challenger', (req, res) => {
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to unhold invalid challengerId=${req.params.challenger}`);
         res.status(httpStatus.badRequest).json({ error: 'That challenger ID is invalid.' });
@@ -696,13 +696,13 @@ api.post('/leader/:id/unhold/:challenger', (req, res) => {
     });
 });
 
-api.post('/leader/:id/live', (req, res) => {
+api.post('/api/v2/leader/:id/live', (req, res) => {
     // Assume the leader should be able to hit this and pass it along; we validate at the bot level anyway
     sendHttpBotRequest('/live', { leaderId: req.leaderId });
     getLeaderInfo(req, res);
 });
 
-api.get('/leader/:id/allchallengers', (req, res) => {
+api.get('/api/v2/leader/:id/allchallengers', (req, res) => {
     const eventString = req.get(PPL_EVENT_HEADER);
     const eventMask = pplEventToBitmask(eventString);
     if (!eventMask) {
@@ -724,7 +724,7 @@ api.get('/leader/:id/allchallengers', (req, res) => {
 /*************
  * Push APIs *
  *************/
-api.use('/push/:id', (req, res, next) => {
+api.use('/api/v2/push/:id', (req, res, next) => {
     logger.api.info(`Validating token for push endpoint request for loginId=${req.params.id}`);
     const session = validateSession(req.get(AUTH_HEADER), req.params.id, requestType.universal);
     if (!session) {
@@ -743,7 +743,7 @@ api.use('/push/:id', (req, res, next) => {
 });
 
 // TODO - UNTESTED
-api.post('/push/:id/enable', (req, res) => {
+api.post('/api/v2/push/:id/enable', (req, res) => {
     logger.api.info(`loginId=${req.params.id} enabling push for platformType=${req.session.platform}`);
     db.push.enable(req.params.id, req.session.platform, req.body.pushToken, (error) => {
         if (error) {
@@ -756,7 +756,7 @@ api.post('/push/:id/enable', (req, res) => {
 });
 
 // TODO - UNTESTED
-api.post('/push/:id/disable', (req, res) => {
+api.post('/api/v2/push/:id/disable', (req, res) => {
     logger.api.info(`loginId=${req.params.id} disabling push for platformType=${req.session.platform}`);
     db.push.disable(req.params.id, req.session.platform, req.body.pushToken, (error) => {
         if (error) {
@@ -771,7 +771,7 @@ api.post('/push/:id/disable', (req, res) => {
 /************************
  * Unauthenticated APIs *
  ************************/
-api.get('/metrics', (req, res) => {
+api.get('/api/v2/metrics', (req, res) => {
     logger.api.info('Returning leader metrics');
     db.leader.metrics((error, result) => {
         if (error) {
@@ -782,12 +782,12 @@ api.get('/metrics', (req, res) => {
     });
 });
 
-api.get('/appsettings', (req, res) => {
+api.get('/api/v2/appsettings', (req, res) => {
     logger.api.info('Returning app settings');
     res.json({ showTrainerCard: new Date() > new Date(config.trainerCardShowDate) });
 });
 
-api.get('/openqueues', (req, res) => {
+api.get('/api/v2/openqueues', (req, res) => {
     logger.api.info('Returning a list of open leader queues');
     db.getOpenQueues((error, result) => {
         if (error) {
@@ -798,7 +798,7 @@ api.get('/openqueues', (req, res) => {
     });
 });
 
-api.get('/badges/:id', (req, res) => {
+api.get('/api/v2/badges/:id', (req, res) => {
     logger.api.info(`Returning simple badge list for loginId=${req.params.id}`);
     db.getBadges(req.params.id, (error, result) => {
         if (error) {
@@ -821,15 +821,15 @@ api.get('/logview/:daysago', (req, res) => {
     generateLogviewResponse(res, daysAgo || 0);
 });
 
-api.post('/loginfo', (req, res) => {
+api.post('/api/v2/loginfo', (req, res) => {
     clientLog(req, res, logger.client.info);
 });
 
-api.post('/logwarning', (req, res) => {
+api.post('/api/v2/logwarning', (req, res) => {
     clientLog(req, res, logger.client.warn);
 });
 
-api.post('/logerror', (req, res) => {
+api.post('/api/v2/logerror', (req, res) => {
     clientLog(req, res, logger.client.error);
 });
 

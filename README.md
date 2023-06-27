@@ -46,7 +46,7 @@ If everything is correctly configured, you should see a few log statements appea
 
 ## Authentication APIs
 
-#### /register (POST)
+#### /api/v2/register (POST)
 
 Creates a new account with the provided username and password.  
 
@@ -78,7 +78,7 @@ Creates a new account with the provided username and password.
 - HTTP 400 (BAD REQUEST) - Returned if the authentication header is omitted or malformed, or if the username is already in use.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /login (POST)
+#### /api/v2/login (POST)
 
 Logs a user in with the provided username and password.  
 
@@ -111,7 +111,7 @@ Logs a user in with the provided username and password.
 - HTTP 401 (UNAUTHORIZED) - Returned if the provided credentials are invalid.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /logout/:id (POST)
+#### /api/v2/logout/:id (POST)
 
 Logs out a user and clears their session from the local cache. If no `Authorization` header is provided, this path simply does nothing rather than return an error.
 
@@ -129,7 +129,7 @@ Logs out a user and clears their session from the local cache. If no `Authorizat
 
 ## Challenger APIs
 
-#### /challenger/:id (GET)
+#### /api/v2/challenger/:id (GET)
 
 Retrieves information about the challenger with the given ID.
 
@@ -183,7 +183,7 @@ Retrieves information about the challenger with the given ID.
 - HTTP 404 (NOT FOUND) - Returned if the given ID doesn't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /challenger/:id (POST)
+#### /api/v2/challenger/:id (PUT)
 
 Updates the challenger's display name to the value provided in the request body.
 
@@ -206,7 +206,7 @@ See: Response payload for [/challenger/:id (GET)](#challengerid-get).
 - HTTP 404 (NOT FOUND) - Returned if the given ID doesn't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /challenger/:id/bingoboard (GET)
+#### /api/v2/challenger/:id/bingoboard (GET)
 
 Retrieves the challenger's bingo board, formatted as a 2D array of objects mapping leader IDs to boolean flags indicating whether or not the challenger has earned that leader's badge. If the board has a free space, its leader ID will be represented as an empty string.
 
@@ -234,7 +234,7 @@ Retrieves the challenger's bingo board, formatted as a 2D array of objects mappi
 - HTTP 404 (NOT FOUND) - Returned if the given ID doesn't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /challenger/:id/enqueue/:leader (POST)
+#### /api/v2/challenger/:id/enqueue/:leader (POST)
 
 Adds the challenger to the given leader's queue. This request performs a number of checks and can fail for a number of reasons, as detailed in the error responses section below.
 
@@ -266,7 +266,7 @@ See: Response payload for [/challenger/:id (GET)](#challengerid-get).
 - HTTP 404 (NOT FOUND) - Returned if either of the given IDs don't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /challenger/:id/dequeue/:leader (POST)
+#### /api/v2/challenger/:id/dequeue/:leader (DELETE)
 
 Removes the challenger from the given leader's queue.
 
@@ -285,7 +285,7 @@ See: Response payload for [/challenger/:id (GET)](#challengerid-get).
 - HTTP 404 (NOT FOUND) - Returned if either of the given IDs don't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /challenger/:id/hold/:leader (POST)
+#### /api/v2/challenger/:id/hold/:leader (POST)
 
 Places the challenger on hold for the given leader.
 
@@ -308,7 +308,7 @@ See: Response payload for [/challenger/:id (GET)](#challengerid-get).
 
 ## Leader APIs
 
-#### /leader/:id (GET)
+#### /api/v2/leader/:id (GET)
 
 Retrieves information about the leader with the given ID.
 
@@ -357,7 +357,7 @@ Retrieves information about the leader with the given ID.
 - HTTP 404 (NOT FOUND) - Returned if the given ID doesn't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /leader/:id/openqueue (POST)
+#### /api/v2/leader/:id/openqueue (POST)
 
 Flags the leader's queue as open, allowing challengers to join it or be added to it.
 
@@ -375,7 +375,7 @@ See: Response payload for [/leader/:id (GET)](#leaderid-get).
 - HTTP 404 (NOT FOUND) - Returned if the given ID doesn't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /leader/:id/closequeue (POST)
+#### /api/v2/leader/:id/closequeue (POST)
 
 Flags the leader's queue as closed, preventing challengers from joining it or being added to it.
 
@@ -393,7 +393,7 @@ See: Response payload for [/leader/:id (GET)](#leaderid-get).
 - HTTP 404 (NOT FOUND) - Returned if the given ID doesn't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /leader/:id/enqueue/:challenger (POST)
+#### /api/v2/leader/:id/enqueue/:challenger (POST)
 
 Adds the given challenger to the leader's queue. This request performs a number of checks and can fail for a number of reasons, as detailed in the error responses section below.
 
@@ -425,7 +425,7 @@ See: Response payload for [/leader/:id (GET)](#leaderid-get).
 - HTTP 404 (NOT FOUND) - Returned if either of the given IDs don't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /leader/:id/dequeue/:challenger (POST)
+#### /api/v2/leader/:id/dequeue/:challenger (DELETE)
 
 Removes the given challenger from the leader's queue.
 
@@ -444,7 +444,7 @@ See: Response payload for [/leader/:id (GET)](#leaderid-get).
 - HTTP 404 (NOT FOUND) - Returned if either of the given IDs don't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /leader/:id/report/:challenger (POST)
+#### /api/v2/leader/:id/report/:challenger (POST)
 
 Reports a match result for the given challenger. This path tracks the battle result and whether a badge was awarded separately to improve the accuracy of battle statistics.
 
@@ -468,7 +468,7 @@ See: Response payload for [/leader/:id (GET)](#leaderid-get).
 - HTTP 404 (NOT FOUND) - Returned if either of the given IDs don't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /leader/:id/hold/:challenger (POST)
+#### /api/v2/leader/:id/hold/:challenger (POST)
 
 Places the given challenger on hold for the leader.
 
@@ -487,7 +487,7 @@ See: Response payload for [/leader/:id (GET)](#leaderid-get).
 - HTTP 404 (NOT FOUND) - Returned if either of the given IDs don't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /leader/:id/unhold/:challenger (POST)
+#### /api/v2/leader/:id/unhold/:challenger (POST)
 
 Returns the given challenger from hold and places them back in the leader's queue, either at the front or back depending on the body param.
 
@@ -510,7 +510,7 @@ See: Response payload for [/leader/:id (GET)](#leaderid-get).
 - HTTP 404 (NOT FOUND) - Returned if either of the given IDs don't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /leader/:id/live (POST)
+#### /api/v2/leader/:id/live (POST)
 
 Notifies the API that the leader is streaming on Twitch. This endpoint should only be used for PPL Online events.
 
@@ -528,7 +528,7 @@ See: Response payload for [/leader/:id (GET)](#leaderid-get).
 - HTTP 404 (NOT FOUND) - Returned if the given ID doesn't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /leader/:id/allchallengers (GET)
+#### /api/v2/leader/:id/allchallengers (GET)
 
 Retrieves a list of all challengers for the PPL event indicated by the request header.
 
@@ -562,7 +562,7 @@ Retrieves a list of all challengers for the PPL event indicated by the request h
 
 ## Unauthenticated APIs
 
-#### /metrics (GET)
+#### /api/v2/metrics (GET)
 
 Retrieves battle and badge metrics for all leaders as a dictionary mapping leader IDs to their data.
 
@@ -584,7 +584,7 @@ Retrieves battle and badge metrics for all leaders as a dictionary mapping leade
 
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /appsettings (GET)
+#### /api/v2/appsettings (GET)
 
 Retrieves a collection of event-specific settings. Currently, the collection only contains a single setting, but more may be added in the future.
 
@@ -600,7 +600,7 @@ Retrieves a collection of event-specific settings. Currently, the collection onl
 
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /openqueues (GET)
+#### /api/v2/openqueues (GET)
 
 Retrieves a list of the queue status of all leaders as a dictionary mapping leader IDs to a boolean flag.
 
@@ -617,7 +617,7 @@ Retrieves a list of the queue status of all leaders as a dictionary mapping lead
 
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /badges/:id (GET)
+#### /api/v2/badges/:id (GET)
 
 Retrieves a list of badges earned by the given challenger, for displaying a non-interactive public trainer card.
 
@@ -642,7 +642,7 @@ Retrieves a list of badges earned by the given challenger, for displaying a non-
 - HTTP 404 (NOT FOUND) - Returned if the given ID doesn't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /loginfo (POST)
+#### /api/v2/loginfo (POST)
 
 Writes an info-level log message to file. This path should only be sent plaintext; any HTML formatting will be stripped before the message is written.
 
@@ -662,7 +662,7 @@ Writes an info-level log message to file. This path should only be sent plaintex
 - HTTP 400 (BAD REQUEST) - Returned if the request body doesn't contain a message param.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /logwarning (POST)
+#### /api/v2/logwarning (POST)
 
 Writes a warning-level log message to file. This path should only be sent plaintext; any HTML formatting will be stripped before the message is written.
 
@@ -682,7 +682,7 @@ Writes a warning-level log message to file. This path should only be sent plaint
 - HTTP 400 (BAD REQUEST) - Returned if the request body doesn't contain a message param.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
-#### /logerror (POST)
+#### /api/v2/logerror (POST)
 
 Writes an error-level log message to file. This path should only be sent plaintext; any HTML formatting will be stripped before the message is written.
 

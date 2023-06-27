@@ -39,7 +39,7 @@ const leaderId = 'd08cde9beddd';
  ******************/
 function login() {
     name(1, 'Log in with stored credentials');
-    sendRequest('/login', 'POST', {}, { ...credentials, ...pplEvent }, (result) => {
+    sendRequest('/api/v2/login', 'POST', {}, { ...credentials, ...pplEvent }, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}, aborting test run`);
             finish();
@@ -53,7 +53,7 @@ function login() {
             } else {
                 pass('successfully logged in');
                 token.Authorization = `Bearer ${data.token}`;
-                basePath = `/challenger/${data.id}`;
+                basePath = `/api/v2/challenger/${data.id}`;
                 setDisplayName();
             }
         }
@@ -62,7 +62,7 @@ function login() {
 
 function setDisplayName() {
     name(2, 'Update display name');
-    sendRequest(basePath, 'POST', { displayName: newName }, token, (result) => {
+    sendRequest(basePath, 'PUT', { displayName: newName }, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -135,7 +135,7 @@ function joinQueue2() {
 
 function leaveQueue1() {
     name(6, 'Leave the leader queue');
-    sendRequest(`${basePath}/dequeue/${leaderId}`, 'POST', {}, token, (result) => {
+    sendRequest(`${basePath}/dequeue/${leaderId}`, 'DELETE', {}, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -191,7 +191,7 @@ function hold() {
 
 function leaveQueue2() {
     name(9, 'Leave the queue while on hold');
-    sendRequest(`${basePath}/dequeue/${leaderId}`, 'POST', {}, token, (result) => {
+    sendRequest(`${basePath}/dequeue/${leaderId}`, 'DELETE', {}, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
         } else {
@@ -209,7 +209,7 @@ function leaveQueue2() {
 
 function badLogin1() {
     name(10, 'Attempt to log in without a PPL-Event header');
-    sendRequest('/login', 'POST', {}, credentials, (result) => {
+    sendRequest('/api/v2/login', 'POST', {}, credentials, (result) => {
         if (result.status === httpStatus.ok) {
             fail('logged in successfully with a missing header');
         } else if (result.status !== httpStatus.badRequest) {
@@ -224,7 +224,7 @@ function badLogin1() {
 
 function badLogin2() {
     name(11, 'Attempt to log in without an Authorization header');
-    sendRequest('/login', 'POST', {}, pplEvent, (result) => {
+    sendRequest('/api/v2/login', 'POST', {}, pplEvent, (result) => {
         if (result.status === httpStatus.ok) {
             fail('logged in successfully with a missing header');
         } else if (result.status !== httpStatus.badRequest) {
@@ -239,7 +239,7 @@ function badLogin2() {
 
 function badLogin3() {
     name(12, 'Attempt to log in with invalid credentials');
-    sendRequest('/login', 'POST', {}, { ...badCredentials, ...pplEvent }, (result) => {
+    sendRequest('/api/v2/login', 'POST', {}, { ...badCredentials, ...pplEvent }, (result) => {
         if (result.status === httpStatus.ok) {
             fail('logged in successfully with invalid credentials');
         } else if (result.status !== httpStatus.unauthorized) {
@@ -254,7 +254,7 @@ function badLogin3() {
 
 function cleanup() {
     finish();
-    sendRequest(basePath, 'POST', { displayName: 'toastchallenger' }, token, (result) => {
+    sendRequest(basePath, 'PUT', { displayName: 'toastchallenger' }, token, (result) => {
         if (result.status !== httpStatus.ok) {
             debug(`Unable to revert display name, response came back with status=${result.status}`);
             process.exit();
