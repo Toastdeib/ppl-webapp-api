@@ -137,7 +137,8 @@ export async function dequeue(leaderId, challengerId, callback) {
         return;
     }
 
-    clearLinkCode(leaderId, challengerId);
+    // TODO - Maybe make this logic account for duo mode pairs
+    clearLinkCode(leaderId, [challengerId]);
 
     result = await fetch(`SELECT challenger_id FROM ${tables.matches} WHERE leader_id = ? AND status = ? ORDER BY timestamp ASC LIMIT 1`, [leaderId, matchStatus.inQueue]);
     if (!result.resultCode && result.rows.length > 0) {

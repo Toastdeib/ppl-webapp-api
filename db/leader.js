@@ -17,7 +17,7 @@ import { clearLinkCode, fetch, getLinkCode, getPushTokens, save, shouldIncludeFe
  * Public APIs *
  ***************/
 export async function getLeaderInfo(id, callback) {
-    let result = await fetch(`SELECT leader_name, leader_type, battle_format, badge_name, queue_open, twitch_handle FROM ${tables.leaders} WHERE id = ?`, [id]);
+    let result = await fetch(`SELECT leader_name, leader_type, battle_format, badge_name, queue_open, duo_mode, twitch_handle FROM ${tables.leaders} WHERE id = ?`, [id]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -33,7 +33,8 @@ export async function getLeaderInfo(id, callback) {
         leaderType: result.rows[0].leader_type,
         battleFormat: result.rows[0].battle_format,
         badgeName: result.rows[0].badge_name,
-        queueOpen: result.rows[0].queue_open === queueStatus.open,
+        queueOpen: !!result.rows[0].queue_open,
+        duoMode: !!result.rows[0].duo_mode,
         twitchEnabled: !!result.rows[0].twitch_handle,
         winCount: 0,
         lossCount: 0,
@@ -42,20 +43,38 @@ export async function getLeaderInfo(id, callback) {
         onHold: []
     };
 
-    result = await fetch(`SELECT m.challenger_id, c.display_name, m.status, m.battle_difficulty, m.battle_format FROM ${tables.matches} m INNER JOIN ${tables.challengers} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.timestamp ASC`, [id, matchStatus.inQueue, matchStatus.onHold]);
+    result = await fetch(`SELECT m.challenger_id, c.display_name, m.status, m.battle_difficulty, m.battle_format FROM ${tables.matches} m INNER JOIN ${tables.challengers} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.status, m.timestamp ASC`, [id, matchStatus.inQueue, matchStatus.onHold]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
-    let position = 0;
-    for (const row of result.rows) {
+    for (let i = 0; i < result.rows.length; i++) {
+        const row = result.rows[i];
+        let linkCode;
+        if (!retval.duoMode) {
+            // The easy path; 1:1 challenger to code mapping
+            linkCode = getLinkCode(id, [row.challenger_id]);
+        } else {
+            // The hard path; 2:1 challenger to code mapping, so check the parity of i and if we have enough people for a code
+            if (i % 2 === 1) {
+                // Second person in a pair will always have a partner
+                linkCode = getLinkCode(id, [result.rows[i - 1].challenger_id, row.challenger_id]);
+            } else if (i < result.rows.length - 1) {
+                // First person in a pair has a partner if we aren't at the end of the list
+                linkCode = getLinkCode(id, [row.challenger_id, result.rows[i + 1].challenger_id]);
+            } else {
+                // First person in a pair at the end of the list has no partner yet
+                linkCode = 'No doubles partner';
+            }
+        }
+
         if (row.status === matchStatus.inQueue) {
             retval.queue.push({
                 challengerId: row.challenger_id,
                 displayName: row.display_name,
-                position: position++,
-                linkCode: getLinkCode(id, row.challenger_id),
+                position: i,
+                linkCode: linkCode,
                 difficulty: row.battle_difficulty,
                 format: row.battle_format
             });
@@ -141,7 +160,13 @@ export async function updateQueueStatus(id, open, duoMode, callback) {
     callback(resultCode.success, {});
 }
 
-export async function reportResult(leaderId, challengerId, challengerWin, badgeAwarded, callback) {
+export async function reportResult(leaderId, challengerIds, challengerWin, badgeAwarded, callback) {
+    if (challengerIds.length < 1 || challengerIds.length > 2) {
+        // Only supports reports for 1 or 2 challengers (regular or multi-battles)
+        callback(resultCode.badRequest);
+        return;
+    }
+
     let matchResult;
     if (challengerWin) {
         matchResult = badgeAwarded ? matchStatus.win : matchStatus.gary;
@@ -149,37 +174,46 @@ export async function reportResult(leaderId, challengerId, challengerWin, badgeA
         matchResult = badgeAwarded ? matchStatus.ash : matchStatus.loss;
     }
 
-    let result = await save(`UPDATE ${tables.matches} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, leaderId, challengerId, matchStatus.inQueue]);
+    let result;
+    if (challengerIds.length === 1) {
+        result = await save(`UPDATE ${tables.matches} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, leaderId, challengerIds[0], matchStatus.inQueue]);
+    } else {
+        // Guaranteed to be 2 challengers thanks to the check above
+        result = await save(`UPDATE ${tables.matches} SET status = ? WHERE leader_id = ? AND challenger_id IN (?, ?) AND status = ?`, [matchResult, leaderId, challengerIds[0], challengerIds[1], matchStatus.inQueue]);
+    }
+
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
-    if (result.rowCount === 0) {
+    if (result.rowCount !== challengerIds.length) {
         callback(resultCode.notInQueue);
+        return;
+    }
+
+    result = await fetch(`SELECT leader_type, duo_mode FROM ${tables.leaders} WHERE id = ?`, [leaderId]);
+    if (result.resultCode) {
+        callback(result.resultCode);
         return;
     }
 
     let hof = false;
     if (challengerWin) {
-        // Check whether the leader they were battling was the champ and notify the API that it was a HoFer if yes
-        result = await fetch(`SELECT 1 FROM ${tables.leaders} WHERE id = ? AND leader_type = ?`, [leaderId, leaderType.champion]);
-        if (result.resultCode) {
-            callback(result.resultCode);
-            return;
-        }
-
         // The query will return a row only if the leader ID is the champ; otherwise it'll be an empty set
-        hof = result.rows.length > 0;
+        hof = result.rows.length > 0 && result.rows[0].leader_type === leaderType.champion;
     }
 
-    clearLinkCode(leaderId, challengerId);
+    clearLinkCode(leaderId, challengerIds);
 
-    result = await fetch(`SELECT challenger_id FROM ${tables.matches} WHERE leader_id = ? AND status = ? ORDER BY timestamp ASC LIMIT 1`, [leaderId, matchStatus.inQueue]);
+    const duoMode = result.rows.length > 0 && !!result.rows.duo_mode;
+    result = await fetch(`SELECT challenger_id FROM ${tables.matches} WHERE leader_id = ? AND status = ? ORDER BY timestamp ASC LIMIT ?`, [leaderId, matchStatus.inQueue, duoMode ? 2 : 1]);
     if (!result.resultCode && result.rows.length > 0) {
         // We have at least one challenger in queue, so send a push to the whoever is up next
         const pushMsg = 'Hey champ in making, it\'s time for your next battle! Check your queues in the app!';
-        sendPush(pushMsg, getPushTokens(result.rows[0].challenger_id));
+        for (const row of result.rows) {
+            sendPush(pushMsg, getPushTokens(row.challenger_id));
+        }
     }
 
     callback(resultCode.success, { hof: hof });

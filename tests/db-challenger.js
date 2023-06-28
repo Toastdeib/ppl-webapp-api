@@ -29,7 +29,7 @@ const challengerId = 'efaa0cdd1cbd165b';
 const newName = 'testchallenger123';
 const baseline = {
     displayName: 'testchallenger1',
-    queuesEntered: { 'bc95c2fc3f1a': 0, 'd0cceeaf006a': 1 },
+    queuesEntered: { 'bc95c2fc3f1a': 0, 'd0cceeaf006a': 1, '987597dc6aa2': 0 },
     badgesEarned: [ '6a9406eedec6', '7729e38c3f7d', 'bcc6f08242fb', '7e8ab2c43c76', '1ed127c44156', '74fe35c10ba6', '68e65518c4d6', 'd08cde9beddd', 'b6857070a317', '1194829fc135', 'be90adcbbe2f' ],
     championDefeated: false
 };
@@ -41,16 +41,18 @@ const leaderIds = {
     open: 'dc43670ce8bc',
     full: '737644fef008',
     elite: 'bc95c2fc3f1a',
+    duo: '987597dc6aa2',
     champ: '5f22dc234543'
 };
 const leaderQueue = {
-    count: 3,
+    count: 4,
     position: 2
 };
 const champQueue = {
-    count: 2,
+    count: 3,
     position: 0
 };
+const multiLinkCode = 'No doubles partner';
 
 /******************
  * TEST FUNCTIONS *
@@ -75,6 +77,11 @@ function verifyBaseline() {
 
             for (const queue of result.queuesEntered) {
                 if (queueKeys.indexOf(queue.leaderId) === -1 || baseline.queuesEntered[queue.leaderId] !== queue.position) {
+                    baselineValid = false;
+                }
+
+                if ((queue.leaderId === leaderIds.duo) !== (queue.linkCode === multiLinkCode)) {
+                    // Link code should be 'No doubles partner' for the multi-battle leader and normal for others
                     baselineValid = false;
                 }
             }
@@ -244,7 +251,9 @@ function verifyNewQueue1() {
             fail(`queue count=${result.queuesEntered.length}, expected=${leaderQueue.count}`);
         } else {
             const queue = result.queuesEntered.find(item => item.leaderId === leaderIds.open);
-            if (queue.position !== leaderQueue.position) {
+            if (!queue) {
+                fail(`challenger is not in queue for leaderId=${leaderIds.open}`);
+            } else if (queue.position !== leaderQueue.position) {
                 fail(`queue position=${queue.position}, expected=${leaderQueue.position}`);
             } else {
                 pass('queue count and position were correct');
@@ -287,7 +296,7 @@ function joinRestrictedQueue() {
 
 function recordLeaderWin() {
     name(13, 'Record a win against a leader');
-    db.leader.reportResult(leaderIds.open, challengerId, true, true, (error, result) => {
+    db.leader.reportResult(leaderIds.open, [challengerId], true, true, (error, result) => {
         if (error) {
             fail(`error=${error}`);
         } else if (result.hof) {
@@ -317,7 +326,7 @@ function verifyBadgeCount1() {
 
 function recordEliteWin() {
     name(15, 'Record a win against an elite');
-    db.leader.reportResult(leaderIds.elite, challengerId, true, true, (error, result) => {
+    db.leader.reportResult(leaderIds.elite, [challengerId], true, true, (error, result) => {
         if (error) {
             fail(`error=${error}`);
         } else if (result.hof) {
@@ -380,7 +389,7 @@ function verifyNewQueue2() {
 
 function recordChampWin() {
     name(19, 'Record a win against the champ');
-    db.leader.reportResult(leaderIds.champ, challengerId, true, true, (error, result) => {
+    db.leader.reportResult(leaderIds.champ, [challengerId], true, true, (error, result) => {
         if (error) {
             fail(`error=${error}`);
         } else if (!result.hof) {

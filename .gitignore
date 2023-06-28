@@ -1,7 +1,6 @@
 **/node_modules
 **/logs
-/config
-!/config/config.js.example
+/config/config-*.js
 cache.json
 *.swp
 /tests/db-test.js

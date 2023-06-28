@@ -109,8 +109,8 @@ function zeroPad(value, length) {
     return result;
 }
 
-function createLinkCodeKey(leaderId, challengerId) {
-    return `${leaderId}:${challengerId}`;
+function createLinkCodeKey(leaderId, challengerIds) {
+    return `${leaderId}:${challengerIds.join('/')}`;
 }
 
 async function initCaches(callback) {
@@ -227,8 +227,8 @@ export function save(query, params) {
     });
 }
 
-export function getLinkCode(leaderId, challengerId) {
-    const key = createLinkCodeKey(leaderId, challengerId);
+export function getLinkCode(leaderId, challengerIds) {
+    const key = createLinkCodeKey(leaderId, challengerIds);
     if (linkCodeCache[key]) {
         // This matchup already has a code, so just use that
         return linkCodeCache[key];
@@ -242,8 +242,8 @@ export function getLinkCode(leaderId, challengerId) {
     return code;
 }
 
-export function clearLinkCode(leaderId, challengerId) {
-    delete linkCodeCache[createLinkCodeKey(leaderId, challengerId)];
+export function clearLinkCode(leaderId, challengerIds) {
+    delete linkCodeCache[createLinkCodeKey(leaderId, challengerIds)];
 }
 
 export function shouldIncludeFeedbackSurvey() {

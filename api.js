@@ -85,6 +85,27 @@ function getLeaderInfo(req, res) {
     });
 }
 
+function reportMatchResult(challengerIds, req, res) {
+    const challengerWin = !!req.body.challengerWin;
+    const badgeAwarded = !!req.body.badgeAwarded;
+    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} reporting match result ${challengerWin}, badge awarded ${badgeAwarded} for challengerIds=${challengerIds.join(', ')}`);
+    db.leader.reportResult(req.leaderId, challengerIds, challengerWin, badgeAwarded, (error, result) => {
+        if (error) {
+            handleDbError(leaderErrors, error, res);
+        } else {
+            for (const challengerId of challengerIds) {
+                if (result.hof) {
+                    sendHttpBotRequest('/hofentered', { challengerId: challengerId });
+                } else if (badgeAwarded) {
+                    sendHttpBotRequest('/badgeearned', { challengerId: challengerId, leaderId: req.leaderId });
+                }
+            }
+
+            getLeaderInfo(req, res);
+        }
+    });
+}
+
 function decodeCredentials(credentials) {
     const parts = credentials.split(' ');
     if (parts[0] !== 'Basic') {
@@ -645,22 +666,17 @@ api.post('/api/v2/leader/:id/report/:challenger', (req, res) => {
         return;
     }
 
-    const challengerWin = !!req.body.challengerWin;
-    const badgeAwarded = !!req.body.badgeAwarded;
-    logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} reporting match result ${challengerWin}, badge awarded ${badgeAwarded} for challengerId=${req.params.challenger}`);
-    db.leader.reportResult(req.leaderId, req.params.challenger, challengerWin, badgeAwarded, (error, result) => {
-        if (error) {
-            handleDbError(leaderErrors, error, res);
-        } else {
-            if (result.hof) {
-                sendHttpBotRequest('/hofentered', { challengerId: req.params.challenger });
-            } else if (badgeAwarded) {
-                sendHttpBotRequest('/badgeearned', { challengerId: req.params.challenger, leaderId: req.leaderId });
-            }
+    reportMatchResult([req.params.challenger], req, res);
+});
 
-            getLeaderInfo(req, res);
-        }
-    });
+api.post('/api/v2/leader/:id/report/:challenger/:otherChallenger', (req, res) => {
+    if (!validateChallengerId(req.params.challenger) || !validateChallengerId(req.params.otherChallenger)) {
+        logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to report a match result for invalid challengerIds=${req.params.challenger}, ${req.params.otherChallenger}`);
+        res.status(httpStatus.badRequest).json({ error: 'One or both challenger IDs are invalid.' });
+        return;
+    }
+
+    reportMatchResult([req.params.challenger, req.params.otherChallenger], req, res);
 });
 
 api.post('/api/v2/leader/:id/hold/:challenger', (req, res) => {

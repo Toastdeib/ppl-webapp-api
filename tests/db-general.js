@@ -66,7 +66,7 @@ const leaderInfo = {
     id: '6a9406eedec6',
     name: 'Test Leader, the Testable',
     leaderType: 7,
-    battleFormat: 3,
+    battleFormat: 7,
     badgeName: 'Test Badge',
     bio: 'Test post, please ignore.',
     tagline: 'Also test post, also please ignore.'
