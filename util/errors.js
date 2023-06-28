@@ -46,6 +46,21 @@ const genericErrors = {
         logMessage: 'Push token not registered',
         userMessage: 'That push token isn\'t registered.',
         statusCode: httpStatus.badRequest
+    },
+    [resultCode.queueAlreadyOpen]: {
+        logMessage: 'Queue already open',
+        userMessage: 'Your queue is already open.',
+        statusCode: httpStatus.badRequest
+    },
+    [resultCode.queueAlreadyClosed]: {
+        logMessage: 'Queue already closed',
+        userMessage: 'Your queue is already closed.',
+        statusCode: httpStatus.badRequest
+    },
+    [resultCode.duoModeNotSupported]: {
+        logMessage: 'Duo mode not supported',
+        userMessage: 'Duo mode is only supported for multi-battle leaders.',
+        statusCode: httpStatus.badRequest
     }
 };
 

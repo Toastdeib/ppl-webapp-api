@@ -366,6 +366,10 @@ Flags the leader's queue as open, allowing challengers to join it or be added to
 
 - `Authorization` - Authentication header following the [Bearer scheme](https://www.rfc-editor.org/rfc/rfc6750#section-2.1).
 
+##### Body params:
+
+- `duoMode` - A boolean flag indicating whether to open the queue in duo mode (multi-battle). This should **only** be passed as `true` if the leader supports multi-battles as one of their battle formats. If omitted, it will be treated as `false`.
+
 ##### Response payload:
 
 See: Response payload for [/leader/:id (GET)](#leaderid-get).
@@ -736,7 +740,8 @@ These codes will be returned in **most** error payloads alongside an error strin
     "tokenAlreadyRegistered": 18,
     "tokenNotRegistered": 19,
     "queueAlreadyOpen": 20,
-    "queueAlreadyClosed": 21
+    "queueAlreadyClosed": 21,
+    "duoModeNotSupported": 22
 }
 ```
 

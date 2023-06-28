@@ -572,7 +572,8 @@ api.get('/api/v2/leader/:id', getLeaderInfo);
 
 api.post('/api/v2/leader/:id/openqueue', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} opening queue`);
-    db.leader.updateQueueStatus(req.leaderId, true, (error) => {
+    const duoMode = !!req.body.duoMode;
+    db.leader.updateQueueStatus(req.leaderId, true, duoMode, (error) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
@@ -584,7 +585,7 @@ api.post('/api/v2/leader/:id/openqueue', (req, res) => {
 
 api.post('/api/v2/leader/:id/closequeue', (req, res) => {
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} closing queue`);
-    db.leader.updateQueueStatus(req.leaderId, false, (error) => {
+    db.leader.updateQueueStatus(req.leaderId, false, false, (error) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {

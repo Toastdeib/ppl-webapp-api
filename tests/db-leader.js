@@ -160,13 +160,28 @@ function addToClosedQueue() {
             fail('successfully added to a closed queue');
         }
 
+        next(openDuoQueue);
+    });
+}
+
+function openDuoQueue() {
+    name(2, 'Attempt to open the queue in duo mode as a non-multi leader');
+    db.leader.updateQueueStatus(leaderId, true, true, (error) => {
+        if (error === resultCode.duoModeNotSupported) {
+            pass('failed to add with result code duoModeNotSupported');
+        } else if (error) {
+            fail(`error=${error}`);
+        } else {
+            fail('successfully opened the queue');
+        }
+
         next(openQueue);
     });
 }
 
 function openQueue() {
-    name(2, 'Open the queue');
-    db.leader.updateQueueStatus(leaderId, true, (error) => {
+    name(3, 'Open the queue');
+    db.leader.updateQueueStatus(leaderId, true, false, (error) => {
         if (error) {
             fail(`error=${error}`);
         } else {
@@ -178,7 +193,7 @@ function openQueue() {
 }
 
 function verifyQueueStatus1() {
-    name(3, 'Verify queue status (after open)');
+    name(4, 'Verify queue status (after open)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -193,10 +208,12 @@ function verifyQueueStatus1() {
 }
 
 function reopenQueue() {
-    name(4, 'Attempt to reopen the already-open queue');
-    db.leader.updateQueueStatus(leaderId, true, (error) => {
+    name(5, 'Attempt to reopen the already-open queue');
+    db.leader.updateQueueStatus(leaderId, true, false, (error) => {
         if (error === resultCode.queueAlreadyOpen) {
             pass('failed to open with result code queueAlreadyOpen');
+        } else if (error) {
+            fail(`error=${error}`);
         } else {
             fail('successfully opened the queue');
         }
@@ -206,7 +223,7 @@ function reopenQueue() {
 }
 
 function addExistingChallenger() {
-    name(5, 'Attempt to add a challenger who is already in queue');
+    name(6, 'Attempt to add a challenger who is already in queue');
     db.queue.enqueue(leaderId, challengerIds.hold, leaderType.casual, battleFormat.singles, (error) => {
         if (error === resultCode.alreadyInQueue) {
             pass('failed to add with result code alreadyInQueue');
@@ -222,7 +239,7 @@ function addExistingChallenger() {
 }
 
 function addNewChallenger() {
-    name(6, 'Add a new challenger to the queue');
+    name(7, 'Add a new challenger to the queue');
     db.queue.enqueue(leaderId, challengerIds.add, leaderType.casual, battleFormat.singles, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -235,7 +252,7 @@ function addNewChallenger() {
 }
 
 function verifyQueue1() {
-    name(7, 'Verify queue length and order (after add)');
+    name(8, 'Verify queue length and order (after add)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -255,7 +272,7 @@ function verifyQueue1() {
 }
 
 function holdChallenger1() {
-    name(8, 'Place a challenger on hold');
+    name(9, 'Place a challenger on hold');
     db.queue.hold(leaderId, challengerIds.hold, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -268,7 +285,7 @@ function holdChallenger1() {
 }
 
 function verifyQueue2() {
-    name(9, 'Verify queue length (after first hold)');
+    name(10, 'Verify queue length (after first hold)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -283,7 +300,7 @@ function verifyQueue2() {
 }
 
 function unholdChallenger1() {
-    name(10, 'Return a challenger from hold at the back of the queue');
+    name(11, 'Return a challenger from hold at the back of the queue');
     db.queue.unhold(leaderId, challengerIds.hold, false, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -296,7 +313,7 @@ function unholdChallenger1() {
 }
 
 function verifyQueue3() {
-    name(11, 'Verify queue length and order (after first unhold)');
+    name(12, 'Verify queue length and order (after first unhold)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -316,7 +333,7 @@ function verifyQueue3() {
 }
 
 function holdChallenger2() {
-    name(12, 'Place a challenger on hold');
+    name(13, 'Place a challenger on hold');
     db.queue.hold(leaderId, challengerIds.hold, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -329,7 +346,7 @@ function holdChallenger2() {
 }
 
 function verifyQueue4() {
-    name(13, 'Verify queue length (after second hold)');
+    name(14, 'Verify queue length (after second hold)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -344,7 +361,7 @@ function verifyQueue4() {
 }
 
 function unholdChallenger2() {
-    name(14, 'Return a challenger from hold at the front of the queue');
+    name(15, 'Return a challenger from hold at the front of the queue');
     db.queue.unhold(leaderId, challengerIds.hold, true, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -357,7 +374,7 @@ function unholdChallenger2() {
 }
 
 function verifyQueue5() {
-    name(15, 'Verify queue length and order (after second unhold)');
+    name(16, 'Verify queue length and order (after second unhold)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -377,7 +394,7 @@ function verifyQueue5() {
 }
 
 function dequeueChallenger() {
-    name(16, 'Remove a challenger from the queue');
+    name(17, 'Remove a challenger from the queue');
     db.queue.dequeue(leaderId, challengerIds.add, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -390,7 +407,7 @@ function dequeueChallenger() {
 }
 
 function verifyQueue6() {
-    name(17, 'Verify queue length (after removal)');
+    name(18, 'Verify queue length (after removal)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -405,7 +422,7 @@ function verifyQueue6() {
 }
 
 function reportWin() {
-    name(18, 'Report a challenger win');
+    name(19, 'Report a challenger win');
     db.leader.reportResult(leaderId, challengerIds.hold, true, true, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -418,7 +435,7 @@ function reportWin() {
 }
 
 function verifyQueue7() {
-    name(19, 'Verify queue length (after win reported)');
+    name(20, 'Verify queue length (after win reported)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -433,7 +450,7 @@ function verifyQueue7() {
 }
 
 function badDequeue() {
-    name(20, 'Attempt to remove a challenger who isn\'t in queue from the queue');
+    name(21, 'Attempt to remove a challenger who isn\'t in queue from the queue');
     db.queue.dequeue(leaderId, challengerIds.add, (error) => {
         if (error === resultCode.notInQueue) {
             pass('failed to remove with result code notInQueue');
@@ -448,7 +465,7 @@ function badDequeue() {
 }
 
 function badHold() {
-    name(21, 'Attempt to place a challenger who isn\'t in queue on hold');
+    name(22, 'Attempt to place a challenger who isn\'t in queue on hold');
     db.queue.hold(leaderId, challengerIds.add, (error) => {
         if (error === resultCode.notInQueue) {
             pass('failed to hold with result code notInQueue');
@@ -463,7 +480,7 @@ function badHold() {
 }
 
 function badUnhold() {
-    name(22, 'Attempt to return a challenger who isn\'t on hold from hold');
+    name(23, 'Attempt to return a challenger who isn\'t on hold from hold');
     db.queue.unhold(leaderId, challengerIds.add, true, (error) => {
         if (error === resultCode.notInQueue) {
             pass('failed to unhold with result code notInQueue');
@@ -478,8 +495,8 @@ function badUnhold() {
 }
 
 function closeQueue() {
-    name(23, 'Close the queue');
-    db.leader.updateQueueStatus(leaderId, false, (error) => {
+    name(24, 'Close the queue');
+    db.leader.updateQueueStatus(leaderId, false, false, (error) => {
         if (error) {
             fail(`error=${error}`);
         } else {
@@ -491,8 +508,8 @@ function closeQueue() {
 }
 
 function recloseQueue() {
-    name(24, 'Attempt to reclose the already-closed queue');
-    db.leader.updateQueueStatus(leaderId, false, (error) => {
+    name(25, 'Attempt to reclose the already-closed queue');
+    db.leader.updateQueueStatus(leaderId, false, false, (error) => {
         if (error === resultCode.queueAlreadyClosed) {
             pass('failed to open with result code queueAlreadyClosed');
         } else {
@@ -504,7 +521,7 @@ function recloseQueue() {
 }
 
 function verifyQueueStatus2() {
-    name(25, 'Verify queue status (after close)');
+    name(26, 'Verify queue status (after close)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -519,7 +536,7 @@ function verifyQueueStatus2() {
 }
 
 function addWithoutEnoughBadges() {
-    name(26, 'Attempt to add a challenger with fewer than 8 badges to an elite queue');
+    name(27, 'Attempt to add a challenger with fewer than 8 badges to an elite queue');
     db.queue.enqueue(eliteId, challengerIds.add, leaderType.elite, battleFormat.singles, (error) => {
         if (error === resultCode.notEnoughBadges) {
             pass('failed to add with result code notEnoughBadges');
@@ -534,7 +551,7 @@ function addWithoutEnoughBadges() {
 }
 
 function addWithEnoughBadges() {
-    name(27, 'Add a challenger to an elite queue');
+    name(28, 'Add a challenger to an elite queue');
     db.queue.enqueue(eliteId, challengerIds.elite, leaderType.elite, battleFormat.singles, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -572,6 +589,6 @@ function cleanup() {
  * TEST EXECUTION *
  ******************/
 db.dbReady.then(() => {
-    start(27);
+    start(28);
     verifyBaseline();
 });

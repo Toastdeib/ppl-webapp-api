@@ -109,15 +109,32 @@ export async function getLeaderInfo(id, callback) {
     callback(resultCode.success, retval);
 }
 
-export async function updateQueueStatus(id, open, callback) {
-    const result = await save(`UPDATE ${tables.leaders} SET queue_open = ? WHERE id = ? AND queue_open = ?`, [open ? queueStatus.open : queueStatus.closed, id, open ? queueStatus.closed : queueStatus.open]);
+export async function updateQueueStatus(id, open, duoMode, callback) {
+    let result = await fetch(`SELECT queue_open, battle_format FROM ${tables.leaders} WHERE id = ?`, [id]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
     }
 
-    if (result.rowCount === 0) {
+    if (result.rows.length === 0) {
+        callback(resultCode.notFound);
+        return;
+    }
+
+    const row = result.rows[0];
+    if (open === !!row.queue_open) {
         callback(open ? resultCode.queueAlreadyOpen : resultCode.queueAlreadyClosed);
+        return;
+    }
+
+    if (open && duoMode && !(row.battle_format & battleFormat.multi)) {
+        callback(resultCode.duoModeNotSupported);
+        return;
+    }
+
+    result = await save(`UPDATE ${tables.leaders} SET queue_open = ?, duo_mode = ? WHERE id = ?`, [open ? queueStatus.open : queueStatus.closed, duoMode ? queueStatus.open : queueStatus.closed, id]);
+    if (result.resultCode) {
+        callback(result.resultCode);
         return;
     }
 
