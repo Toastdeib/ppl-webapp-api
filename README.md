@@ -16,7 +16,7 @@
 This project is half of a system built to help manage events run by the [PAX Pokémon League](https://paxpokemonleague.net) both online and at in-person PAXes. It consists of an API built to support the [PPL Webapp](https://github.com/lunemily/ppl-in-person) frontend. It's set up to present its public-facing API through Express and be driven off of a MySQL database, the expected schema of which can be found in a comment near the top of the [core.js](db/core.js) database module. In order to set up a new instance, you need to:
 
 1. Clone the project and install all the dependencies with npm.
-2. Make a copy of the [config.js.example](config/config.js.example) file simply named config.js.
+2. Make copies of the [config.js.example](config/config.js.example) file for each event type outlined in [config.js](config/config.js).
 3. Populate the API configs appropriately for your environment:
     - The `debug` field indicates whether the node application should run in debug mode. Setting this to `true` will enable console input in the running application, as well as the `debugSave` function on the database module.
     - The `port` field is the port that the API will listen on, and should be an open port on the machine running this node application.
@@ -25,7 +25,7 @@ This project is half of a system built to help manage events run by the [PAX Pok
     - The `corsOrigin` field can be either a string or an array of strings, and each string should be a domain that's permitted to access the API.
     - The `mysql...` fields configure the database connection, and will vary depending on how your system is set up.
     - The `tableSuffix` field is optional and applies a suffix to all table names queried by the database module if specified. This is useful for setting up a staging environment with a separate set of tables from those used in production.
-4. Populate the event configs appropriately for your PPL event:
+4. Populate the event configs appropriately for your PPL events, leaving all **numeric** fields untouched for the test configs:
     - The `...SurveyUrl` fields are links to surveys to be filled out by Hall of Fame entrants, challengers, and leaders respectively. The former is typically used for challengers to submit their winning teams, and the latter two are for general feedback.
     - The `surveyStartDate` and `surveyDurationDays` fields define when the survey links should be sent down in API responses and for how long. The start date is typically the final day of a PPL event.
     - The `trainerCardShowDate` field defines when the trainer card should start appearing in the webapp. It's typically the day of the champion reveal, so that leader names and art can be pre-loaded without challengers seeing them early.
@@ -34,7 +34,7 @@ This project is half of a system built to help manage events run by the [PAX Pok
     - The `maxQueueSize` field defines how many challengers a leader can have in their queue at a given time. This should typically be large for in-person events and more restricted during online events.
     - The `maxQueuesPerChallenger` field defines how many leader queues a challenger can be in at once.
     - The `excludedBingoIds` field is an array of leader ID strings that defines what, if any, leaders should be excluded when constructing new bingo boards. This should be used in cases where multiple leaders have the same ace/Tera and you want to avoid collisions.
-5. Run `node startup.js`. **Note**: This *may* require `sudo` to run, depending on the permissions on the cert path.
+5. Run `node startup.js`, providing a `PPL_EVENT` environment variable if desired; if unspecified, it will pull from the `config-general.js` file you created in step 2. **Note**: This *may* require `sudo` to run, depending on the permissions on the cert path.
 
 If everything is correctly configured, you should see a few log statements appear indicating that the API is running. You can validate it by using curl, a simple web browser (for the GET requests), or another tool of your choice.
 
@@ -865,6 +865,6 @@ The six suites are:
 - [api-challenger.js](tests/api-challenger.js) - An API test suite covering challenger-oriented API paths. This suite has roughly the same coverage as the db-challenger.js suite.g match results.
 - [api-leader.js](tests/api-leader.js) - An API test suite covering leader-oriented API paths. This suite has roughly the same coverage as the db-leader.js suite.
 
-As documented at the top of each test suite file, they're all intended to be run with certain environment variables which modify the behavior of the logging module and what database tables the tests should be performed on. The tests are intended to work off of a separate set of database tables, suffixed with `_test`, and pre-populated with the queries found in [baseline.sql](tests/baseline.sql). While each suite is designed to perform cleanup of any database changes it makes, the test tables *can* get out of sync with the baseline if certain tests or cleanup steps fail, so rerunning the baseline may be necessary in case of unexpected errors.
+As documented at the top of each test suite file, they're all intended to be run with certain environment variables which modify the behavior of the logging module and what database tables the tests should be performed on. The [db.sh](tests/db.sh) and [api.sh](tests/api.sh) shell scripts will run each set of suites in sequence with the correct environment variables, pausing in between each run for validation of the results. The tests are intended to work off of a separate set of database tables, suffixed with `_test`, and pre-populated with the queries found in [baseline.sql](tests/baseline.sql). While each suite is designed to perform cleanup of any database changes it makes, the test tables *can* get out of sync with the baseline if certain tests or cleanup steps fail, so rerunning the baseline may be necessary in case of unexpected errors. This can be performed easily by running `node db-reset.js` in the tests directory.
 
 [Back to top](#table-of-contents)

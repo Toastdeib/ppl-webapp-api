@@ -21,7 +21,7 @@ const config = {
     requiredBadges: 8,
     requiredEmblems: 4,
     maxQueueSize: 20,
-    maxQueuesPerChallenger: 3,
+    maxQueuesPerChallenger: 4,
     excludedBingoIds: []
 };
 
