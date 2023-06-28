@@ -7,6 +7,7 @@
     - [Authentication APIs](#authentication-apis)
     - [Challenger APIs](#challenger-apis)
     - [Leader APIs](#leader-apis)
+    - [Push APIs](#push-apis)
     - [Unauthenticated APIs](#unauthenticated-apis)
     - [Constants](#constants)
 - [Tests](#tests)
@@ -58,6 +59,11 @@ Creates a new account with the provided username and password.
     - `west`
     - `aus`
     - `online`
+- `Platform` - A string indicating the platform this request is coming from. Can be one of:
+    - `web`
+    - `android`
+    - `ios`
+**Note**: The `Platform` header is technically optional and will be populated as `none` if omitted or invalid, but it's necessary to provide for push notification functionality.
 
 ##### Response payload:
 
@@ -90,6 +96,11 @@ Logs a user in with the provided username and password.
     - `west`
     - `aus`
     - `online`
+- `Platform` - A string indicating the platform this request is coming from. Can be one of:
+    - `web`
+    - `android`
+    - `ios`
+**Note**: The `Platform` header is technically optional and will be populated as `none` if omitted or invalid, but it's necessary to provide for push notification functionality.
 
 ##### Response payload:
 
@@ -327,6 +338,7 @@ Retrieves information about the leader with the given ID.
     "battleFormat": [int, uses the battleFormat constant],
     "badgeName": [string],
     "queueOpen": [boolean],
+    "duoMode": [boolean],
     "twitchEnabled": [boolean],
     "winCount": [int],
     "lossCount": [int],
@@ -473,6 +485,30 @@ See: Response payload for [/leader/:id (GET)](#leaderid-get).
 - HTTP 404 (NOT FOUND) - Returned if either of the given IDs don't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
+#### /api/v2/leader/:id/report/:challenger/:otherChallenger (POST)
+
+Reports a match result for the given challenger pair, for use when a leader is running their queue in duo mode with multi-battles. This path tracks the battle result and whether a badge was awarded separately to improve the accuracy of battle statistics.
+
+##### Required headers:
+
+- `Authorization` - Authentication header following the [Bearer scheme](https://www.rfc-editor.org/rfc/rfc6750#section-2.1).
+
+##### Body params:
+
+- `challengerWin` - A boolean flag indicating whether the challenger won the match.
+- `badgeAwarded` - A boolean flag indicating whether the challenger was awarded a badge.
+
+##### Response payload:
+
+See: Response payload for [/leader/:id (GET)](#leaderid-get).
+
+##### Possible error responses:
+
+- HTTP 400 (BAD REQUEST) - Returned if either of the given challenger IDs aren't in the leader's queue.
+- HTTP 401 (UNAUTHORIZED) - Returned if the authentication header is omitted or malformed.
+- HTTP 404 (NOT FOUND) - Returned if any of the given IDs don't exist in the database.
+- HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
+
 #### /api/v2/leader/:id/hold/:challenger (POST)
 
 Places the given challenger on hold for the leader.
@@ -560,6 +596,58 @@ Retrieves a list of all challengers for the PPL event indicated by the request h
 
 ##### Possible error responses:
 
+- HTTP 401 (UNAUTHORIZED) - Returned if the authentication header is omitted or malformed.
+- HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
+
+[Back to top](#table-of-contents)
+
+## Push APIs
+
+#### /api/v2/push/:id/enable (POST)
+
+Enables push notifications on the given login for a device specified by other request parameters. This path should only be used by mobile platforms that support push notifications (e.g. Android and iOS). It is currently **untested** and **unstable**, and the body params and response payload are still subject to change.
+
+##### Required headers:
+
+- `Authorization` - Authentication header following the [Bearer scheme](https://www.rfc-editor.org/rfc/rfc6750#section-2.1).
+
+##### Body params:
+
+- `pushToken` - The device's push token, as a string.
+
+##### Response payload:
+
+```json
+{}
+```
+
+##### Possible error responses:
+
+- HTTP 400 (BAD REQUEST) - Returned if the push token is omitted from the request body.
+- HTTP 401 (UNAUTHORIZED) - Returned if the authentication header is omitted or malformed.
+- HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
+
+#### /api/v2/push/:id/disable (POST)
+
+Disables push notifications on the given login for a device specified by other request parameters. This path should only be used by mobile platforms that support push notifications (e.g. Android and iOS). It is currently **untested** and **unstable**, and the body params and response payload are still subject to change.
+
+##### Required headers:
+
+- `Authorization` - Authentication header following the [Bearer scheme](https://www.rfc-editor.org/rfc/rfc6750#section-2.1).
+
+##### Body params:
+
+- `pushToken` - The device's push token, as a string.
+
+##### Response payload:
+
+```json
+{}
+```
+
+##### Possible error responses:
+
+- HTTP 400 (BAD REQUEST) - Returned if the push token is omitted from the request body.
 - HTTP 401 (UNAUTHORIZED) - Returned if the authentication header is omitted or malformed.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 

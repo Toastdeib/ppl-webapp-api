@@ -48,7 +48,7 @@ let leaderIds, eliteIds;
  * - username: VARCHAR(30)
  * - password_hash: VARCHAR(99)
  * - ppl_events: TINYINT(4)
- * - is_leader: BOOLEAN
+ * - is_leader: TINYINT(1)
  * - leader_id: VARCHAR(8)
  * - registered_date: TIMESTAMP
  * - last_used_date: TIMESTAMP
@@ -72,7 +72,8 @@ let leaderIds, eliteIds;
  * - badge_name: VARCHAR(40)
  * - leader_bio: VARCHAR(800)
  * - leader_tagline: VARCHAR(150)
- * - queue_open: BOOLEAN
+ * - queue_open: TINYINT(1)
+ * - duo_mode: TINYINT(1)
  * - queue_open_text: VARCHAR(150)
  * - queue_close_text: VARCHAR(150)
  * - twitch_handle: VARCHAR(30)
