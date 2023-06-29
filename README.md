@@ -829,7 +829,10 @@ These codes will be returned in **most** error payloads alongside an error strin
     "tokenNotRegistered": 19,
     "queueAlreadyOpen": 20,
     "queueAlreadyClosed": 21,
-    "duoModeNotSupported": 22
+    "duoModeNotSupported": 22,
+    "notInDuoMode": 23,
+    "inDuoMode": 24,
+    "notEnoughChallengers": 25
 }
 ```
 

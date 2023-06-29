@@ -1,3 +1,17 @@
+/******************************************************
+ *             RESULT CODE MESSAGE MODULE             *
+ *                                                    *
+ * This module contains a mapping of result codes to  *
+ * log messages, display messages for users, and HTTP *
+ * status codes. The API uses this to map error       *
+ * responses from the db modules to responses it can  *
+ * send back to the requesting client. It exports two *
+ * constants, challengerErrors and leaderErrors. Each *
+ * constant contains a full set of mappings, with     *
+ * some of them specific to the user type and some of *
+ * them shared, for codes where the message is type-  *
+ * agnostic or only ever shown to one user type.      *
+ ******************************************************/
 import config from '../config/config.js';
 import { httpStatus, resultCode } from './constants.js';
 
@@ -60,6 +74,21 @@ const genericErrors = {
     [resultCode.duoModeNotSupported]: {
         logMessage: 'Duo mode not supported',
         userMessage: 'Duo mode is only supported for multi-battle leaders.',
+        statusCode: httpStatus.badRequest
+    },
+    [resultCode.notInDuoMode]: {
+        logMessage: 'Queue not in duo mode',
+        userMessage: 'You can only report match results for one challenger at a time while your queue isn\'t in duo mode.',
+        statusCode: httpStatus.badRequest
+    },
+    [resultCode.inDuoMode]: {
+        logMessage: 'Queue in duo mode',
+        userMessage: 'You can only report match results for two challengers at a time while your queue is in duo mode.',
+        statusCode: httpStatus.badRequest
+    },
+    [resultCode.notEnoughChallengers]: {
+        logMessage: 'Not enough challengers',
+        userMessage: 'You don\'t have enough challengers in your queue to report a match result.',
         statusCode: httpStatus.badRequest
     }
 };
