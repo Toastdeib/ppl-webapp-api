@@ -27,18 +27,18 @@ import { pplEvent, resultCode } from '../util/constants.js';
  ****************/
 const idCounts = {
     east: {
-        first: 7,
-        second: 8
+        first: 9,
+        second: 10
     },
     west: {
-        first: 7,
-        second: 7,
-        third: 8
+        first: 9,
+        second: 9,
+        third: 10
     },
     all: {
         challengers: {
-            first: 8,
-            second: 9
+            first: 10,
+            second: 11
         },
         leaders: {
             first: 28,

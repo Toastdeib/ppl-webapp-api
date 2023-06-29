@@ -38,35 +38,36 @@ const baseline = {
     winCount: 2, // 1 loss, 1 ash
     lossCount: 2, // 1 win, 1 gary
     badgesAwarded: 2, // 1 win, 1 ash
-    queue: { '79235b4e0fec1b40': 0, '8b7a46b38cf6321f': 1 },
+    queue: { '79235b4e0fec1b40': 0, '8b7a46b38cf6321f': 1, '1dac6ab4951dda90': 2, '1b12a016e053a471': 3 },
     onHold: [ 'c80f226aeb5ec8ae' ]
 };
 const challengerIds = {
     add: '5ae3d0f7ea736bda',
     hold: '79235b4e0fec1b40',
-    elite: 'efaa0cdd1cbd165b'
+    elite: 'efaa0cdd1cbd165b',
+    duo: ['8b7a46b38cf6321f', '1dac6ab4951dda90']
 };
 const queueStats = {
     add: {
-        length: 3,
-        position: 2
+        length: 5,
+        position: 4
     },
     hold: {
-        length: 2
+        length: 4
     },
     unholdBack: {
-        length: 3,
-        position: 2
+        length: 5,
+        position: 4
     },
     unholdFront: {
-        length: 3,
+        length: 5,
         position: 0
     },
     remove: {
-        length: 2
+        length: 4
     },
     win: {
-        length: 1
+        length: 3
     }
 };
 
@@ -176,13 +177,13 @@ function badOpenDuoQueue() {
             fail('successfully opened the queue');
         }
 
-        next(openDuoQueue);
+        next(openSoloQueue);
     });
 }
 
-function openDuoQueue() {
-    name(3, 'Open the queue in duo mode');
-    db.leader.updateQueueStatus(leaderId, true, true, (error) => {
+function openSoloQueue() {
+    name(3, 'Open the queue in regular mode');
+    db.leader.updateQueueStatus(leaderId, true, false, (error) => {
         if (error) {
             fail(`error=${error}`);
         } else {
@@ -194,55 +195,14 @@ function openDuoQueue() {
 }
 
 function verifyQueueStatus1() {
-    name(4, 'Verify queue status (after duo open)');
+    name(4, 'Verify queue status (after regular open)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
-        } else if (result.queueOpen === false) {
+        } else if (!result.queueOpen) {
             fail('queue is still flagged as closed');
-        } else if (result.queue[0].linkCode !== result.queue[1].linkCode) {
-            fail('first two challengers have mismatching link codes in duo mode');
-        } else {
-            pass('queue is flagged as open');
-        }
-
-        next(closeQueue1);
-    });
-}
-
-function closeQueue1() {
-    name(5, 'Close the queue');
-    db.leader.updateQueueStatus(leaderId, false, false, (error) => {
-        if (error) {
-            fail(`error=${error}`);
-        } else {
-            pass('successfully closed the queue');
-        }
-
-        next(openSoloQueue);
-    });
-}
-
-function openSoloQueue() {
-    name(6, 'Open the queue in regular mode');
-    db.leader.updateQueueStatus(leaderId, true, false, (error) => {
-        if (error) {
-            fail(`error=${error}`);
-        } else {
-            pass('successfully opened the queue');
-        }
-
-        next(verifyQueueStatus2);
-    });
-}
-
-function verifyQueueStatus2() {
-    name(7, 'Verify queue status (after regular open)');
-    db.leader.getInfo(leaderId, (error, result) => {
-        if (error) {
-            fail(`error=${error}`);
-        } else if (result.queueOpen === false) {
-            fail('queue is still flagged as closed');
+        } else if (result.duoMode) {
+            fail('queue is open in duo mode');
         } else if (result.queue[0].linkCode === result.queue[1].linkCode) {
             fail('first two challengers have matching link codes in regular mode');
         } else {
@@ -254,7 +214,7 @@ function verifyQueueStatus2() {
 }
 
 function reopenQueue() {
-    name(8, 'Attempt to reopen the already-open queue');
+    name(5, 'Attempt to reopen the already-open queue');
     db.leader.updateQueueStatus(leaderId, true, false, (error) => {
         if (error === resultCode.queueAlreadyOpen) {
             pass('failed to open with result code queueAlreadyOpen');
@@ -269,7 +229,7 @@ function reopenQueue() {
 }
 
 function addExistingChallenger() {
-    name(9, 'Attempt to add a challenger who is already in queue');
+    name(6, 'Attempt to add a challenger who is already in queue');
     db.queue.enqueue(leaderId, challengerIds.hold, leaderType.casual, battleFormat.singles, (error) => {
         if (error === resultCode.alreadyInQueue) {
             pass('failed to add with result code alreadyInQueue');
@@ -285,7 +245,7 @@ function addExistingChallenger() {
 }
 
 function addNewChallenger() {
-    name(10, 'Add a new challenger to the queue');
+    name(7, 'Add a new challenger to the queue');
     db.queue.enqueue(leaderId, challengerIds.add, leaderType.casual, battleFormat.singles, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -298,7 +258,7 @@ function addNewChallenger() {
 }
 
 function verifyQueue1() {
-    name(11, 'Verify queue length and order (after add)');
+    name(8, 'Verify queue length and order (after add)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -318,7 +278,7 @@ function verifyQueue1() {
 }
 
 function holdChallenger1() {
-    name(12, 'Place a challenger on hold');
+    name(9, 'Place a challenger on hold');
     db.queue.hold(leaderId, challengerIds.hold, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -331,7 +291,7 @@ function holdChallenger1() {
 }
 
 function verifyQueue2() {
-    name(13, 'Verify queue length (after first hold)');
+    name(10, 'Verify queue length (after first hold)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -346,7 +306,7 @@ function verifyQueue2() {
 }
 
 function unholdChallenger1() {
-    name(14, 'Return a challenger from hold at the back of the queue');
+    name(11, 'Return a challenger from hold at the back of the queue');
     db.queue.unhold(leaderId, challengerIds.hold, false, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -359,7 +319,7 @@ function unholdChallenger1() {
 }
 
 function verifyQueue3() {
-    name(15, 'Verify queue length and order (after first unhold)');
+    name(12, 'Verify queue length and order (after first unhold)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -379,7 +339,7 @@ function verifyQueue3() {
 }
 
 function holdChallenger2() {
-    name(16, 'Place a challenger on hold');
+    name(13, 'Place a challenger on hold');
     db.queue.hold(leaderId, challengerIds.hold, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -392,7 +352,7 @@ function holdChallenger2() {
 }
 
 function verifyQueue4() {
-    name(17, 'Verify queue length (after second hold)');
+    name(14, 'Verify queue length (after second hold)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -407,7 +367,7 @@ function verifyQueue4() {
 }
 
 function unholdChallenger2() {
-    name(18, 'Return a challenger from hold at the front of the queue');
+    name(15, 'Return a challenger from hold at the front of the queue');
     db.queue.unhold(leaderId, challengerIds.hold, true, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -420,7 +380,7 @@ function unholdChallenger2() {
 }
 
 function verifyQueue5() {
-    name(19, 'Verify queue length and order (after second unhold)');
+    name(16, 'Verify queue length and order (after second unhold)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -440,7 +400,7 @@ function verifyQueue5() {
 }
 
 function dequeueChallenger() {
-    name(20, 'Remove a challenger from the queue');
+    name(17, 'Remove a challenger from the queue');
     db.queue.dequeue(leaderId, challengerIds.add, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -453,7 +413,7 @@ function dequeueChallenger() {
 }
 
 function verifyQueue6() {
-    name(21, 'Verify queue length (after removal)');
+    name(18, 'Verify queue length (after removal)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -468,7 +428,7 @@ function verifyQueue6() {
 }
 
 function reportWin() {
-    name(22, 'Report a challenger win');
+    name(19, 'Report a challenger win');
     db.leader.reportResult(leaderId, [challengerIds.hold], true, true, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -481,7 +441,7 @@ function reportWin() {
 }
 
 function verifyQueue7() {
-    name(23, 'Verify queue length (after win reported)');
+    name(20, 'Verify queue length (after win reported)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -496,7 +456,7 @@ function verifyQueue7() {
 }
 
 function badDequeue() {
-    name(24, 'Attempt to remove a challenger who isn\'t in queue from the queue');
+    name(21, 'Attempt to remove a challenger who isn\'t in queue from the queue');
     db.queue.dequeue(leaderId, challengerIds.add, (error) => {
         if (error === resultCode.notInQueue) {
             pass('failed to remove with result code notInQueue');
@@ -511,7 +471,7 @@ function badDequeue() {
 }
 
 function badHold() {
-    name(25, 'Attempt to place a challenger who isn\'t in queue on hold');
+    name(22, 'Attempt to place a challenger who isn\'t in queue on hold');
     db.queue.hold(leaderId, challengerIds.add, (error) => {
         if (error === resultCode.notInQueue) {
             pass('failed to hold with result code notInQueue');
@@ -526,7 +486,7 @@ function badHold() {
 }
 
 function badUnhold() {
-    name(26, 'Attempt to return a challenger who isn\'t on hold from hold');
+    name(23, 'Attempt to return a challenger who isn\'t on hold from hold');
     db.queue.unhold(leaderId, challengerIds.add, true, (error) => {
         if (error === resultCode.notInQueue) {
             pass('failed to unhold with result code notInQueue');
@@ -536,12 +496,12 @@ function badUnhold() {
             fail('successfully returned a challenger from hold');
         }
 
-        next(closeQueue2);
+        next(closeQueue1);
     });
 }
 
-function closeQueue2() {
-    name(27, 'Close the queue');
+function closeQueue1() {
+    name(24, 'Close the queue');
     db.leader.updateQueueStatus(leaderId, false, false, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -554,7 +514,7 @@ function closeQueue2() {
 }
 
 function recloseQueue() {
-    name(28, 'Attempt to reclose the already-closed queue');
+    name(25, 'Attempt to reclose the already-closed queue');
     db.leader.updateQueueStatus(leaderId, false, false, (error) => {
         if (error === resultCode.queueAlreadyClosed) {
             pass('failed to open with result code queueAlreadyClosed');
@@ -562,19 +522,92 @@ function recloseQueue() {
             fail('successfully closed the queue');
         }
 
+        next(verifyQueueStatus2);
+    });
+}
+
+function verifyQueueStatus2() {
+    name(26, 'Verify queue status (after close)');
+    db.leader.getInfo(leaderId, (error, result) => {
+        if (error) {
+            fail(`error=${error}`);
+        } else if (result.queueOpen) {
+            fail('queue is still flagged as open');
+        } else {
+            pass('queue is flagged as closed');
+        }
+
+        next(openDuoQueue);
+    });
+}
+
+function openDuoQueue() {
+    name(27, 'Open the queue in duo mode');
+    db.leader.updateQueueStatus(leaderId, true, true, (error) => {
+        if (error) {
+            fail(`error=${error}`);
+        } else {
+            pass('successfully opened the queue');
+        }
+
         next(verifyQueueStatus3);
     });
 }
 
 function verifyQueueStatus3() {
-    name(29, 'Verify queue status (after close)');
+    name(28, 'Verify queue status (after duo open)');
     db.leader.getInfo(leaderId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
-        } else if (result.queueOpen === true) {
-            fail('queue is still flagged as open');
+        } else if (!result.queueOpen) {
+            fail('queue is still flagged as closed');
+        } else if (!result.duoMode) {
+            fail('queue isn\'t open in duo mode');
+        } else if (result.queue[0].linkCode !== result.queue[1].linkCode) {
+            fail('first two challengers have mismatching link codes in duo mode');
         } else {
-            pass('queue is flagged as closed');
+            pass('queue is flagged as open');
+        }
+
+        next(reportDuoWin1);
+    });
+}
+
+function reportDuoWin1() {
+    name(29, 'Report a duo mode challenger win');
+    db.leader.reportResult(leaderId, challengerIds.duo, true, true, (error) => {
+        if (error) {
+            fail(`error=${error}`);
+        } else {
+            pass('match result reported successfully');
+        }
+
+        next(reportDuoWin2);
+    });
+}
+
+function reportDuoWin2() {
+    name(30, 'Attempt to report a duo mode challenger win with only one challenger in queue');
+    db.leader.reportResult(leaderId, challengerIds.duo, true, true, (error) => {
+        if (error === resultCode.notEnoughChallengers) {
+            pass('failed to report match result with result code notEnoughChallengers');
+        } else if (error) {
+            fail(`error=${error}`);
+        } else {
+            fail('match result reported successfully');
+        }
+
+        next(closeQueue2);
+    });
+}
+
+function closeQueue2() {
+    name(31, 'Close the queue');
+    db.leader.updateQueueStatus(leaderId, false, false, (error) => {
+        if (error) {
+            fail(`error=${error}`);
+        } else {
+            pass('successfully closed the queue');
         }
 
         next(addWithoutEnoughBadges);
@@ -582,7 +615,7 @@ function verifyQueueStatus3() {
 }
 
 function addWithoutEnoughBadges() {
-    name(30, 'Attempt to add a challenger with fewer than 8 badges to an elite queue');
+    name(32, 'Attempt to add a challenger with fewer than 8 badges to an elite queue');
     db.queue.enqueue(eliteId, challengerIds.add, leaderType.elite, battleFormat.singles, (error) => {
         if (error === resultCode.notEnoughBadges) {
             pass('failed to add with result code notEnoughBadges');
@@ -597,7 +630,7 @@ function addWithoutEnoughBadges() {
 }
 
 function addWithEnoughBadges() {
-    name(31, 'Add a challenger to an elite queue');
+    name(33, 'Add a challenger to an elite queue');
     db.queue.enqueue(eliteId, challengerIds.elite, leaderType.elite, battleFormat.singles, (error) => {
         if (error) {
             fail(`error=${error}`);
@@ -612,13 +645,13 @@ function addWithEnoughBadges() {
 function cleanup() {
     finish();
     debug('Cleaning up db modifications');
-    db.debugSave(`UPDATE ${db.tables.matches} SET status = ? WHERE challenger_id = ? AND leader_id = ?`, [matchStatus.inQueue, challengerIds.hold, leaderId], (rowCount) => {
+    db.debugSave(`UPDATE ${db.tables.matches} SET status = ? WHERE challenger_id IN (?, ?, ?) AND leader_id = ?`, [matchStatus.inQueue, challengerIds.hold, ...challengerIds.duo, leaderId], (rowCount) => {
         if (rowCount === 0) {
-            debug('Cleanup failed to revert match result, please validate the db manually');
+            debug('Cleanup failed to revert match results, please validate the db manually');
             process.exit();
         }
 
-        debug('Reverted match result');
+        debug('Reverted match results');
         db.debugSave(`DELETE FROM ${db.tables.matches} WHERE challenger_id = ? AND leader_id = ?`, [challengerIds.elite, eliteId], (rowCount) => {
             if (rowCount === 0) {
                 debug('Cleanup failed to delete new elite match, please validate the db manually');
@@ -635,6 +668,6 @@ function cleanup() {
  * TEST EXECUTION *
  ******************/
 db.dbReady.then(() => {
-    start(31);
+    start(33);
     verifyBaseline();
 });

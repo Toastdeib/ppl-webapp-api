@@ -167,6 +167,36 @@ export async function reportResult(leaderId, challengerIds, challengerWin, badge
         return;
     }
 
+    let result = await fetch(`SELECT l.leader_type, l.duo_mode, (SELECT COUNT(m.challenger_id) FROM ${tables.matches} m WHERE m.leader_id = l.id AND m.status = ?) queue_size FROM ${tables.leaders} l WHERE l.id = ?`, [matchStatus.inQueue, leaderId]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rows.length === 0) {
+        callback(resultCode.notFound);
+        return;
+    }
+
+    const duoMode = !!result.rows[0].duo_mode;
+    const queueSize = result.rows[0].queue_size;
+    const type = result.rows[0].leader_type;
+    if (duoMode && challengerIds.length === 1) {
+        callback(resultCode.inDuoMode);
+        return;
+    }
+
+    if (!duoMode && challengerIds.length === 2) {
+        callback(resultCode.notInDuoMode);
+        return;
+    }
+
+    if (queueSize === 0 || (duoMode && queueSize === 1)) {
+        // Empty queue, or duo mode with only one in queue
+        callback(resultCode.notEnoughChallengers);
+        return;
+    }
+
     let matchResult;
     if (challengerWin) {
         matchResult = badgeAwarded ? matchStatus.win : matchStatus.gary;
@@ -174,7 +204,6 @@ export async function reportResult(leaderId, challengerIds, challengerWin, badge
         matchResult = badgeAwarded ? matchStatus.ash : matchStatus.loss;
     }
 
-    let result;
     if (challengerIds.length === 1) {
         result = await save(`UPDATE ${tables.matches} SET status = ? WHERE leader_id = ? AND challenger_id = ? AND status = ?`, [matchResult, leaderId, challengerIds[0], matchStatus.inQueue]);
     } else {
@@ -192,21 +221,14 @@ export async function reportResult(leaderId, challengerIds, challengerWin, badge
         return;
     }
 
-    result = await fetch(`SELECT leader_type, duo_mode FROM ${tables.leaders} WHERE id = ?`, [leaderId]);
-    if (result.resultCode) {
-        callback(result.resultCode);
-        return;
-    }
-
     let hof = false;
-    if (challengerWin) {
+    if (challengerWin) { // TODO - Should this be going off the badgeAwarded flag instead?
         // The query will return a row only if the leader ID is the champ; otherwise it'll be an empty set
-        hof = result.rows.length > 0 && result.rows[0].leader_type === leaderType.champion;
+        hof = type === leaderType.champion;
     }
 
     clearLinkCode(leaderId, challengerIds);
 
-    const duoMode = result.rows.length > 0 && !!result.rows.duo_mode;
     result = await fetch(`SELECT challenger_id FROM ${tables.matches} WHERE leader_id = ? AND status = ? ORDER BY timestamp ASC LIMIT ?`, [leaderId, matchStatus.inQueue, duoMode ? 2 : 1]);
     if (!result.resultCode && result.rows.length > 0) {
         // We have at least one challenger in queue, so send a push to the whoever is up next

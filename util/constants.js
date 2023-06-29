@@ -21,7 +21,10 @@ export const resultCode = {
     tokenNotRegistered: 19,
     queueAlreadyOpen: 20,
     queueAlreadyClosed: 21,
-    duoModeNotSupported: 22
+    duoModeNotSupported: 22,
+    notInDuoMode: 23,
+    inDuoMode: 24,
+    notEnoughChallengers: 25
 };
 
 export const leaderType = {
