@@ -10,7 +10,7 @@
 import config from '../config/config.js';
 import { sendPush } from '../push/push.js';
 import { clearLinkCode, fetch, getPushTokens, save, tables } from './core.js';
-import { leaderType, matchStatus, resultCode } from '../util/constants.js';
+import { leaderType, matchStatus, queueStatus, resultCode } from '../util/constants.js';
 
 /***************
  * Public APIs *
@@ -24,7 +24,7 @@ export async function enqueue(leaderId, challengerId, difficulty, format, callba
     // 4. Challenger isn't already in this leader's queue and hasn't already beaten them (0 matches with status <> 2)
     // 5. Leader has room in the queue (<20 matches with status in [0, 1])
     // 6. Challenger isn't in too many queues (<3 matches with status in [0, 1] across all leaders)
-    let result = await fetch(`SELECT leader_type, battle_format, queue_open FROM ${tables.leaders} WHERE id = ?`, [leaderId]);
+    let result = await fetch(`SELECT l.leader_type, l.battle_format, l.queue_open, (SELECT COUNT(m.challenger_id) FROM ${tables.matches} m WHERE m.leader_id = l.id AND m.status = ?) queue_size FROM ${tables.leaders} l WHERE l.id = ? GROUP BY l.id`, [matchStatus.inQueue, leaderId]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -35,77 +35,63 @@ export async function enqueue(leaderId, challengerId, difficulty, format, callba
         return;
     }
 
-    if (result.rows[0].queue_open === 0) {
+    const leaderInfo = result.rows[0];
+    if (leaderInfo.queue_open === queueStatus.closed) {
         callback(resultCode.queueIsClosed);
         return;
     }
 
-    const type = result.rows[0].leader_type;
-    if (!(type & difficulty)) {
+    if (!(leaderInfo.leader_type & difficulty)) {
         callback(resultCode.unsupportedDifficulty);
         return;
     }
 
-    if (!(result.rows[0].battle_format & format)) {
+    if (!(leaderInfo.battle_format & format)) {
         callback(resultCode.unsupportedFormat);
         return;
     }
 
-    if (type & (leaderType.elite | leaderType.champion)) {
+    if (leaderInfo.queue_size >= config.maxQueueSize) {
+        callback(resultCode.queueIsFull);
+        return;
+    }
+
+    result = await fetch(`SELECT leader_id, battle_difficulty, status FROM ${tables.matches} WHERE challenger_id = ? AND status <> ?`, [challengerId, matchStatus.loss]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (leaderInfo.leader_type & (leaderType.elite | leaderType.champion)) {
         // Elite or champ; pull badges and validate
-        result = await fetch(`SELECT battle_difficulty FROM ${tables.matches} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, matchStatus.win, matchStatus.ash]);
-        const badgeCount = result.rows.filter(row => !(row.battle_difficulty & (leaderType.elite | leaderType.champion))).length;
-        const emblemCount = result.rows.filter(row => row.battle_difficulty & leaderType.elite).length;
+        const earned = result.rows.filter(row => row.status === matchStatus.win || row.status === matchStatus.ash);
+        const badgeCount = earned.filter(row => !(row.battle_difficulty & (leaderType.elite | leaderType.champion))).length;
+        const emblemCount = earned.filter(row => row.battle_difficulty & leaderType.elite).length;
         // Match validity check is a bit wacky because PPL West doesn't have elites,
         // so we need to check badge count for the champ if config.requiredEmblems === 0
-        if (((type & leaderType.elite) && badgeCount < config.requiredBadges) || // Elite with insufficient badges
-            ((type & leaderType.champion) && config.requiredEmblems === 0 && badgeCount < config.requiredBadges)) { // Champ with no elites and insufficient badges
+        if (((leaderInfo.leader_type & leaderType.elite) && badgeCount < config.requiredBadges) || // Elite with insufficient badges
+            ((leaderInfo.leader_type & leaderType.champion) && config.requiredEmblems === 0 && badgeCount < config.requiredBadges)) { // Champ with no elites and insufficient badges
             callback(resultCode.notEnoughBadges);
             return;
         }
 
-        if (((type & leaderType.champion) && emblemCount < config.requiredEmblems)) { // Champ with insufficient emblems
+        if (((leaderInfo.leader_type & leaderType.champion) && emblemCount < config.requiredEmblems)) { // Champ with insufficient emblems
             callback(resultCode.notEnoughEmblems);
             return;
         }
     }
 
-    result = await fetch(`SELECT status FROM ${tables.matches} WHERE leader_id = ? AND challenger_id = ? AND status <> ?`, [leaderId, challengerId, matchStatus.loss]);
-    if (result.resultCode) {
-        callback(result.resultCode);
-        return;
-    }
-
-    if (result.rows.find(row => row.status === matchStatus.inQueue || row.status === matchStatus.onHold)) {
+    if (result.rows.find(row => row.leader_id === leaderId && (row.status === matchStatus.inQueue || row.status === matchStatus.onHold))) {
         callback(resultCode.alreadyInQueue);
         return;
     }
 
-    if (result.rows.find(row => row.status === matchStatus.win)) {
+    if (result.rows.find(row => row.leader_id === leaderId && row.status === matchStatus.win)) {
         callback(resultCode.alreadyWon);
         return;
     }
 
-    result = await fetch(`SELECT 1 FROM ${tables.matches} WHERE leader_id = ? AND status = ?`, [leaderId, matchStatus.inQueue]);
-    if (result.resultCode) {
-        callback(result.resultCode);
-        return;
-    }
-
-    if (result.rows.length >= config.maxQueueSize) {
-        callback(resultCode.queueIsFull);
-        return;
-    }
-
-    const queueWasEmpty = result.rows.length === 0;
-
-    result = await fetch(`SELECT 1 FROM ${tables.matches} WHERE challenger_id = ? AND status IN (?, ?)`, [challengerId, matchStatus.inQueue, matchStatus.onHold]);
-    if (result.resultCode) {
-        callback(result.resultCode);
-        return;
-    }
-
-    if (result.rows.length >= config.maxQueuesPerChallenger) {
+    if (result.rows.filter(row => row.status === matchStatus.inQueue || row.status === matchStatus.onHold).length >= config.maxQueuesPerChallenger) {
         callback(resultCode.tooManyChallenges);
         return;
     }
@@ -116,7 +102,7 @@ export async function enqueue(leaderId, challengerId, difficulty, format, callba
         return;
     }
 
-    if (queueWasEmpty) {
+    if (leaderInfo.queue_size === 0) {
         // Notify the challenger that it's their turn to battle, since they're the only one in queue
         const pushMsg = 'Hey champ in making, it\'s time for your next battle! Check your queues in the app!';
         sendPush(pushMsg, getPushTokens(challengerId));
