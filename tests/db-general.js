@@ -19,6 +19,7 @@ if (process.env.TEST_RUN !== 'true' || !process.env.TABLE_SUFFIX) {
 }
 
 import db from '../db/db.js';
+import { challengerErrors, leaderErrors } from '../util/errors.js';
 import { debug, fail, finish, name, next, pass, start } from './test-logger.js';
 import { pplEvent, resultCode } from '../util/constants.js';
 
@@ -372,8 +373,52 @@ function getLeaderMetrics() {
             pass('metrics data was correct');
         }
 
-        next(cleanup);
+        next(validateChallengerErrorMessages);
     });
+}
+
+function validateChallengerErrorMessages() {
+    name(18, 'Validate that all result codes are covered in the challenger error messages module');
+    const missingCodes = [];
+    for (const key of Object.keys(resultCode)) {
+        if (!resultCode[key]) {
+            continue;
+        }
+
+        if (!challengerErrors[resultCode[key]]) {
+            missingCodes.push(key);
+        }
+    }
+
+    if (missingCodes.length > 0) {
+        fail(`challenger errors are missing the following codes: ${missingCodes.join(', ')}`);
+    } else {
+        pass('challenger errors cover all existing codes');
+    }
+
+    next(validateLeaderErrorMessages);
+}
+
+function validateLeaderErrorMessages() {
+    name(19, 'Validate that all result codes are covered in the leader error messages module');
+    const missingCodes = [];
+    for (const key of Object.keys(resultCode)) {
+        if (!resultCode[key]) {
+            continue;
+        }
+
+        if (!leaderErrors[resultCode[key]]) {
+            missingCodes.push(key);
+        }
+    }
+
+    if (missingCodes.length > 0) {
+        fail(`leader errors are missing the following codes: ${missingCodes.join(', ')}`);
+    } else {
+        pass('leader errors cover all existing codes');
+    }
+
+    next(cleanup);
 }
 
 function cleanup() {
@@ -407,6 +452,6 @@ function cleanup() {
  * TEST EXECUTION *
  ******************/
 db.dbReady.then(() => {
-    start(17);
+    start(19);
     getAllChallengersEast1();
 });
