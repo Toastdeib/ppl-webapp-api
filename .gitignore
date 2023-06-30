@@ -4,3 +4,4 @@
 cache.json
 *.swp
 /tests/db-test.js
+/static

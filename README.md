@@ -35,7 +35,8 @@ This project is half of a system built to help manage events run by the [PAX Pok
     - The `maxQueueSize` field defines how many challengers a leader can have in their queue at a given time. This should typically be large for in-person events and more restricted during online events.
     - The `maxQueuesPerChallenger` field defines how many leader queues a challenger can be in at once.
     - The `excludedBingoIds` field is an array of leader ID strings that defines what, if any, leaders should be excluded when constructing new bingo boards. This should be used in cases where multiple leaders have the same ace/Tera and you want to avoid collisions.
-5. Run `node startup.js`, providing a `PPL_EVENT` environment variable if desired; if unspecified, it will pull from the `config-general.js` file you created in step 2. **Note**: This *may* require `sudo` to run, depending on the permissions on the cert path.
+5. Create a directory named `static` in the root of the project for serving up static image files for clients. The directory can be empty, but it should exist for the express middleware that sets up the virtual `/static` path.
+6. Run `node startup.js`, providing a `PPL_EVENT` environment variable if desired; if unspecified, it will pull from the `config-general.js` file you created in step 2. **Note**: This *may* require `sudo` to run, depending on the permissions on the cert path.
 
 If everything is correctly configured, you should see a few log statements appear indicating that the API is running. You can validate it by using curl, a simple web browser (for the GET requests), or another tool of your choice.
 
