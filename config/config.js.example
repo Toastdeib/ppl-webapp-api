@@ -22,7 +22,9 @@ const config = {
     requiredEmblems: 4,
     maxQueueSize: 20,
     maxQueuesPerChallenger: 4,
-    excludedBingoIds: []
+    excludedBingoIds: [],
+    multiBingoIds: [],
+    sharedBingoIds: {}
 };
 
 export default config;

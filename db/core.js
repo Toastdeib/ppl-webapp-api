@@ -114,6 +114,20 @@ function createLinkCodeKey(leaderId, challengerIds) {
     return `${leaderId}:${challengerIds.join('/')}`;
 }
 
+function filterBingoIds(ids) {
+    const filtered = [];
+    for (const id of ids) {
+        if (config.multiBingoIds.indexOf(id) !== -1) {
+            filtered.push(`${id}-1`);
+            filtered.push(`${id}-2`);
+        } else if (config.excludedBingoIds.indexOf(id) === -1 && !config.sharedBingoIds[id]) {
+            filtered.push(id);
+        }
+    }
+
+    return filtered;
+}
+
 async function initCaches(callback) {
     let result = await fetch(`SELECT id, leader_type FROM ${tables.leaders} WHERE leader_type <> ?`, [leaderType.champion]);
     if (result.resultCode) {
@@ -254,25 +268,19 @@ export function shouldIncludeFeedbackSurvey() {
 
 export function generateBingoBoard() {
     const ids = [];
-    const leaderCopy = leaderIds.slice();
-    const eliteCopy = eliteIds.slice();
+    const leaderCopy = filterBingoIds(leaderIds);
+    const eliteCopy = filterBingoIds(eliteIds);
 
     // Populate with random leader IDs first
     while (ids.length < BINGO_ID_COUNT && leaderCopy.length > 0) {
         const index = Math.floor(Math.random() * leaderCopy.length);
-        const id = leaderCopy.splice(index, 1)[0];
-        if (config.excludedBingoIds.indexOf(id) === -1) {
-            ids.push(id);
-        }
+        ids.push(leaderCopy.splice(index, 1)[0]);
     }
 
     // And then fill with elite IDs if we don't have enough
     while (ids.length < BINGO_ID_COUNT && eliteCopy.length > 0) {
         const index = Math.floor(Math.random() * eliteCopy.length);
-        const id = eliteCopy.splice(index, 1)[0];
-        if (config.excludedBingoIds.indexOf(id) === -1) {
-            ids.push(id);
-        }
+        ids.push(eliteCopy.splice(index, 1)[0]);
     }
 
     if (ids.length < BINGO_ID_COUNT) {
@@ -289,6 +297,7 @@ export function generateBingoBoard() {
     if (INCLUDE_FREE_SPACE) {
         shuffled.splice(Math.floor(shuffled.length / 2), 0, '');
     }
+
     return shuffled.join(',');
 }
 
@@ -303,9 +312,16 @@ export function inflateBingoBoard(flatBoard, earnedBadges) {
     for (let i = 0; i < config.bingoBoardWidth; i++) {
         board.push([]);
         for (let k = 0; k < config.bingoBoardWidth; k++) {
-            const id = split.splice(0, 1)[0];
+            const boardId = split.splice(0, 1)[0];
+            let realId = boardId;
+            const index = realId.indexOf('-');
+            if (index > -1) {
+                // Trim the '-1' or '-2' off if it's got one, for the earnedBadges check
+                realId = realId.substr(0, index);
+            }
+
             const blob = {};
-            blob[id] = id === '' || earnedBadges.indexOf(id) > -1;
+            blob[boardId] = realId === '' || earnedBadges.indexOf(config.sharedBingoIds[realId] || realId) > -1;
             board[i].push(blob);
         }
     }
