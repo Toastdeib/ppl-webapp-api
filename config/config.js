@@ -44,5 +44,5 @@ switch (pplEvent) {
         process.exit(0);
 }
 
-logger.api.info('PPL_EVENT environment variable is valid, loading configs');
+logger.api.info(`Running with PPL_EVENT=${pplEvent}`);
 export default config;
