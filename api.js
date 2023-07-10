@@ -801,7 +801,10 @@ api.get('/api/v2/metrics', (req, res) => {
 
 api.get('/api/v2/appsettings', (req, res) => {
     logger.api.info('Returning app settings');
-    res.json({ showTrainerCard: new Date() > new Date(config.trainerCardShowDate) });
+    res.json({
+        showTrainerCard: new Date() > new Date(config.trainerCardShowDate),
+        eventIsOver: new Date() > new Date(config.eventEndDate)
+    });
 });
 
 api.get('/api/v2/openqueues', (req, res) => {
