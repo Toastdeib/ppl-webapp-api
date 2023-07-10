@@ -683,13 +683,14 @@ Retrieves battle and badge metrics for all leaders as a dictionary mapping leade
 
 #### /api/v2/appsettings (GET)
 
-Retrieves a collection of event-specific settings. Currently, the collection only contains a single setting, but more may be added in the future.
+Retrieves a collection of event-specific settings. Currently, the collection only contains two settings, but more may be added in the future.
 
 ##### Response payload:
 
 ```json
 {
-    "showTrainerCard": [boolean, based on how close to the start of a PPL event it is]
+    "showTrainerCard": [boolean, based on the trainer card show date config entry],
+    "eventIsOver": [boolean, based on the event end date config entry]
 }
 ```
 
