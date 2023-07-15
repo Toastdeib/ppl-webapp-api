@@ -58,6 +58,8 @@ function getAppSettings() {
             const data = JSON.parse(result.body);
             if (data.showTrainerCard === undefined) {
                 fail('payload was missing showTrainerCard property');
+            } else if (data.eventIsOver === undefined) {
+                fail('payload was missing eventIsOver property');
             } else {
                 pass('payload contained all expected properties');
             }

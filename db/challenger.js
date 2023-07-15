@@ -63,11 +63,16 @@ export async function getChallengerInfo(id, callback) {
                 position: 0, // Start this at 0, increment if we have additional rows for the leader ID
                 linkCode: row.duo_mode ? 'No doubles partner' : getLinkCode(row.leader_id, [id]),
                 difficulty: row.battle_difficulty, // Default to the new row, clobber it if we get another one
-                format: row.battle_format // Same logic here as with difficulty
+                format: row.battle_format, // Same logic here as with difficulty
+                positionFound: row.challenger_id === id // Temporary field that gets stripped off before returning the response
             });
         } else {
-            match.position++;
+            if (!match.positionFound) {
+                match.position++;
+            }
+
             if (row.challenger_id === id) {
+                match.positionFound = true;
                 if (row.duo_mode) {
                     // Only overwrite the link code if the leader is in duo mode
                     if (match.position % 2 === 1) {
@@ -83,6 +88,8 @@ export async function getChallengerInfo(id, callback) {
             }
         }
     }
+
+    retval.queuesEntered.forEach(match => delete match.positionFound);
 
     result = await fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name, m.battle_difficulty, m.battle_format, m.status FROM ${tables.matches} m INNER JOIN ${tables.leaders} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?, ?)`, [id, matchStatus.onHold, matchStatus.win, matchStatus.ash]);
     if (result.resultCode) {
