@@ -221,12 +221,6 @@ export async function reportResult(leaderId, challengerIds, challengerWin, badge
         return;
     }
 
-    let hof = false;
-    if (challengerWin) { // TODO - Should this be going off the badgeAwarded flag instead?
-        // The query will return a row only if the leader ID is the champ; otherwise it'll be an empty set
-        hof = type === leaderType.champion;
-    }
-
     clearLinkCode(leaderId, challengerIds);
 
     result = await fetch(`SELECT challenger_id FROM ${tables.matches} WHERE leader_id = ? AND status = ? ORDER BY timestamp ASC LIMIT ?`, [leaderId, matchStatus.inQueue, duoMode ? 2 : 1]);
@@ -238,7 +232,7 @@ export async function reportResult(leaderId, challengerIds, challengerWin, badge
         }
     }
 
-    callback(resultCode.success, { hof: hof });
+    callback(resultCode.success, { hof: badgeAwarded && (type === leaderType.champion) });
 }
 
 export async function getAllChallengers(eventMask, callback) {
