@@ -25,7 +25,8 @@ const config = {
     maxQueuesPerChallenger: 4,
     excludedBingoIds: [],
     multiBingoIds: [],
-    sharedBingoIds: {}
+    sharedBingoIds: {},
+    supportsQueueState: false
 };
 
 export default config;

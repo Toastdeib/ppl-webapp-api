@@ -19,7 +19,7 @@ import http from 'http';
 import logger from './util/logger.js';
 import sanitize from 'sanitize-html';
 import { challengerErrors, leaderErrors } from './util/errors.js';
-import { httpStatus, platformType, pplEvent, requestType } from './util/constants.js';
+import { httpStatus, platformType, pplEvent, requestType, resultCode } from './util/constants.js';
 
 const api = express();
 api.use(cors({ origin: config.corsOrigin }));
@@ -515,6 +515,11 @@ api.get('/api/v2/challenger/:id/bingoboard', (req, res) => {
 });
 
 api.post('/api/v2/challenger/:id/enqueue/:leader', (req, res) => {
+    if (!config.supportsQueueState) {
+        handleDbError(challengerErrors, resultCode.queueStateNotSupported, res);
+        return;
+    }
+
     if (!validateLeaderId(req.params.leader)) {
         logger.api.warn(`loginId=${req.params.id} attempted to join queue for invalid leaderId=${req.params.leader}`);
         res.status(httpStatus.badRequest).json({ error: 'That leader ID is invalid.' });
@@ -592,6 +597,11 @@ api.use('/api/v2/leader/:id', (req, res, next) => {
 api.get('/api/v2/leader/:id', getLeaderInfo);
 
 api.post('/api/v2/leader/:id/openqueue', (req, res) => {
+    if (!config.supportsQueueState) {
+        handleDbError(challengerErrors, resultCode.queueStateNotSupported, res);
+        return;
+    }
+
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} opening queue`);
     const duoMode = !!req.body.duoMode;
     db.leader.updateQueueStatus(req.leaderId, true, duoMode, (error) => {
@@ -605,6 +615,11 @@ api.post('/api/v2/leader/:id/openqueue', (req, res) => {
 });
 
 api.post('/api/v2/leader/:id/closequeue', (req, res) => {
+    if (!config.supportsQueueState) {
+        handleDbError(challengerErrors, resultCode.queueStateNotSupported, res);
+        return;
+    }
+
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} closing queue`);
     db.leader.updateQueueStatus(req.leaderId, false, false, (error) => {
         if (error) {

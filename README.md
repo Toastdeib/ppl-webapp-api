@@ -38,6 +38,7 @@ This project is half of a system built to help manage events run by the [PAX Pok
     - The `excludedBingoIds` field is an array of leader ID strings that defines what, if any, leaders should be excluded when constructing new bingo boards. This should be used in cases where multiple leaders have the same ace/Tera and you want to avoid collisions.
     - The `multiBingoIds` field is an array of leader ID strings that defines what, if any, multi-battle leaders should be given two separate entries on the bingo board. This will produce bingo board keys in the form of `[id]-1` and `[id]-2`, so any bingo board image files in the `/static` directory (explained below) for leaders in this field should be named appropriately.
     - The `sharedBingoIds` field is an object mapping leader IDs which have the same signature/Tera 'mon on the bingo board, so that any of them will count towards the bingo space. Any **values** in this object should be the IDs used for actual bingo board images.
+    - The `supportsQueueState` field is a flag indicating whether the open/close queue functionality should be enabled for the PPL event. Typically, this should only be true for virtual events (i.e. PPL Online). If set to `false`, the `/openqueue`, `/closequeue`, and challenger-facing `/enqueue` paths will all be gated. **Note**: If this flag is set to `false`, *all leaders for the event* should have their `queue_open` field set to `1` in the database for normal functionality to work.
 5. Create a directory named `static` in the root of the project for serving up static image files for clients. The directory can be empty, but it should exist for the express middleware that sets up the virtual `/static` path.
 6. Run `node startup.js`, providing a `PPL_EVENT` environment variable if desired; if unspecified, it will pull from the `config-general.js` file you created in step 2. **Note**: This *may* require `sudo` to run, depending on the permissions on the cert path.
 
@@ -278,6 +279,7 @@ See: Response payload for [/challenger/:id (GET)](#challengerid-get).
     - `queueIsFull` - Returned if the given leader's queue is full.
     - `tooManyChallenges` - Returned if the challenger is in too many different leader queues already.
 - HTTP 401 (UNAUTHORIZED) - Returned if the authentication header is omitted or malformed.
+- HTTP 403 (FORBIDDEN) - Returned if the event doesn't support queue state.
 - HTTP 404 (NOT FOUND) - Returned if either of the given IDs don't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
@@ -393,6 +395,7 @@ See: Response payload for [/leader/:id (GET)](#leaderid-get).
 ##### Possible error responses:
 
 - HTTP 401 (UNAUTHORIZED) - Returned if the authentication header is omitted or malformed.
+- HTTP 403 (FORBIDDEN) - Returned if the event doesn't support queue state.
 - HTTP 404 (NOT FOUND) - Returned if the given ID doesn't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 
@@ -411,6 +414,7 @@ See: Response payload for [/leader/:id (GET)](#leaderid-get).
 ##### Possible error responses:
 
 - HTTP 401 (UNAUTHORIZED) - Returned if the authentication header is omitted or malformed.
+- HTTP 403 (FORBIDDEN) - Returned if the event doesn't support queue state.
 - HTTP 404 (NOT FOUND) - Returned if the given ID doesn't exist in the database.
 - HTTP 500 (SERVER ERROR) - Returned if a database error occurs.
 

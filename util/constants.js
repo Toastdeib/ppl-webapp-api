@@ -24,7 +24,8 @@ export const resultCode = {
     duoModeNotSupported: 22,
     notInDuoMode: 23,
     inDuoMode: 24,
-    notEnoughChallengers: 25
+    notEnoughChallengers: 25,
+    queueStateNotSupported: 26
 };
 
 export const leaderType = {
@@ -73,6 +74,7 @@ export const httpStatus = {
     ok: 200,
     badRequest: 400,
     unauthorized: 401,
+    forbidden: 403,
     notFound: 404,
     serverError: 500
 };

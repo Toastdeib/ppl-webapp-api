@@ -144,6 +144,11 @@ export const challengerErrors = {
         userMessage: 'That leader doesn\'t support that battle format.',
         statusCode: httpStatus.badRequest
     },
+    [resultCode.queueStateNotSupported]: {
+        logMessage: 'Queue state not supported',
+        userMessage: 'The current PPL event doesn\'t support challengers joining queues directly.',
+        statusCode: httpStatus.forbidden
+    },
     ...genericErrors
 };
 
@@ -197,6 +202,11 @@ export const leaderErrors = {
         logMessage: 'Unsupported battle format',
         userMessage: 'You don\'t support that battle format.',
         statusCode: httpStatus.badRequest
+    },
+    [resultCode.queueStateNotSupported]: {
+        logMessage: 'Queue state not supported',
+        userMessage: 'The current PPL event doesn\'t support opening and closing queues.',
+        statusCode: httpStatus.forbidden
     },
     ...genericErrors
 };
