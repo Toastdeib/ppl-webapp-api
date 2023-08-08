@@ -48,6 +48,8 @@ const idCounts = {
     }
 };
 
+const shortUsername = 'abc';
+const longUsername = 'thisisaverylongusernamewhichexceedsthirtycharacters';
 const takenUsername = 'testchallenger1';
 const newUsername = 'newtestchallenger1';
 const password = 'password1';
@@ -129,12 +131,42 @@ function getAllIds1() {
             pass('ID counts were correct');
         }
 
+        next(registerWithShortUsername);
+    });
+}
+
+function registerWithShortUsername() {
+    name(4, 'Register with a short username');
+    db.auth.register(shortUsername, password, pplEvent.east, (error) => {
+        if (error === resultCode.usernameTooShort) {
+            pass('registration failed with usernameTooShort result code');
+        } else if (error) {
+            fail(`error=${error}`);
+        } else {
+            fail('registration was successful');
+        }
+
+        next(registerWithLongUsername);
+    });
+}
+
+function registerWithLongUsername() {
+    name(5, 'Register with a long username');
+    db.auth.register(longUsername, password, pplEvent.east, (error) => {
+        if (error === resultCode.usernameTooLong) {
+            pass('registration failed with usernameTooLong result code');
+        } else if (error) {
+            fail(`error=${error}`);
+        } else {
+            fail('registration was successful');
+        }
+
         next(registerWithTakenUsername);
     });
 }
 
 function registerWithTakenUsername() {
-    name(4, 'Register with a taken username');
+    name(6, 'Register with a taken username');
     db.auth.register(takenUsername, password, pplEvent.east, (error) => {
         if (error === resultCode.usernameTaken) {
             pass('registration failed with usernameTaken result code');
@@ -149,7 +181,7 @@ function registerWithTakenUsername() {
 }
 
 function registerWithNewUsername() {
-    name(5, 'Register with a new username');
+    name(7, 'Register with a new username');
     db.auth.register(newUsername, password, pplEvent.east, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -163,7 +195,7 @@ function registerWithNewUsername() {
 }
 
 function loginWithGoodCredentials() {
-    name(6, 'Login with valid credentials');
+    name(8, 'Login with valid credentials');
     db.auth.login(newUsername, password, pplEvent.east, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -178,7 +210,7 @@ function loginWithGoodCredentials() {
 }
 
 function loginWithBadCredentials() {
-    name(7, 'Login with invalid credentials');
+    name(9, 'Login with invalid credentials');
     db.auth.login(newUsername, badPassword, pplEvent.east, (error) => {
         if (error === resultCode.badCredentials) {
             pass('login failed with badCredentials result code');
@@ -193,7 +225,7 @@ function loginWithBadCredentials() {
 }
 
 function getAllChallengersEast2() {
-    name(8, 'Get all challenger IDs for east (after registration)');
+    name(10, 'Get all challenger IDs for east (after registration)');
     db.leader.getAllChallengers(pplEvent.east, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -208,7 +240,7 @@ function getAllChallengersEast2() {
 }
 
 function getAllChallengersWest2() {
-    name(9, 'Get all challenger IDs for west (after registration)');
+    name(11, 'Get all challenger IDs for west (after registration)');
     db.leader.getAllChallengers(pplEvent.west, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -223,7 +255,7 @@ function getAllChallengersWest2() {
 }
 
 function getAllIds2() {
-    name(10, 'Get all IDs (after registration)');
+    name(12, 'Get all IDs (after registration)');
     db.getAllIds((error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -240,7 +272,7 @@ function getAllIds2() {
 }
 
 function loginForWest() {
-    name(11, 'Login for west');
+    name(13, 'Login for west');
     db.auth.login(newUsername, password, pplEvent.west, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -255,7 +287,7 @@ function loginForWest() {
 }
 
 function getAllChallengersWest3() {
-    name(12, 'Get all challenger IDs for west (after second login)');
+    name(14, 'Get all challenger IDs for west (after second login)');
     db.leader.getAllChallengers(pplEvent.west, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -270,7 +302,7 @@ function getAllChallengersWest3() {
 }
 
 function getBadges1() {
-    name(13, 'Get all badges for the new challenger');
+    name(15, 'Get all badges for the new challenger');
     db.getBadges(id, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -287,7 +319,7 @@ function getBadges1() {
 }
 
 function getBadges2() {
-    name(14, 'Get all badges for an existing challenger');
+    name(16, 'Get all badges for an existing challenger');
     db.getBadges(badgesId, (error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -304,7 +336,7 @@ function getBadges2() {
 }
 
 function getOpenQueues() {
-    name(15, 'Get and validate a list of open leader queues');
+    name(17, 'Get and validate a list of open leader queues');
     db.getOpenQueues((error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -328,7 +360,7 @@ function getOpenQueues() {
 }
 
 function getAllLeaderData() {
-    name(16, 'Get and validate leader data');
+    name(18, 'Get and validate leader data');
     db.getAllLeaderData((error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -355,7 +387,7 @@ function getAllLeaderData() {
 }
 
 function getLeaderMetrics() {
-    name(17, 'Get and validate leader metrics');
+    name(19, 'Get and validate leader metrics');
     db.leader.metrics((error, result) => {
         if (error) {
             fail(`error=${error}`);
@@ -378,7 +410,7 @@ function getLeaderMetrics() {
 }
 
 function validateChallengerErrorMessages() {
-    name(18, 'Validate that all result codes are covered in the challenger error messages module');
+    name(20, 'Validate that all result codes are covered in the challenger error messages module');
     const missingCodes = [];
     for (const key of Object.keys(resultCode)) {
         if (!resultCode[key]) {
@@ -400,7 +432,7 @@ function validateChallengerErrorMessages() {
 }
 
 function validateLeaderErrorMessages() {
-    name(19, 'Validate that all result codes are covered in the leader error messages module');
+    name(21, 'Validate that all result codes are covered in the leader error messages module');
     const missingCodes = [];
     for (const key of Object.keys(resultCode)) {
         if (!resultCode[key]) {
@@ -452,6 +484,6 @@ function cleanup() {
  * TEST EXECUTION *
  ******************/
 db.dbReady.then(() => {
-    start(19);
+    start(21);
     getAllChallengersEast1();
 });

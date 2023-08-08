@@ -25,7 +25,9 @@ export const resultCode = {
     notInDuoMode: 23,
     inDuoMode: 24,
     notEnoughChallengers: 25,
-    queueStateNotSupported: 26
+    queueStateNotSupported: 26,
+    usernameTooShort: 27,
+    usernameTooLong: 28
 };
 
 export const leaderType = {

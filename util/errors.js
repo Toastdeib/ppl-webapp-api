@@ -90,6 +90,16 @@ const genericErrors = {
         logMessage: 'Not enough challengers',
         userMessage: 'You don\'t have enough challengers in your queue to report a match result.',
         statusCode: httpStatus.badRequest
+    },
+    [resultCode.usernameTooShort]: {
+        logMessage: 'Username too short',
+        userMessage: 'Usernames can\'t be shorter than four characters.',
+        statusCode: httpStatus.badRequest
+    },
+    [resultCode.usernameTooLong]: {
+        logMessage: 'Username too long',
+        userMessage: 'Usernames can\'t be longer than thirty characters.',
+        statusCode: httpStatus.badRequest
     }
 };
 

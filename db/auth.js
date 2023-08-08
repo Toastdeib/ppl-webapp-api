@@ -13,6 +13,8 @@ import { fetch, generateBingoBoard, save, tables } from './core.js';
 
 const SALT_HEX_LENGTH = 16;
 const LOGIN_ID_HEX_LENGTH = 8;
+const MIN_USERNAME_LENGTH = 4;
+const MAX_USERNAME_LENGTH = 30;
 
 /******************
  * Util functions *
@@ -28,6 +30,17 @@ function hashWithSalt(password, salt) {
  * Public APIs *
  ***************/
 export async function register(username, password, eventMask, callback) {
+    username = username.trim();
+    if (username.length < MIN_USERNAME_LENGTH) {
+        callback(resultCode.usernameTooShort);
+        return;
+    }
+
+    if (username.length > MAX_USERNAME_LENGTH) {
+        callback(resultCode.usernameTooLong);
+        return;
+    }
+
     let result = await fetch(`SELECT 1 FROM ${tables.logins} WHERE username = ?`, [username]);
     if (result.resultCode) {
         callback(result.resultCode);
@@ -74,6 +87,7 @@ export async function register(username, password, eventMask, callback) {
 }
 
 export async function login(username, password, eventMask, callback) {
+    username = username.trim();
     let result = await fetch(`SELECT id, password_hash, ppl_events, is_leader, leader_id FROM ${tables.logins} WHERE username = ?`, [username]);
     if (result.resultCode) {
         callback(result.resultCode);
