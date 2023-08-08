@@ -60,6 +60,8 @@ function getAppSettings() {
                 fail('payload was missing showTrainerCard property');
             } else if (data.eventIsOver === undefined) {
                 fail('payload was missing eventIsOver property');
+            } else if (data.eventSupportsQueueState === undefined) {
+                fail('payload was missing eventSupportsQueueState property');
             } else {
                 pass('payload contained all expected properties');
             }
