@@ -17,7 +17,7 @@
 This project is half of a system built to help manage events run by the [PAX Pokémon League](https://paxpokemonleague.net) both online and at in-person PAXes. It consists of an API built to support the [PPL Webapp](https://github.com/lunemily/ppl-in-person) frontend. It's set up to present its public-facing API through Express and be driven off of a MySQL database, the expected schema of which can be found in a comment near the top of the [core.js](db/core.js) database module. In order to set up a new instance, you need to:
 
 1. Clone the project and install all the dependencies with npm.
-2. Make copies of the [config.js.example](config/config.js.example) file for each event type outlined in [config.js](config/config.js).
+2. Make a copy of the [config.js.example](config/config.js.example) file named `general.js` in the same directory as the example file.
 3. Populate the API configs appropriately for your environment:
     - The `debug` field indicates whether the node application should run in debug mode. Setting this to `true` will enable console input in the running application, as well as the `debugSave` function on the database module.
     - The `port` field is the port that the API will listen on, and should be an open port on the machine running this node application.
@@ -26,7 +26,7 @@ This project is half of a system built to help manage events run by the [PAX Pok
     - The `corsOrigin` field can be either a string or an array of strings, and each string should be a domain that's permitted to access the API.
     - The `mysql...` fields configure the database connection, and will vary depending on how your system is set up.
     - The `tableSuffix` field is optional and applies a suffix to all table names queried by the database module if specified. This is useful for setting up a staging environment with a separate set of tables from those used in production.
-4. Populate the event configs appropriately for your PPL events, leaving all **numeric** fields untouched for the test configs:
+4. Populate the event configs appropriately for your baseline PPL event:
     - The `...SurveyUrl` fields are links to surveys to be filled out by Hall of Fame entrants, challengers, and leaders respectively. The former is typically used for challengers to submit their winning teams, and the latter two are for general feedback.
     - The `surveyStartDate` and `surveyDurationDays` fields define when the survey links should be sent down in API responses and for how long. The start date is typically the final day of a PPL event.
     - The `trainerCardShowDate` field defines when the trainer card should start appearing in the webapp. It's typically the day of the champion reveal, so that leader names and art can be pre-loaded without challengers seeing them early.
@@ -39,8 +39,9 @@ This project is half of a system built to help manage events run by the [PAX Pok
     - The `multiBingoIds` field is an array of leader ID strings that defines what, if any, multi-battle leaders should be given two separate entries on the bingo board. This will produce bingo board keys in the form of `[id]-1` and `[id]-2`, so any bingo board image files in the `/static` directory (explained below) for leaders in this field should be named appropriately.
     - The `sharedBingoIds` field is an object mapping leader IDs which have the same signature/Tera 'mon on the bingo board, so that any of them will count towards the bingo space. Any **values** in this object should be the IDs used for actual bingo board images.
     - The `supportsQueueState` field is a flag indicating whether the open/close queue functionality should be enabled for the PPL event. Typically, this should only be true for virtual events (i.e. PPL Online). If set to `false`, the `/openqueue`, `/closequeue`, and challenger-facing `/enqueue` paths will all be gated. **Note**: If this flag is set to `false`, *all leaders for the event* should have their `queue_open` field set to `1` in the database for normal functionality to work.
-5. Create a directory named `static` in the root of the project for serving up static image files for clients. The directory can be empty, but it should exist for the express middleware that sets up the virtual `/static` path.
-6. Run `node startup.js`, providing a `PPL_EVENT` environment variable if desired; if unspecified, it will pull from the `config-general.js` file you created in step 2. **Note**: This *may* require `sudo` to run, depending on the permissions on the cert path.
+5. Create a directory named `event` under the `config` directory and make additional copies of [config.js.example](config/config.js.example) for each PPL event listed in [config.js](config/config.js). These files only need to contain config values that need to be overridden from those in the general configs. **Note**: The *numerical* event config fields in `test.js` should match those in the example config for the tests to run successfully.
+6. Create a directory named `static` in the root of the project for serving up static image files for clients. The directory can be empty, but it should exist for the express middleware that sets up the virtual `/static` path.
+7. Run `node startup.js`, providing a `PPL_EVENT` environment variable if desired; if unspecified, it will pull from the `general.js` file you created in step 2. **Note**: This *may* require `sudo` to run, depending on the permissions on the cert path.
 
 If everything is correctly configured, you should see a few log statements appear indicating that the API is running. You can validate it by using curl, a simple web browser (for the GET requests), or another tool of your choice.
 

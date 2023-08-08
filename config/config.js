@@ -10,34 +10,34 @@
  * invalid one is specified, the API will fail to     *
  * initialize entirely.                               *
  ******************************************************/
-import ausConfig from './config-aus.js';
-import eastConfig from './config-east.js';
-import generalConfig from './config-general.js';
+import ausConfig from './event/aus.js';
+import eastConfig from './event/east.js';
+import generalConfig from './general.js';
 import logger from '../util/logger.js';
-import onlineConfig from './config-online.js';
-import testConfig from './config-test.js';
-import westConfig from './config-west.js';
+import onlineConfig from './event/online.js';
+import testConfig from './event/test.js';
+import westConfig from './event/west.js';
 
 const pplEvent = process.env.PPL_EVENT || 'general';
 let config;
 switch (pplEvent) {
-    case 'east':
-        config = { ...eastConfig };
-        break;
-    case 'west':
-        config = { ...westConfig };
-        break;
-    case 'aus':
-        config = { ...ausConfig };
-        break;
-    case 'online':
-        config = { ...onlineConfig };
-        break;
     case 'general':
         config = { ...generalConfig };
         break;
+    case 'east':
+        config = { ...generalConfig, ...eastConfig };
+        break;
+    case 'west':
+        config = { ...generalConfig, ...westConfig };
+        break;
+    case 'aus':
+        config = { ...generalConfig, ...ausConfig };
+        break;
+    case 'online':
+        config = { ...generalConfig, ...onlineConfig };
+        break;
     case 'test':
-        config = { ...testConfig };
+        config = { ...generalConfig, ...testConfig };
         break;
     default:
         logger.api.error('PPL_EVENT environment variable is invalid, aborting startup');
