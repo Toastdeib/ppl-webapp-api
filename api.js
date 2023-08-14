@@ -320,6 +320,11 @@ function clientLog(req, res, logFunc) {
 }
 
 function sendHttpBotRequest(path, params) {
+    if (!config.supportsBotNotifications) {
+        // Don't send bot notifications if the event doesn't support them
+        return;
+    }
+
     const postData = JSON.stringify(params);
     const options = {
         hostname: 'localhost',
