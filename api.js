@@ -41,6 +41,8 @@ const AUTH_HEADER = 'Authorization';
 const PPL_EVENT_HEADER = 'PPL-Event';
 const PLATFORM_HEADER = 'Platform';
 
+const EVENT_END_DATE = new Date(config.eventEndDate);
+
 /******************
  * Util functions *
  ******************/
@@ -357,6 +359,18 @@ function sendHttpBotRequest(path, params) {
     req.end();
 }
 
+function eventIsOver(res) {
+    if (new Date() > EVENT_END_DATE) {
+        if (res) {
+            res.status(httpStatus.badRequest).json({ error: 'You\'re still here? It\'s over! Go home! Go!' });
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
 /***********************
  * Authentication APIs *
  ***********************/
@@ -520,6 +534,10 @@ api.get('/api/v2/challenger/:id/bingoboard', (req, res) => {
 });
 
 api.post('/api/v2/challenger/:id/enqueue/:leader', (req, res) => {
+    if (eventIsOver(res)) {
+        return;
+    }
+
     if (!config.supportsQueueState) {
         handleDbError(challengerErrors, resultCode.queueStateNotSupported, res);
         return;
@@ -602,6 +620,10 @@ api.use('/api/v2/leader/:id', (req, res, next) => {
 api.get('/api/v2/leader/:id', getLeaderInfo);
 
 api.post('/api/v2/leader/:id/openqueue', (req, res) => {
+    if (eventIsOver(res)) {
+        return;
+    }
+
     if (!config.supportsQueueState) {
         handleDbError(challengerErrors, resultCode.queueStateNotSupported, res);
         return;
@@ -637,6 +659,10 @@ api.post('/api/v2/leader/:id/closequeue', (req, res) => {
 });
 
 api.post('/api/v2/leader/:id/enqueue/:challenger', (req, res) => {
+    if (eventIsOver(res)) {
+        return;
+    }
+
     if (!validateChallengerId(req.params.challenger)) {
         logger.api.warn(`loginId=${req.params.id}, leaderId=${req.leaderId} attempted to enqueue invalid challengerId=${req.params.challenger}`);
         res.status(httpStatus.badRequest).json({ error: 'That challenger ID is invalid.' });
@@ -734,6 +760,10 @@ api.post('/api/v2/leader/:id/unhold/:challenger', (req, res) => {
 });
 
 api.post('/api/v2/leader/:id/live', (req, res) => {
+    if (eventIsOver(res)) {
+        return;
+    }
+
     // Assume the leader should be able to hit this and pass it along; we validate at the bot level anyway
     sendHttpBotRequest('/live', { leaderId: req.leaderId });
     getLeaderInfo(req, res);
@@ -823,7 +853,7 @@ api.get('/api/v2/appsettings', (req, res) => {
     logger.api.info('Returning app settings');
     res.json({
         showTrainerCard: new Date() > new Date(config.trainerCardShowDate),
-        eventIsOver: new Date() > new Date(config.eventEndDate),
+        eventIsOver: eventIsOver(),
         eventSupportsQueueState: config.supportsQueueState
     });
 });
