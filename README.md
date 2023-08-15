@@ -844,7 +844,10 @@ These codes will be returned in **most** error payloads alongside an error strin
     "duoModeNotSupported": 22,
     "notInDuoMode": 23,
     "inDuoMode": 24,
-    "notEnoughChallengers": 25
+    "notEnoughChallengers": 25,
+    "queueStateNotSupported": 26,
+    "usernameTooShort": 27,
+    "usernameTooLong": 28
 }
 ```
 
@@ -923,6 +926,7 @@ These are used as a mapping for the subset of HTTP status codes that can be retu
     "ok": 200,
     "badRequest": 400,
     "unauthorized": 401,
+    "forbidden": 403,
     "notFound": 404,
     "serverError": 500
 }
