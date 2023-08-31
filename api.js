@@ -625,7 +625,7 @@ api.post('/api/v2/leader/:id/openqueue', (req, res) => {
     }
 
     if (!config.supportsQueueState) {
-        handleDbError(challengerErrors, resultCode.queueStateNotSupported, res);
+        handleDbError(leaderErrors, resultCode.queueStateNotSupported, res);
         return;
     }
 
@@ -643,7 +643,7 @@ api.post('/api/v2/leader/:id/openqueue', (req, res) => {
 
 api.post('/api/v2/leader/:id/closequeue', (req, res) => {
     if (!config.supportsQueueState) {
-        handleDbError(challengerErrors, resultCode.queueStateNotSupported, res);
+        handleDbError(leaderErrors, resultCode.queueStateNotSupported, res);
         return;
     }
 
