@@ -29,9 +29,11 @@ const LINK_CODE_MULTIPLIER = 10000;
 const LINK_CODE_PADDING = 4;
 
 // For even-width boards, we don't want a free space since it can't be centered
+// We also don't want a free space if the board is 3x3, since it's already very small
+const MIN_WIDTH_FOR_FREE_SPACE = 5;
 const BINGO_SPACE_COUNT = config.bingoBoardWidth * config.bingoBoardWidth;
-const BINGO_ID_COUNT = BINGO_SPACE_COUNT - (config.bingoBoardWidth % 2);
-const INCLUDE_FREE_SPACE = config.bingoBoardWidth % 2 === 1;
+const BINGO_ID_COUNT = BINGO_SPACE_COUNT - (config.bingoBoardWidth >= MIN_WIDTH_FOR_FREE_SPACE ? (config.bingoBoardWidth % 2) : 0);
+const INCLUDE_FREE_SPACE = config.bingoBoardWidth >= MIN_WIDTH_FOR_FREE_SPACE && config.bingoBoardWidth % 2 === 1;
 
 // Challenger/leader survey dates
 const SURVEY_START_DATE = new Date(config.surveyStartDate);

@@ -8,6 +8,7 @@
  *   getAllIds, getAllLeaderData, getOpenQueues,      *
  *   getBadges                                        *
  ******************************************************/
+import config from '../config/config.js';
 import { fetch, tables } from './core.js';
 import { matchStatus, queueStatus, resultCode } from '../util/constants.js';
 
@@ -42,6 +43,10 @@ export async function getAllLeaderData(callback) {
 
     const retval = {};
     for (const row of result.rows) {
+        if (config.excludedTrainerCardIds.indexOf(row.id) > -1) {
+            continue;
+        }
+
         retval[row.id] = {
             name: row.leader_name,
             leaderType: row.leader_type,

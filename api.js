@@ -538,10 +538,12 @@ api.post('/api/v2/challenger/:id/enqueue/:leader', (req, res) => {
         return;
     }
 
+    /*
     if (!config.supportsQueueState) {
         handleDbError(challengerErrors, resultCode.queueStateNotSupported, res);
         return;
     }
+    */
 
     if (!validateLeaderId(req.params.leader)) {
         logger.api.warn(`loginId=${req.params.id} attempted to join queue for invalid leaderId=${req.params.leader}`);
@@ -854,7 +856,9 @@ api.get('/api/v2/appsettings', (req, res) => {
     res.json({
         showTrainerCard: new Date() > new Date(config.trainerCardShowDate),
         eventIsOver: eventIsOver(),
-        eventSupportsQueueState: config.supportsQueueState
+        eventSupportsQueueState: config.supportsQueueState,
+        leadersToDefeat: config.requiredBadges,
+        elitesToDefeat: config.requiredEmblems
     });
 });
 

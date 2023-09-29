@@ -23,6 +23,7 @@ const config = {
     requiredEmblems: 4,
     maxQueueSize: 20,
     maxQueuesPerChallenger: 4,
+    excludedTrainerCardIds: [],
     excludedBingoIds: [],
     multiBingoIds: [],
     sharedBingoIds: {},
