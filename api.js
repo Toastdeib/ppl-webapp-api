@@ -7,7 +7,8 @@
  * challenger, unauthenticated, and logging. The      *
  * module exports the express app so it can be        *
  * instantiated for actual use as well as for use in  *
- * the API test suites.                               *
+ * the API test suites. It also exports the           *
+ * validateSession function for use by websockets.    *
  ******************************************************/
 import bodyParser from 'body-parser';
 import config from './config/config.js';
@@ -152,7 +153,7 @@ function clearSession(token, id) {
     saveCache();
 }
 
-function validateSession(token, id, type) {
+export function validateSession(token, id, type) {
     if (!token) {
         // Missing token header
         logger.api.warn(`loginId=${id} attempted to make an API request with a missing auth header`);

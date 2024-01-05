@@ -1,5 +1,6 @@
 import api from './api.js';
 import config from './config/config.js';
+import { createWsServer } from './ws-server.js';
 import fs from 'fs';
 import https from 'https';
 import logger from './util/logger.js';
@@ -16,6 +17,15 @@ const credentials = {
 };
 
 const httpsServer = https.createServer(credentials, api);
+
+// Websocket server init
+const wss = createWsServer();
+httpsServer.on('upgrade', (request, socket, head) => {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+    });
+});
+
 httpsServer.listen(config.port, () => {
     logger.api.info(`API running on port ${config.port}`);
 });

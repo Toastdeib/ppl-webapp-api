@@ -26,6 +26,7 @@ This project is half of a system built to help manage events run by the [PAX Pok
     - The `corsOrigin` field can be either a string or an array of strings, and each string should be a domain that's permitted to access the API.
     - The `mysql...` fields configure the database connection, and will vary depending on how your system is set up.
     - The `tableSuffix` field is optional and applies a suffix to all table names queried by the database module if specified. This is useful for setting up a staging environment with a separate set of tables from those used in production.
+    - The `websocketPingInterval` field defines how often websockets are pinged to check whether they're still alive in milliseconds.
 4. Populate the event configs appropriately for your baseline PPL event:
     - The `...SurveyUrl` fields are links to surveys to be filled out by Hall of Fame entrants, challengers, and leaders respectively. The former is typically used for challengers to submit their winning teams, and the latter two are for general feedback.
     - The `surveyStartDate` and `surveyDurationDays` fields define when the survey links should be sent down in API responses and for how long. The start date is typically the final day of a PPL event.

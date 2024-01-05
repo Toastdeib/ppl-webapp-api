@@ -25,7 +25,8 @@
     "pug": "^3.0.2",
     "sanitize-html": "^2.10.0",
     "winston": "^3.8.2",
-    "winston-daily-rotate-file": "^4.7.1"
+    "winston-daily-rotate-file": "^4.7.1",
+    "ws": "^8.16.0"
   },
   "devDependencies": {
     "eslint": "^8.40.0"

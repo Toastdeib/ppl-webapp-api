@@ -93,3 +93,10 @@ export const platformType = {
     android: 1,
     ios: 2
 };
+
+export const websocketEvent = {
+    authenticate: 0,
+    confirm: 1,
+    refreshChallenger: 2,
+    refreshLeader: 3
+};

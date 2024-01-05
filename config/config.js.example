@@ -10,6 +10,7 @@ const config = {
     mysqlPassword: '[MYSQL PASSWORD GOES HERE]',
     mysqlDatabase: '[MYSQL DATABASE NAME GOES HERE]',
     tableSuffix: '',
+    websocketPingInterval: 15000,
     // Event config
     championSurveyUrl: 'localhost',
     challengerSurveyUrl: 'localhost',
