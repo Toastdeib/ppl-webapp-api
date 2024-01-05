@@ -4,12 +4,11 @@
  * This module exposes functions for instantiating    *
  * a WebSocketServer object that handles session      *
  * validation as part of its handshake process, as    *
- * well as functions for sending refresh pokes to     *
+ * well as a function for sending refresh pokes to    *
  * relevant client connections.                       *
  *                                                    *
  * This module exports the following functions:       *
- *   createWsServer, notifyChallengerRefresh,         *
- *   notifyLeaderRefresh                              *
+ *   createWsServer, notifyRefresh                    *
  ******************************************************/
 
 import config from './config/config.js';
@@ -49,34 +48,22 @@ function pong() {
 function processMessage(data) {
     // This function is used as a callback for socket events; the 'this' variable refers to a WebSocket object
     const json = JSON.parse('' + data);
+    let session;
     switch (json.action) {
         case websocketEvent.authenticate:
-            if (!validateSession(json.token, json.id, requestType.universal)) {
+            session = validateSession(json.token, json.id, requestType.universal);
+            if (!session) {
                 // Invalid credentials; close the socket
                 this.close();
             } else {
                 // Valid credentials; notify the client that it's authenticated
                 logger.api.info(`Websocket connection authenticated for loginId=${json.id}`);
-                socketDict[json.id] = this;
+                // Use the leader ID instead of the login ID for the dictionary key if we have one; it makes things -way- simpler
+                socketDict[session.isLeader ? session.leaderId : json.id] = this;
                 this.send(JSON.stringify({ action: websocketEvent.confirm }));
             }
             break;
     }
-}
-
-function notifyRefresh(id, action) {
-    const socket = socketDict[id];
-    if (!socket) {
-        return;
-    }
-
-    if (socket.readyState === CLOSING || socket.readyState === CLOSED) {
-        // Socket is closing or closed; remove it from the dict
-        delete socketDict[id];
-        return;
-    }
-
-    socket.send(JSON.stringify({ action: action }));
 }
 
 /***************
@@ -84,7 +71,7 @@ function notifyRefresh(id, action) {
  ***************/
 export function createWsServer() {
     server = new WebSocketServer({ noServer: true });
-    server.on('connection', (socket, request) => {
+    server.on('connection', (socket) => {
         logger.api.info('Websocket connection established');
         socket.isAlive = true;
         socket.on('error', logger.api.error);
@@ -98,10 +85,17 @@ export function createWsServer() {
     return server;
 }
 
-export function notifyChallengerRefresh(id) {
-    notifyRefresh(id, websocketEvent.refreshChallenger);
-}
+export function notifyRefresh(id) {
+    const socket = socketDict[id];
+    if (!socket) {
+        return;
+    }
 
-export function notifyLeaderRefresh(id) {
-    notifyRefresh(id, websocketEvent.refreshLeader);
+    if (socket.readyState === CLOSING || socket.readyState === CLOSED) {
+        // Socket is closing or closed; remove it from the dict
+        delete socketDict[id];
+        return;
+    }
+
+    socket.send(JSON.stringify({ action: websocketEvent.refreshData }));
 }

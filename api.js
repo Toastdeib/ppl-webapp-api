@@ -18,6 +18,7 @@ import express from 'express';
 import fs from 'fs';
 import http from 'http';
 import logger from './util/logger.js';
+import { notifyRefresh } from './ws-server.js';
 import sanitize from 'sanitize-html';
 import { challengerErrors, leaderErrors } from './util/errors.js';
 import { httpStatus, platformType, pplEvent, requestType, resultCode } from './util/constants.js';
@@ -104,6 +105,9 @@ function reportMatchResult(challengerIds, req, res) {
                 }
             }
 
+            for (const challengerId of challengerIds) {
+                notifyRefresh(challengerId);
+            }
             getLeaderInfo(req, res);
         }
     });
@@ -566,6 +570,7 @@ api.post('/api/v2/challenger/:id/enqueue/:leader', (req, res) => {
         if (error) {
             handleDbError(challengerErrors, error, res);
         } else {
+            notifyRefresh(req.params.leader);
             getChallengerInfo(req, res);
         }
     });
@@ -583,6 +588,7 @@ api.delete('/api/v2/challenger/:id/dequeue/:leader', (req, res) => {
         if (error) {
             handleDbError(challengerErrors, error, res);
         } else {
+            notifyRefresh(req.params.leader);
             getChallengerInfo(req, res);
         }
     });
@@ -600,6 +606,7 @@ api.post('/api/v2/challenger/:id/hold/:leader', (req, res) => {
         if (error) {
             handleDbError(challengerErrors, error, res);
         } else {
+            notifyRefresh(req.params.leader);
             getChallengerInfo(req, res);
         }
     });
@@ -686,6 +693,7 @@ api.post('/api/v2/leader/:id/enqueue/:challenger', (req, res) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
+            notifyRefresh(req.params.challenger);
             getLeaderInfo(req, res);
         }
     });
@@ -703,6 +711,7 @@ api.delete('/api/v2/leader/:id/dequeue/:challenger', (req, res) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
+            notifyRefresh(req.params.challenger);
             getLeaderInfo(req, res);
         }
     });
@@ -740,6 +749,7 @@ api.post('/api/v2/leader/:id/hold/:challenger', (req, res) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
+            notifyRefresh(req.params.challenger);
             getLeaderInfo(req, res);
         }
     });
@@ -757,6 +767,7 @@ api.post('/api/v2/leader/:id/unhold/:challenger', (req, res) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
+            notifyRefresh(req.params.challenger);
             getLeaderInfo(req, res);
         }
     });

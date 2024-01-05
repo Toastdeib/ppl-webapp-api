@@ -97,6 +97,5 @@ export const platformType = {
 export const websocketEvent = {
     authenticate: 0,
     confirm: 1,
-    refreshChallenger: 2,
-    refreshLeader: 3
+    refreshData: 2
 };
