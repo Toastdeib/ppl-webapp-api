@@ -990,6 +990,8 @@ And so on. As the socket connections **must** be authenticated, an additional st
 
 **All** messages sent from the server over websockets will be stringified JSON blobs that contain an `action` property with a value defined by the constant above. At present, no other fields will be included in any of the payloads, but the JSON format offers the flexibility to add them in the future if needed.
 
+[Back to top](#table-of-contents)
+
 # Tests
 
 This project currently contains six test suites in the /tests directory - three that run on the database module directly, and three that instantiate an instance of the API and run against that instead. The database test suites currently have full coverage of *all* functions exposed by the module, and the API test suites cover all but three paths (/register, /logview, and /logview/:daysago). Coverage should be sufficient to help find bugs in both the API and database modules before they make it to production.
