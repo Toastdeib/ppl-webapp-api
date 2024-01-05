@@ -10,6 +10,7 @@
     - [Push APIs](#push-apis)
     - [Unauthenticated APIs](#unauthenticated-apis)
     - [Constants](#constants)
+- [Websockets](#websockets)
 - [Tests](#tests)
 
 # Overview
@@ -958,7 +959,36 @@ These are used to identify the platform a request is coming from. They're mapped
 }
 ```
 
+#### websocketAction
+
+These are used to identify the action being sent along a websocket connection for real-time update support. `authenticate` and `confirm` are both part of the handshake process and `refreshData` is currently the only supported RTU action.
+
+```json
+{
+    "authenticate": 0,
+    "confirm": 1,
+    "refreshData": 2
+}
+```
+
 [Back to top](#table-of-contents)
+# Websockets
+
+To support real-time updates within the webapp without requiring a full page refresh, this API allows clients to establish secure websocket connections over which they can receive poke payloads notifying them that the queue status for a logged-in user has changed through someone else's actions. For example:
+
+* A challenger's queue updating itself when a leader finishes a battle.
+* A leader's queue updating itself when a challenger joins, leaves, or places themselves on hold.
+
+And so on. As the socket connections **must** be authenticated, an additional step beyond the simple handshake needs to be completed as part of the connection flow. Implementing clients should do the following steps:
+
+1. Make a request using any websocket library to the base URL and port for the API, but with the `wss://` protocol (`ws://` if the API is being served over HTTP and not HTTPS).
+2. Configure the `message` event listener to parse the data into a JSON object.
+3. Handle each action as defined by the [websocketAction constant](#websocketaction) as follows:
+   * `authenticate`: Send a stringified JSON blob to the server over the websocket containing the `action` field (echoed back), an `id` field populated with the user's login ID, and a `token` field populated with the user's session token (including the `Bearer ` prefix that you would include in API request headers).
+   * `confirm`: No action needed; this message is simply confirmation from the server that the authentication payload was valid.
+   * `refreshData`: Pull the latest challenger or leader info payload from the API, depending on whether the logged in user is a challenger or a leader, and update any parts of the UI that need to be updated.
+
+**All** messages sent from the server over websockets will be stringified JSON blobs that contain an `action` property with a value defined by the constant above. At present, no other fields will be included in any of the payloads, but the JSON format offers the flexibility to add them in the future if needed.
 
 # Tests
 

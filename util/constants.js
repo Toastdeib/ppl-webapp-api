@@ -94,7 +94,7 @@ export const platformType = {
     ios: 2
 };
 
-export const websocketEvent = {
+export const websocketAction = {
     authenticate: 0,
     confirm: 1,
     refreshData: 2

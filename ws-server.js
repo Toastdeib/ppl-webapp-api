@@ -15,7 +15,7 @@ import config from './config/config.js';
 import logger from './util/logger.js';
 import { validateSession } from './api.js';
 import { WebSocketServer } from 'ws';
-import { requestType, websocketEvent } from './util/constants.js';
+import { requestType, websocketAction } from './util/constants.js';
 
 let server;
 const socketDict = {};
@@ -50,7 +50,7 @@ function processMessage(data) {
     const json = JSON.parse('' + data);
     let session;
     switch (json.action) {
-        case websocketEvent.authenticate:
+        case websocketAction.authenticate:
             session = validateSession(json.token, json.id, requestType.universal);
             if (!session) {
                 // Invalid credentials; close the socket
@@ -60,7 +60,7 @@ function processMessage(data) {
                 logger.api.info(`Websocket connection authenticated for loginId=${json.id}`);
                 // Use the leader ID instead of the login ID for the dictionary key if we have one; it makes things -way- simpler
                 socketDict[session.isLeader ? session.leaderId : json.id] = this;
-                this.send(JSON.stringify({ action: websocketEvent.confirm }));
+                this.send(JSON.stringify({ action: websocketAction.confirm }));
             }
             break;
     }
@@ -78,7 +78,7 @@ export function createWsServer() {
         socket.on('message', processMessage);
         socket.on('pong', pong);
 
-        socket.send(JSON.stringify({ action: websocketEvent.authenticate }));
+        socket.send(JSON.stringify({ action: websocketAction.authenticate }));
     });
 
     setInterval(ping, config.websocketPingInterval);
@@ -97,5 +97,5 @@ export function notifyRefresh(id) {
         return;
     }
 
-    socket.send(JSON.stringify({ action: websocketEvent.refreshData }));
+    socket.send(JSON.stringify({ action: websocketAction.refreshData }));
 }
