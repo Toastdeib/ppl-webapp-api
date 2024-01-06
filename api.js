@@ -74,12 +74,18 @@ function getChallengerInfo(req, res) {
     });
 }
 
-function getLeaderInfo(req, res) {
+function getLeaderInfo(req, res, notify) {
     logger.api.info(`Returning leader info for loginId=${req.params.id}, leaderId=${req.leaderId}`);
     db.leader.getInfo(req.leaderId, (error, result) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
+            if (notify) {
+                for (const item of res.queue) {
+                    notifyRefresh(item.challengerId);
+                }
+            }
+
             res.json({
                 loginId: req.params.id,
                 leaderId: req.leaderId,
@@ -108,7 +114,7 @@ function reportMatchResult(challengerIds, req, res) {
             for (const challengerId of challengerIds) {
                 notifyRefresh(challengerId);
             }
-            getLeaderInfo(req, res);
+            getLeaderInfo(req, res, true);
         }
     });
 }
@@ -589,6 +595,7 @@ api.delete('/api/v2/challenger/:id/dequeue/:leader', (req, res) => {
             handleDbError(challengerErrors, error, res);
         } else {
             notifyRefresh(req.params.leader);
+            // TODO - Notify other challengers in the leader's queue
             getChallengerInfo(req, res);
         }
     });
@@ -607,6 +614,7 @@ api.post('/api/v2/challenger/:id/hold/:leader', (req, res) => {
             handleDbError(challengerErrors, error, res);
         } else {
             notifyRefresh(req.params.leader);
+            // TODO - Notify other challengers in the leader's queue
             getChallengerInfo(req, res);
         }
     });
@@ -712,7 +720,7 @@ api.delete('/api/v2/leader/:id/dequeue/:challenger', (req, res) => {
             handleDbError(leaderErrors, error, res);
         } else {
             notifyRefresh(req.params.challenger);
-            getLeaderInfo(req, res);
+            getLeaderInfo(req, res, true);
         }
     });
 });
@@ -750,7 +758,7 @@ api.post('/api/v2/leader/:id/hold/:challenger', (req, res) => {
             handleDbError(leaderErrors, error, res);
         } else {
             notifyRefresh(req.params.challenger);
-            getLeaderInfo(req, res);
+            getLeaderInfo(req, res, true);
         }
     });
 });
@@ -763,12 +771,16 @@ api.post('/api/v2/leader/:id/unhold/:challenger', (req, res) => {
     }
 
     logger.api.info(`loginId=${req.params.id}, leaderId=${req.leaderId} returning challengerId=${req.params.challenger} from hold`);
-    db.queue.unhold(req.leaderId, req.params.challenger, !!req.body.placeAtFront, (error) => {
+    const front = !!req.body.placeAtFront;
+    db.queue.unhold(req.leaderId, req.params.challenger, front, (error) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
-            notifyRefresh(req.params.challenger);
-            getLeaderInfo(req, res);
+            if (!front) {
+                // Only poke the challenger if it's to the back of the queue, since that doesn't impact queue order
+                notifyRefresh(req.params.challenger);
+            }
+            getLeaderInfo(req, res, front);
         }
     });
 });
