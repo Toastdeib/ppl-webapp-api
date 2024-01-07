@@ -18,10 +18,10 @@ import express from 'express';
 import fs from 'fs';
 import http from 'http';
 import logger from './util/logger.js';
-import { notifyRefresh } from './ws-server.js';
 import sanitize from 'sanitize-html';
 import { challengerErrors, leaderErrors } from './util/errors.js';
 import { httpStatus, platformType, pplEvent, requestType, resultCode } from './util/constants.js';
+import { notifyRefreshBingo, notifyRefreshData } from './ws-server.js';
 
 const api = express();
 api.use(cors({ origin: config.corsOrigin }));
@@ -81,8 +81,8 @@ function getLeaderInfo(req, res, notify) {
             handleDbError(leaderErrors, error, res);
         } else {
             if (notify) {
-                for (const item of res.queue) {
-                    notifyRefresh(item.challengerId);
+                for (const item of result.queue) {
+                    notifyRefreshData(item.challengerId);
                 }
             }
 
@@ -112,8 +112,10 @@ function reportMatchResult(challengerIds, req, res) {
             }
 
             for (const challengerId of challengerIds) {
-                notifyRefresh(challengerId);
+                notifyRefreshData(challengerId);
+                notifyRefreshBingo(challengerId);
             }
+
             getLeaderInfo(req, res, true);
         }
     });
@@ -576,7 +578,7 @@ api.post('/api/v2/challenger/:id/enqueue/:leader', (req, res) => {
         if (error) {
             handleDbError(challengerErrors, error, res);
         } else {
-            notifyRefresh(req.params.leader);
+            notifyRefreshData(req.params.leader);
             getChallengerInfo(req, res);
         }
     });
@@ -594,7 +596,7 @@ api.delete('/api/v2/challenger/:id/dequeue/:leader', (req, res) => {
         if (error) {
             handleDbError(challengerErrors, error, res);
         } else {
-            notifyRefresh(req.params.leader);
+            notifyRefreshData(req.params.leader);
             // TODO - Notify other challengers in the leader's queue
             getChallengerInfo(req, res);
         }
@@ -613,7 +615,7 @@ api.post('/api/v2/challenger/:id/hold/:leader', (req, res) => {
         if (error) {
             handleDbError(challengerErrors, error, res);
         } else {
-            notifyRefresh(req.params.leader);
+            notifyRefreshData(req.params.leader);
             // TODO - Notify other challengers in the leader's queue
             getChallengerInfo(req, res);
         }
@@ -701,7 +703,7 @@ api.post('/api/v2/leader/:id/enqueue/:challenger', (req, res) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
-            notifyRefresh(req.params.challenger);
+            notifyRefreshData(req.params.challenger);
             getLeaderInfo(req, res);
         }
     });
@@ -719,7 +721,7 @@ api.delete('/api/v2/leader/:id/dequeue/:challenger', (req, res) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
-            notifyRefresh(req.params.challenger);
+            notifyRefreshData(req.params.challenger);
             getLeaderInfo(req, res, true);
         }
     });
@@ -757,7 +759,7 @@ api.post('/api/v2/leader/:id/hold/:challenger', (req, res) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
         } else {
-            notifyRefresh(req.params.challenger);
+            notifyRefreshData(req.params.challenger);
             getLeaderInfo(req, res, true);
         }
     });
@@ -778,7 +780,7 @@ api.post('/api/v2/leader/:id/unhold/:challenger', (req, res) => {
         } else {
             if (!front) {
                 // Only poke the challenger if it's to the back of the queue, since that doesn't impact queue order
-                notifyRefresh(req.params.challenger);
+                notifyRefreshData(req.params.challenger);
             }
             getLeaderInfo(req, res, front);
         }

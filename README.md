@@ -967,7 +967,8 @@ These are used to identify the action being sent along a websocket connection fo
 {
     "authenticate": 0,
     "confirm": 1,
-    "refreshData": 2
+    "refreshData": 2,
+    "refreshBingo": 3
 }
 ```
 
@@ -987,6 +988,7 @@ And so on. As the socket connections **must** be authenticated, an additional st
    * `authenticate`: Send a stringified JSON blob to the server over the websocket containing the `action` field (echoed back), an `id` field populated with the user's login ID, and a `token` field populated with the user's session token (including the `Bearer ` prefix that you would include in API request headers).
    * `confirm`: No action needed; this message is simply confirmation from the server that the authentication payload was valid.
    * `refreshData`: Pull the latest challenger or leader info payload from the API, depending on whether the logged in user is a challenger or a leader, and update any parts of the UI that need to be updated.
+   * `refreshBingo`: Pull the latest bingo board data from the API and update that view. **Note:** This will only be sent to challengers, and should only be acted on if the bingo board view is currently open.
 
 **All** messages sent from the server over websockets will be stringified JSON blobs that contain an `action` property with a value defined by the constant above. At present, no other fields will be included in any of the payloads, but the JSON format offers the flexibility to add them in the future if needed.
 

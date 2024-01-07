@@ -97,5 +97,6 @@ export const platformType = {
 export const websocketAction = {
     authenticate: 0,
     confirm: 1,
-    refreshData: 2
+    refreshData: 2,
+    refreshBingo: 3
 };

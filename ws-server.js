@@ -8,7 +8,8 @@
  * relevant client connections.                       *
  *                                                    *
  * This module exports the following functions:       *
- *   createWsServer, notifyRefresh                    *
+ *   createWsServer, notifyRefreshData,               *
+ *   notifyRefreshBingo                               *
  ******************************************************/
 
 import config from './config/config.js';
@@ -66,6 +67,21 @@ function processMessage(data) {
     }
 }
 
+function notifyRefresh(id, action) {
+    const socket = socketDict[id];
+    if (!socket) {
+        return;
+    }
+
+    if (socket.readyState === CLOSING || socket.readyState === CLOSED) {
+        // Socket is closing or closed; remove it from the dict
+        delete socketDict[id];
+        return;
+    }
+
+    socket.send(JSON.stringify({ action: action }));
+}
+
 /***************
  * Public APIs *
  ***************/
@@ -85,17 +101,10 @@ export function createWsServer() {
     return server;
 }
 
-export function notifyRefresh(id) {
-    const socket = socketDict[id];
-    if (!socket) {
-        return;
-    }
+export function notifyRefreshData(id) {
+    notifyRefresh(id, websocketAction.refreshData);
+}
 
-    if (socket.readyState === CLOSING || socket.readyState === CLOSED) {
-        // Socket is closing or closed; remove it from the dict
-        delete socketDict[id];
-        return;
-    }
-
-    socket.send(JSON.stringify({ action: websocketAction.refreshData }));
+export function notifyRefreshBingo(id) {
+    notifyRefresh(id, websocketAction.refreshBingo);
 }
