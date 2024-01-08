@@ -5,7 +5,7 @@
  * for the queue-management-related tasks.            *
  *                                                    *
  * This module exports the following functions:       *
- *   enqueue, dequeue, hold, unhold                   *
+ *   enqueue, dequeue, hold, unhold, getIdsInQueue    *
  ******************************************************/
 import config from '../config/config.js';
 import { sendPush } from '../push/push.js';
@@ -192,4 +192,14 @@ export async function unhold(leaderId, challengerId, placeAtFront, callback) {
     }
 
     callback(resultCode.success);
+}
+
+export async function getIdsInQueue(leaderId, callback) {
+    const result = await fetch(`SELECT challenger_id FROM ${tables.matches} WHERE leader_id = ? AND status = ?`, [leaderId, matchStatus.inQueue]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    callback(resultCode.success, result.rows.map(row => row.challenger_id));
 }

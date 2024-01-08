@@ -597,7 +597,15 @@ api.delete('/api/v2/challenger/:id/dequeue/:leader', (req, res) => {
             handleDbError(challengerErrors, error, res);
         } else {
             notifyRefreshData(req.params.leader);
-            // TODO - Notify other challengers in the leader's queue
+            db.queue.getIdsInQueue(req.params.leader, (error, result) => {
+                if (!error) {
+                    // Don't bother handling errors here; this is just for websocket updates and not a critical path
+                    for (const id of result) {
+                        notifyRefreshData(id);
+                    }
+                }
+            });
+
             getChallengerInfo(req, res);
         }
     });
@@ -616,7 +624,15 @@ api.post('/api/v2/challenger/:id/hold/:leader', (req, res) => {
             handleDbError(challengerErrors, error, res);
         } else {
             notifyRefreshData(req.params.leader);
-            // TODO - Notify other challengers in the leader's queue
+            db.queue.getIdsInQueue(req.params.leader, (error, result) => {
+                if (!error) {
+                    // Don't bother handling errors here; this is just for websocket updates and not a critical path
+                    for (const id of result) {
+                        notifyRefreshData(id);
+                    }
+                }
+            });
+
             getChallengerInfo(req, res);
         }
     });

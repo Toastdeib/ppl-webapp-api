@@ -8,7 +8,7 @@
  * submodules.                                        *
  ******************************************************/
 import { dbReady, debugSave, tables } from './core.js';
-import { dequeue, enqueue, hold, unhold } from './queue.js';
+import { dequeue, enqueue, getIdsInQueue, hold, unhold } from './queue.js';
 import { disable, enable } from './push.js';
 import { generateHex, login, register } from './auth.js';
 import { getAllChallengers, getLeaderInfo, getLeaderMetrics, reportResult, updateQueueStatus } from './leader.js';
@@ -32,7 +32,8 @@ const db = {
         enqueue: enqueue,
         dequeue: dequeue,
         hold: hold,
-        unhold: unhold
+        unhold: unhold,
+        getIdsInQueue: getIdsInQueue
     },
     auth: {
         register: register,
