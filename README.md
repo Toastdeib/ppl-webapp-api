@@ -163,6 +163,8 @@ Retrieves information about the challenger with the given ID.
 {
     "id": [string],
     "displayName": [string],
+    "winCount": [int],
+    "lossCount": [int],
     "queuesEntered": [
         {
             "leaderId": [string],

@@ -41,6 +41,8 @@ export async function getChallengerInfo(id, callback) {
 
     const retval = {
         displayName: row.display_name,
+        winCount: 0,
+        lossCount: 0,
         queuesEntered: [],
         queuesOnHold: [],
         badgesEarned: []
@@ -91,7 +93,7 @@ export async function getChallengerInfo(id, callback) {
 
     retval.queuesEntered.forEach(match => delete match.positionFound);
 
-    result = await fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name, m.battle_difficulty, m.battle_format, m.status FROM ${tables.matches} m INNER JOIN ${tables.leaders} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status IN (?, ?, ?)`, [id, matchStatus.onHold, matchStatus.win, matchStatus.ash]);
+    result = await fetch(`SELECT m.leader_id, l.leader_name, l.leader_type, l.badge_name, m.battle_difficulty, m.battle_format, m.status FROM ${tables.matches} m INNER JOIN ${tables.leaders} l ON l.id = m.leader_id WHERE m.challenger_id = ? AND m.status <> ?`, [id, matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -106,7 +108,7 @@ export async function getChallengerInfo(id, callback) {
                 difficulty: row.battle_difficulty,
                 format: row.battle_format
             });
-        } else {
+        } else if (row.status === matchStatus.win || row.status === matchStatus.ash) {
             retval.badgesEarned.push({
                 leaderId: row.leader_id,
                 leaderName: row.leader_name,
@@ -116,6 +118,12 @@ export async function getChallengerInfo(id, callback) {
             if (row.leader_type === leaderType.champion) {
                 championDefeated = true;
             }
+        }
+
+        if (row.status === matchStatus.win || row.status === matchStatus.gary) {
+            retval.winCount++;
+        } else if (row.status === matchStatus.loss || row.status === matchStatus.ash) {
+            retval.lossCount++;
         }
     }
 

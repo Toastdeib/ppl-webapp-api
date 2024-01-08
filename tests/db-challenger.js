@@ -29,6 +29,8 @@ const challengerId = 'efaa0cdd1cbd165b';
 const newName = 'testchallenger123';
 const baseline = {
     displayName: 'testchallenger1',
+    winCount: 9,
+    lossCount: 2,
     queuesEntered: { 'bc95c2fc3f1a': 0, 'd0cceeaf006a': 1, '987597dc6aa2': 0 },
     badgesEarned: [ '6a9406eedec6', '7729e38c3f7d', 'bcc6f08242fb', '7e8ab2c43c76', '1ed127c44156', '74fe35c10ba6', '68e65518c4d6', 'd08cde9beddd', 'b6857070a317', '1194829fc135', 'be90adcbbe2f' ],
     championDefeated: false
@@ -71,8 +73,16 @@ function verifyBaseline() {
             fail(`unable to verify baseline, aborting test run, error=${error}`);
             process.exit();
         } else {
-            // Data to verify: displayName, queuesEntered (length, IDs, positions), badgesEarned (length, IDs), championDefeated
+            // Data to verify: displayName, winCount, lossCount, queuesEntered (length, IDs, positions), badgesEarned (length, IDs), championDefeated
             if (result.displayName !== baseline.displayName) {
+                baselineValid = false;
+            }
+
+            if (result.winCount !== baseline.winCount) {
+                baselineValid = false;
+            }
+
+            if (result.lossCount !== baseline.lossCount) {
                 baselineValid = false;
             }
 
@@ -403,6 +413,8 @@ function verifyBadgeCount1() {
             fail(`error=${error}`);
         } else if (result.badgesEarned.length !== baseline.badgesEarned.length + 1) {
             fail(`badge count=${result.badgesEarned.length}, expected ${baseline.badgesEarned.length + 1}`);
+        } else if (result.winCount !== baseline.winCount + 1) {
+            fail(`winCount=${result.winCount}, expected ${baseline.winCount + 1}`);
         } else {
             pass('badge count was correct');
         }
@@ -433,6 +445,8 @@ function verifyBadgeCount2() {
             fail(`error=${error}`);
         } else if (result.badgesEarned.length !== baseline.badgesEarned.length + 2) {
             fail(`badge count=${result.badgesEarned.length}, expected ${baseline.badgesEarned.length + 2}`);
+        } else if (result.winCount !== baseline.winCount + 2) {
+            fail(`winCount=${result.winCount}, expected ${baseline.winCount + 2}`);
         } else {
             pass('badge count was correct');
         }
