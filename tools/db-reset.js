@@ -7,11 +7,14 @@
  * printing a status indicator as it goes and the total *
  * runtime upon completion.                             *
  *                                                      *
- * Usage:                                               *
- * node db-reset.js                                     *
+ * To prevent logs from being created, this should be   *
+ * run via the reset.sh script, which sets an           *
+ * environment variable to use debug logging like the   *
+ * test suites do instead of writing to file.           *
  ********************************************************/
 import config from '../config/config.js';
 import fs from 'fs';
+import logger from '../util/logger.js';
 import sql from 'mysql';
 
 const sqlDb = sql.createPool({
@@ -26,8 +29,8 @@ function saveAsync(query, params) {
     return new Promise((resolve) => {
         sqlDb.query(query, params, (error, result) => {
             if (error) {
-                console.log('Database write failed');
-                console.log(error);
+                logger.api.error('Database write failed');
+                logger.api.error(error);
                 resolve({ status: 1, rowCount: [] });
             } else {
                 resolve({ status: 0, rowCount: result.affectedRows });
@@ -37,9 +40,9 @@ function saveAsync(query, params) {
 }
 
 async function repopulateDb() {
-    const lines = fs.readFileSync('baseline.sql', 'utf8').split('\n')
+    const lines = fs.readFileSync('../tests/baseline.sql', 'utf8').split('\n')
         .filter(line => line.indexOf('INSERT INTO') === 0 || line.indexOf('DELETE FROM') === 0);
-    console.log(`Rebuliding test db from ${lines.length} statements...`);
+    logger.api.debug(`Rebuilding test db from ${lines.length} statements...`);
     console.log('0%                                            100%');
 
     const now = new Date();
@@ -55,7 +58,8 @@ async function repopulateDb() {
         }
     }
 
-    console.log(`\nTest db rebuild complete in \x1b[36m${new Date() - now}ms\x1b[0m`);
+    console.log();
+    logger.api.debug(`Test db rebuild complete in \x1b[36m${new Date() - now}ms\x1b[0m`);
     process.exit();
 }
 

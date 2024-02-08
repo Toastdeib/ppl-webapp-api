@@ -4,5 +4,6 @@
 /config/event
 cache.json
 *.swp
+*.tsv
 /tests/db-test.js
 /static
