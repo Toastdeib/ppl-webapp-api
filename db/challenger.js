@@ -112,7 +112,9 @@ export async function getChallengerInfo(id, callback) {
             retval.badgesEarned.push({
                 leaderId: row.leader_id,
                 leaderName: row.leader_name,
-                badgeName: row.badge_name
+                badgeName: row.badge_name,
+                difficulty: row.battle_difficulty,
+                format: row.battle_format
             });
 
             if (row.leader_type === leaderType.champion) {

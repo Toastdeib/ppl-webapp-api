@@ -189,7 +189,9 @@ Retrieves information about the challenger with the given ID.
         {
             "leaderId": [string],
             "leaderName": [string],
-            "badgeName": [string]
+            "badgeName": [string],
+            "difficulty": [int, uses the leaderType constant],
+            "format": [int, uses the battleFormat constant]
         },
         ...
     ],
