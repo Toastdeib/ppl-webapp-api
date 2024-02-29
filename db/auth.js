@@ -41,22 +41,17 @@ export async function register(username, password, eventMask, callback) {
         return;
     }
 
-    let result = await fetch(`SELECT 1 FROM ${tables.logins} WHERE username = ?`, [username]);
-    if (result.resultCode) {
-        callback(result.resultCode);
-        return;
-    }
-
-    if (result.rows.length !== 0) {
-        callback(resultCode.usernameTaken);
-        return;
-    }
-
     const salt = generateHex(SALT_HEX_LENGTH);
     const hash = hashWithSalt(password, salt);
     const id = generateHex(LOGIN_ID_HEX_LENGTH);
-    result = await save(`INSERT INTO ${tables.logins} (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES (?, ?, ?, ?, 0, NULL)`, [id, username, `${hash}:${salt}`, eventMask]);
+    let result = await save(`INSERT INTO ${tables.logins} (id, username, password_hash, ppl_events, is_leader, leader_id) VALUES (?, ?, ?, ?, 0, NULL)`, [id, username, `${hash}:${salt}`, eventMask]);
     if (result.resultCode) {
+        if (result.sqlError.code === 'ER_DUP_ENTRY') {
+            // Key collision on the username, reject it with usernameTaken
+            callback(resultCode.usernameTaken);
+            return;
+        }
+
         callback(result.resultCode);
         return;
     }

@@ -222,9 +222,9 @@ export function fetch(query, params) {
             if (error) {
                 logger.api.error('Database read failed');
                 logger.api.error(error);
-                resolve({ status: resultCode.dbFailure, rows: [] });
+                resolve({ resultCode: resultCode.dbFailure, rows: [], sqlError: error });
             } else {
-                resolve({ status: resultCode.success, rows: result });
+                resolve({ resultCode: resultCode.success, rows: result });
             }
         });
     });
@@ -236,9 +236,9 @@ export function save(query, params) {
             if (error) {
                 logger.api.error('Database write failed');
                 logger.api.error(error);
-                resolve({ status: resultCode.dbFailure, rowCount: [] });
+                resolve({ resultCode: resultCode.dbFailure, rowCount: 0, sqlError: error });
             } else {
-                resolve({ status: resultCode.success, rowCount: result.affectedRows });
+                resolve({ resultCode: resultCode.success, rowCount: result.affectedRows });
             }
         });
     });
