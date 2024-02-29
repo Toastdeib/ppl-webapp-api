@@ -46,8 +46,8 @@ let leaderIds, eliteIds;
 
 /* TABLE SCHEMA *
  * ppl_webapp_logins
- * - id: VARCHAR(16)
- * - username: VARCHAR(30)
+ * - id: VARCHAR(16) (PRIMARY KEY)
+ * - username: VARCHAR(30) (UNIQUE)
  * - password_hash: VARCHAR(99)
  * - ppl_events: TINYINT(4)
  * - is_leader: TINYINT(1)
@@ -56,18 +56,18 @@ let leaderIds, eliteIds;
  * - last_used_date: TIMESTAMP
  *
  * ppl_webapp_push_tokens
- * - id: VARCHAR(16)
+ * - id: VARCHAR(16) (PRIMARY KEY)
  * - device_id: VARCHAR(100) TODO - May not be needed?
  * - push_type: TINYINT(4)
  * - push_token: VARCHAR(300) TODO - May need embiggening
  *
  * ppl_webapp_challengers
- * - id: VARCHAR(16)
+ * - id: VARCHAR(16) (PRIMARY KEY)
  * - display_name: VARCHAR(40)
  * - bingo_board: VARCHAR(350)
  *
  * ppl_webapp_leaders
- * - id: VARCHAR(16)
+ * - id: VARCHAR(16) (PRIMARY KEY)
  * - leader_name: VARCHAR(80)
  * - leader_type: TINYINT(4)
  * - battle_format: TINYINT(4)
@@ -83,7 +83,7 @@ let leaderIds, eliteIds;
  * - profile_art: MEDIUMTEXT (defunct)
  *
  * ppl_webapp_matches
- * - match_id: INT
+ * - match_id: INT (PRIMARY KEY) (AUTOINCREMENT)
  * - leader_id: VARCHAR(16)
  * - challenger_id: VARCHAR(16)
  * - battle_difficulty: TINYINT(4)
