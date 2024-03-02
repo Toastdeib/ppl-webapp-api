@@ -29,7 +29,9 @@ const config = {
     multiBingoIds: [],
     sharedBingoIds: {},
     supportsQueueState: false,
-    supportsBotNotifications: false
+    supportsBotNotifications: false,
+    communityRoomMeetupTimes: [ { startTime: '1970-01-01T00:00:00Z', duration: 120 } ],
+    hhlMeetupTimes: [ { startTime: '1970-01-01T00:00:00Z', duration: 120 } ]
 };
 
 export default config;

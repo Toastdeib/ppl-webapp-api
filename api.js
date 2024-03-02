@@ -900,7 +900,9 @@ api.get('/api/v2/appsettings', (req, res) => {
         eventIsOver: eventIsOver(),
         eventSupportsQueueState: config.supportsQueueState,
         leadersToDefeat: config.requiredBadges,
-        elitesToDefeat: config.requiredEmblems
+        elitesToDefeat: config.requiredEmblems,
+        communityRoomMeetupTimes: config.communityRoomMeetupTimes,
+        hhlMeetupTimes: config.hhlMeetupTimes,
     });
 });
 
