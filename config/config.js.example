@@ -22,6 +22,7 @@ const config = {
     bingoBoardWidth: 5,
     requiredBadges: 8,
     requiredEmblems: 4,
+    emblemWeight: 1,
     maxQueueSize: 20,
     maxQueuesPerChallenger: 4,
     excludedTrainerCardIds: [],

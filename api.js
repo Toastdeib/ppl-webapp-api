@@ -901,6 +901,7 @@ api.get('/api/v2/appsettings', (req, res) => {
         eventSupportsQueueState: config.supportsQueueState,
         leadersToDefeat: config.requiredBadges,
         elitesToDefeat: config.requiredEmblems,
+        emblemWeight: config.emblemWeight,
         communityRoomMeetupTimes: config.communityRoomMeetupTimes,
         hhlMeetupTimes: config.hhlMeetupTimes,
     });
