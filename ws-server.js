@@ -79,6 +79,7 @@ function notifyRefresh(id, action) {
         return;
     }
 
+    logger.api.info(`Sending websocket action ${action} to id=${id}`);
     socket.send(JSON.stringify({ action: action }));
 }
 

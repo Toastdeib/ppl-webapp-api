@@ -75,7 +75,7 @@ function getChallengerInfo(req, res) {
 }
 
 function getLeaderInfo(req, res, notify) {
-    logger.api.info(`Returning leader info for loginId=${req.params.id}, leaderId=${req.leaderId}`);
+    logger.api.info(`Returning leader info for loginId=${req.params.id}, leaderId=${req.leaderId} with notify=${notify}`);
     db.leader.getInfo(req.leaderId, (error, result) => {
         if (error) {
             handleDbError(leaderErrors, error, res);
@@ -653,7 +653,9 @@ api.use('/api/v2/leader/:id', (req, res, next) => {
     next();
 });
 
-api.get('/api/v2/leader/:id', getLeaderInfo);
+api.get('/api/v2/leader/:id', (req, res) => {
+    getLeaderInfo(req, res);
+});
 
 api.post('/api/v2/leader/:id/openqueue', (req, res) => {
     if (eventIsOver(res)) {
