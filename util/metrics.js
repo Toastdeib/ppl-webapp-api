@@ -67,6 +67,7 @@ export function trackResponse(statusCode, correlationId) {
     const duration = timestamp - request.timestamp;
     metricsCache.responses.push({
         statusCode: statusCode,
+        path: request.path,
         timestamp: timestamp,
         duration: duration,
         correlationId: correlationId
@@ -76,7 +77,11 @@ export function trackResponse(statusCode, correlationId) {
 export function getMetrics() {
     const maxAge = new Date() - MAX_DATA_AGE_MILLISECONDS;
     return {
-        requests: metricsCache.requests.filter(request => request.timestamp >= maxAge),
-        responses: metricsCache.responses.filter(response => response.timestamp >= maxAge)
+        requests: metricsCache.requests
+            .filter(request => request.timestamp >= maxAge)
+            .map(request => { return { path: request.path, timestamp: request.timestamp }; }),
+        responses: metricsCache.responses
+            .filter(response => response.timestamp >= maxAge)
+            .map(response => { return { statusCode: response.statusCode, path: response.path, duration: response.duration }; })
     };
 }
