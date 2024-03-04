@@ -67,17 +67,24 @@ export async function enqueue(leaderId, challengerId, difficulty, format, callba
         const earned = result.rows.filter(row => row.status === matchStatus.win || row.status === matchStatus.ash);
         const badgeCount = earned.filter(row => !(row.battle_difficulty & (leaderType.elite | leaderType.champion))).length;
         const emblemCount = earned.filter(row => row.battle_difficulty & leaderType.elite).length;
-        // Match validity check is a bit wacky because PPL West doesn't have elites,
-        // so we need to check badge count for the champ if config.requiredEmblems === 0
-        if (((leaderInfo.leader_type & leaderType.elite) && badgeCount < config.requiredBadges) || // Elite with insufficient badges
-            ((leaderInfo.leader_type & leaderType.champion) && config.requiredEmblems === 0 && badgeCount < config.requiredBadges)) { // Champ with no elites and insufficient badges
+
+        if ((leaderInfo.leader_type & leaderType.elite) && badgeCount < config.requiredBadgesForElites) {
             callback(resultCode.notEnoughBadges);
             return;
         }
 
-        if (((leaderInfo.leader_type & leaderType.champion) && emblemCount < config.requiredEmblems)) { // Champ with insufficient emblems
-            callback(resultCode.notEnoughEmblems);
-            return;
+        if ((leaderInfo.leader_type & leaderType.champion)) {
+            if (config.requiredEmblemsForChamp > 0 && emblemCount < config.requiredEmblemsForChamp) {
+                // Regular format, elites are required
+                callback(resultCode.notEnoughEmblems);
+                return;
+            }
+
+            if (config.requiredBadgesForChamp > 0 && (badgeCount + emblemCount * config.emblemWeight) < config.requiredBadgesForChamp) {
+                // Elite-optional format, count them as weighted badges
+                callback(resultCode.notEnoughBadges);
+                return;
+            }
         }
     }
 

@@ -901,11 +901,16 @@ api.get('/api/v2/appsettings', (req, res) => {
         showTrainerCard: new Date() > new Date(config.trainerCardShowDate),
         eventIsOver: eventIsOver(),
         eventSupportsQueueState: config.supportsQueueState,
-        leadersToDefeat: config.requiredBadges,
-        elitesToDefeat: config.requiredEmblems,
-        emblemWeight: config.emblemWeight,
+        leadersToDefeat: config.requiredBadgesForElites, // DEPRECATED
+        elitesToDefeat: config.requiredEmblemsForChamp, // DEPRECATED
+        leagueFormat: {
+            badgesForElites: config.requiredBadgesForElites,
+            emblemsForChamp: config.requiredEmblemsForChamp,
+            badgesForChamp: config.requiredBadgesForChamp,
+            emblemWeight: config.emblemWeight
+        },
         communityRoomMeetupTimes: config.communityRoomMeetupTimes,
-        hhlMeetupTimes: config.hhlMeetupTimes,
+        hhlMeetupTimes: config.hhlMeetupTimes
     });
 });
 

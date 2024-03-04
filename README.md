@@ -34,8 +34,10 @@ This project is half of a system built to help manage events run by the [PAX Pok
     - The `trainerCardShowDate` field defines when the trainer card should start appearing in the webapp. It's typically the day of the champion reveal, so that leader names and art can be pre-loaded without challengers seeing them early.
     - The `eventEndDate` field defines when the PPL event is considered to be officially over, and is used to set a flag in the `/appsettings` API endpoint indicating that for callers so they can inform users.
     - The `bingoBoardWidth` field defines the dimensions of the board used for the leader bingo side activity. It should typically be less than the square root of the number of leaders and elites combined (e.g. a 4x4 or 5x5 board for a pool of 30 total non-champion leaders).
-    - The `requiredBadges` and `requiredEmblems` fields define how many badges and emblems a challenger needs to face elites and the champion, respectively. If `requiredEmblems` is set to 0, `requiredBadges` will be used for the champion check as well as elites.
-    - The `emblemWeight` field defines how many badges an elite emblem should count for. This should only be set to a value higher than 1 if `requiredEmblems` is set to 0.
+    - The `requiredBadgesForElites` field defines how many badges are required to battle elites. If an event only has regular leaders and a champion, this field will be ignored.
+    - The `requiredBadgesForChamp` field defines how many badges are required to battle the champion. If this value is non-zero, `requiredEmblemsForChamp` **should** be zero, as it implies that the event either doesn't have elites or that they're optional.
+    - The `requiredEmblemsForChamp` field defines how many elite emblems are required to battle the champion. If this value is non-zero, `requiredBadgesForChamp` **should** be zero, as it means that the elites are required to reach the champion.
+    - The `emblemWeight` field defines how many badges an elite emblem should count for. This should only be set to a value higher than 1 if `requiredEmblemsForChamp` is set to 0.
     - The `maxQueueSize` field defines how many challengers a leader can have in their queue at a given time. This should typically be large for in-person events and more restricted during online events.
     - The `maxQueuesPerChallenger` field defines how many leader queues a challenger can be in at once.
     - The `excludedBingoIds` field is an array of leader ID strings that defines what, if any, leaders should be excluded when constructing new bingo boards. This should be used in cases where multiple leaders have the same ace/Tera and you want to avoid collisions.
@@ -706,7 +708,17 @@ Retrieves a collection of event-specific settings. The collection currently cont
 {
     "showTrainerCard": [boolean, based on the trainer card show date config entry],
     "eventIsOver": [boolean, based on the event end date config entry],
-    "eventSupportsQueueState": [boolean, indicates whether leaders should be able to open/close queues]
+    "eventSupportsQueueState": [boolean, indicates whether leaders should be able to open/close queues],
+    "leadersToDefeat": [int, DEPRECATED, specifies the number of badges required to face elites],
+    "elitesToDefeat": [int, DEPRECATED, specifies the number of elite emblems required to face the champ],
+    "leagueFormat": {
+        "badgesForElites": [int, specifies the number of badges required to face elites],
+        "emblemsForChamp": [int, specifies the number of elite emblems required to face the champ],
+        "badgesForChamp": [int, specifies the number of badges required to face the champ for no-elite/elite-optional formats],
+        "emblemWeight": [int, specifies how many badges elite emblems should count as when badgesForChamp is non-zero]
+    },
+    "communityRoomMeetupTimes": config.communityRoomMeetupTimes,
+    "hhlMeetupTimes": config.hhlMeetupTimes
 }
 ```
 
