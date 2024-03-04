@@ -3,6 +3,7 @@ import config from './config/config.js';
 import { createWsServer } from './ws-server.js';
 import fs from 'fs';
 import https from 'https';
+import { initMetrics } from './util/metrics.js';
 import logger from './util/logger.js';
 
 // Certificate
@@ -29,6 +30,8 @@ httpsServer.on('upgrade', (request, socket, head) => {
 httpsServer.listen(config.port, () => {
     logger.api.info(`API running on port ${config.port}`);
 });
+
+initMetrics();
 
 if (config.debug) {
     process.stdin.resume();

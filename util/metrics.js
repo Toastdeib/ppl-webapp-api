@@ -14,7 +14,8 @@
  * for that same request.                             *
  *                                                    *
  * This module exports the following functions:       *
- *   trackRequest, trackResponse, getMetrics          *
+ *   initMetrics, trackRequest, trackResponse,        *
+ *   getMetrics                                       *
  ******************************************************/
 import { generateHex } from '../db/auth.js';
 
@@ -26,8 +27,6 @@ const metricsCache = {
     requests: [],
     responses: []
 };
-
-setInterval(pruneCache, PRUNE_INTERVAL_MILLISECONDS);
 
 /******************
  * Util functions *
@@ -44,6 +43,10 @@ function pruneCache() {
 /***************
  * Public APIs *
  ***************/
+export function initMetrics() {
+    setInterval(pruneCache, PRUNE_INTERVAL_MILLISECONDS);
+}
+
 export function trackRequest(path) {
     const timestamp = new Date();
     const correlationId = generateHex(CORRELATION_ID_HEX_LENGTH);
