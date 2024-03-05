@@ -941,8 +941,7 @@ api.get('/api/v2/appsettings', (req, res) => {
             badgesForChamp: config.requiredBadgesForChamp,
             emblemWeight: config.emblemWeight
         },
-        communityRoomMeetupTimes: config.communityRoomMeetupTimes,
-        hhlMeetupTimes: config.hhlMeetupTimes,
+        meetupTimes: config.meetupTimes,
         howToChallenge: config.howToChallenge,
         rules: config.rules,
         prizePools: config.prizePools,

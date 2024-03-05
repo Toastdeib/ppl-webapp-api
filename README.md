@@ -45,8 +45,7 @@ This project is half of a system built to help manage events run by the [PAX Pok
     - The `sharedBingoIds` field is an object mapping leader IDs which have the same signature/Tera 'mon on the bingo board, so that any of them will count towards the bingo space. Any **values** in this object should be the IDs used for actual bingo board images.
     - The `supportsQueueState` field is a flag indicating whether the open/close queue functionality should be enabled for the PPL event. Typically, this should only be true for virtual events (i.e. PPL Online). If set to `false`, the `/openqueue`, `/closequeue`, and challenger-facing `/enqueue` paths will all be gated. **Note**: If this flag is set to `false`, *all leaders for the event* should have their `queue_open` field set to `1` in the database for normal functionality to work.
     - The `supportsBotNotifications` field is a flag indicating whether certain events should be forwarded to PPLBot for Discord notifications. Similar to the previous flag, this should typically only be true for virtual events.
-    - The `communityRoomMeetupTimes` field is an array of JSON objects, each containing a `startTime` and `duration` field. `startTime` should be a UTC timestamp and `duration` should be a duration in minutes. Each entry in the array should describe a single meetup time, so there should be one for each timeslot we have in the Community Room.
-    - The `hhlMeetupTimes` field is an array of JSON objects, each containing a `startTime` and `duration` field. `startTime` should be a UTC timestamp and `duration` should be a duration in minutes. Each entry in the array should describe a single meetup time, so there should typically be four, one for each scheduled meetup time in the Handheld Lounge.
+    - The `meetupTimes` field is an array of JSON objects, each containing a `location`, a `startTime`, and a `duration` field. `location` should be a string describing the location (e.g. "Community Room" or "Handheld Lounge"),`startTime` should be a UTC timestamp, and `duration` should be a duration in minutes. Each entry in the array should describe a single meetup time.
 5. Create a directory named `event` under the `config` directory and make additional copies of [config.js.example](config/config.js.example) for each PPL event listed in [config.js](config/config.js). These files only need to contain config values that need to be overridden from those in the general configs. **Note**: The *numerical* event config fields in `test.js` should match those in the example config for the tests to run successfully.
 6. Create a directory named `static` in the root of the project for serving up static image files for clients. The directory can be empty, but it should exist for the express middleware that sets up the virtual `/static` path.
 7. Run `node startup.js`, providing a `PPL_EVENT` environment variable if desired; if unspecified, it will pull from the `general.js` file you created in step 2. **Note**: This *may* require `sudo` to run, depending on the permissions on the cert path.
@@ -717,8 +716,20 @@ Retrieves a collection of event-specific settings. The collection currently cont
         "badgesForChamp": [int, specifies the number of badges required to face the champ for no-elite/elite-optional formats],
         "emblemWeight": [int, specifies how many badges elite emblems should count as when badgesForChamp is non-zero]
     },
-    "communityRoomMeetupTimes": config.communityRoomMeetupTimes,
-    "hhlMeetupTimes": config.hhlMeetupTimes
+    "meetupTimes": [
+        {
+            "location": [string, the location name for a meetup],
+            "startTime": [string, the start time of the meetup as a UTC timestamp],
+            "duration": [int, the duration of the meetup in minutes]
+        },
+        ...
+    ],
+    "howToChallenge": [boolean, indicates whether the webapp should display the 'how to challenge' section],
+    "rules": [boolean, indicates whether the webapp should display the rules section],
+    "prizePools": [boolean, indicates whether the webapp should display the prize pool section],
+    "schedule": [boolean, indicates whether the webapp should display the schedule section],
+    "bingoBoard": [boolean, indicates whether the webapp should display the bingo board to challengers],
+    "map": [boolean, indicates whether the webapp should display the venue map]
 }
 ```
 
