@@ -62,6 +62,30 @@ function getAppSettings() {
                 fail('payload was missing eventIsOver property');
             } else if (data.eventSupportsQueueState === undefined) {
                 fail('payload was missing eventSupportsQueueState property');
+            } else if (data.leagueFormat === undefined) {
+                fail('payload was missing leagueFormat property');
+            } else if (data.leagueFormat.badgesForElites === undefined) {
+                fail('payload was missing leagueFormat.badgesForElites property');
+            } else if (data.leagueFormat.emblemsForChamp === undefined) {
+                fail('payload was missing leagueFormat.emblemsForChamp property');
+            } else if (data.leagueFormat.badgesForChamp === undefined) {
+                fail('payload was missing leagueFormat.badgesForChamp property');
+            } else if (data.leagueFormat.emblemWeight === undefined) {
+                fail('payload was missing leagueFormat.emblemWeight property');
+            } else if (data.meetupTimes === undefined) {
+                fail('payload was missing meetupTimes property');
+            } else if (data.howToChallenge === undefined) {
+                fail('payload was missing howToChallenge property');
+            } else if (data.rules === undefined) {
+                fail('payload was missing rules property');
+            } else if (data.prizePools === undefined) {
+                fail('payload was missing prizePools property');
+            } else if (data.schedule === undefined) {
+                fail('payload was missing schedule property');
+            } else if (data.bingoBoard === undefined) {
+                fail('payload was missing bingoBoard property');
+            } else if (data.map === undefined) {
+                fail('payload was missing map property');
             } else {
                 pass('payload contained all expected properties');
             }
