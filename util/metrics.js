@@ -85,6 +85,6 @@ export function getMetrics() {
             .map(request => { return { path: request.path, timestamp: request.timestamp }; }),
         responses: metricsCache.responses
             .filter(response => response.timestamp >= maxAge)
-            .map(response => { return { statusCode: response.statusCode, path: response.path, duration: response.duration }; })
+            .map(response => { return { path: response.path, timestamp: response.timestamp, statusCode: response.statusCode, duration: response.duration }; })
     };
 }
