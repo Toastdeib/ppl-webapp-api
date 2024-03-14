@@ -28,17 +28,6 @@ export async function getChallengerInfo(id, callback) {
     }
 
     const row = result.rows[0];
-    let bingoBoard = row.bingo_board;
-    if (!bingoBoard) {
-        bingoBoard = generateBingoBoard();
-        result = await save(`UPDATE ${tables.challengers} SET bingo_board = ? WHERE id = ?`, [bingoBoard, id]);
-        if (result.resultCode) {
-            logger.api.error(`Error saving new bingo board for id=${id}`);
-        } else {
-            logger.api.info(`Saved new bingo board for id=${id}`);
-        }
-    }
-
     const retval = {
         displayName: row.display_name,
         winCount: 0,
@@ -168,7 +157,19 @@ export async function getBingoBoard(id, callback) {
         return;
     }
 
-    const flatBoard = result.rows[0].bingo_board;
+    let flatBoard = result.rows[0].bingo_board;
+    if (!flatBoard) {
+        flatBoard = generateBingoBoard();
+        result = await save(`UPDATE ${tables.challengers} SET bingo_board = ? WHERE id = ?`, [flatBoard, id]);
+        if (result.resultCode) {
+            logger.api.error(`Error saving new bingo board for id=${id}`);
+            callback(result.resultCode);
+            return;
+        } else {
+            logger.api.info(`Saved new bingo board for id=${id}`);
+        }
+    }
+
     result = await fetch(`SELECT leader_id FROM ${tables.matches} WHERE challenger_id = ? AND status IN (?, ?, ?)`, [id, matchStatus.loss, matchStatus.win, matchStatus.ash]);
     if (result.resultCode) {
         callback(result.resultCode);
