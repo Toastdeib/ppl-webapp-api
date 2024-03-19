@@ -10,8 +10,21 @@
  * with color formatting for clarity, so as to avoid  *
  * clogging the real logs with dummy data.            *
  ******************************************************/
+import { MESSAGE } from 'triple-beam';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
+
+class ColorConsole extends winston.transports.Console {
+    constructor(options) {
+        super(options);
+    }
+
+    log(info, callback) {
+        const re = /([a-z0-9]+)=([a-z0-9]+)/gi;
+        info[MESSAGE] = info[MESSAGE].replaceAll(re, '\x1b[36m$1\x1b[0m=\x1b[32m$2\x1b[0m');
+        super.log(info, callback);
+    }
+}
 
 function dDebug(msg) {
     console.log(`\x1b[36mD>\x1b[0m ${msg}`);
@@ -51,7 +64,7 @@ if (process.env.TEST_RUN === 'true') {
         transports: [
             new winston.transports.DailyRotateFile({ filename: 'logs/api-error-%DATE%.log', level: 'error', maxFiles: '14d' }),
             new winston.transports.DailyRotateFile({ filename: 'logs/api-combined-%DATE%.log', level: 'info', maxFiles: '14d' }),
-            new winston.transports.Console({ format: winston.format.simple() })
+            new ColorConsole({ format: winston.format.simple() })
         ]
     });
 
