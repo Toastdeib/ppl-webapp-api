@@ -20,7 +20,7 @@ class ColorConsole extends winston.transports.Console {
     }
 
     log(info, callback) {
-        const re = /([a-z0-9]+)=([a-z0-9]+)/gi;
+        const re = /([a-z0-9_]+)=([a-z0-9_]+)/gi;
         info[MESSAGE] = info[MESSAGE].replaceAll(re, '\x1b[36m$1\x1b[0m=\x1b[32m$2\x1b[0m');
         super.log(info, callback);
     }
