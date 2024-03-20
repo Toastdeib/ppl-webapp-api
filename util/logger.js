@@ -11,20 +11,41 @@
  * clogging the real logs with dummy data.            *
  ******************************************************/
 import { MESSAGE } from 'triple-beam';
-import winston from 'winston';
+import { createLogger, format, transports } from 'winston';
 import 'winston-daily-rotate-file';
 
-class ColorConsole extends winston.transports.Console {
+const TIMESTAMP_START = 11;
+const TIMESTAMP_LENGTH = 8;
+
+class ColorConsole extends transports.Console {
     constructor(options) {
         super(options);
     }
 
     log(info, callback) {
         const re = /([a-z0-9_]+)=([a-z0-9_]+)/gi;
-        info[MESSAGE] = info[MESSAGE].replaceAll(re, '\x1b[36m$1\x1b[0m=\x1b[32m$2\x1b[0m');
+        info[MESSAGE] = info[MESSAGE].replaceAll(re, '\x1b[95m$1\x1b[0m=\x1b[91m$2\x1b[0m');
         super.log(info, callback);
     }
 }
+
+function getColor(level) {
+    switch (level) {
+        case 'debug':
+            return '\x1b[36m';
+        case 'info':
+            return '\x1b[32m';
+        case 'warn':
+            return '\x1b[33m';
+        case 'error':
+            return '\x1b[31m';
+    }
+}
+
+const consoleFormatter = format((info) => {
+    info[MESSAGE] = `[${info.timestamp.substr(TIMESTAMP_START, TIMESTAMP_LENGTH)}] ${getColor(info.level)}${info.level}\x1b[0m: ${info.message}`;
+    return info;
+});
 
 function dDebug(msg) {
     console.log(`\x1b[36mD>\x1b[0m ${msg}`);
@@ -58,21 +79,21 @@ if (process.env.TEST_RUN === 'true') {
         error: dError
     };
 } else {
-    apiLogger = winston.createLogger({
+    apiLogger = createLogger({
         level: 'debug',
-        format: winston.format.combine(winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), winston.format.json()),
+        format: format.combine(format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), format.json()),
         transports: [
-            new winston.transports.DailyRotateFile({ filename: 'logs/api-error-%DATE%.log', level: 'error', maxFiles: '14d' }),
-            new winston.transports.DailyRotateFile({ filename: 'logs/api-combined-%DATE%.log', level: 'info', maxFiles: '14d' }),
-            new ColorConsole({ format: winston.format.simple() })
+            new transports.DailyRotateFile({ filename: 'logs/api-error-%DATE%.log', level: 'error', maxFiles: '14d' }),
+            new transports.DailyRotateFile({ filename: 'logs/api-combined-%DATE%.log', level: 'info', maxFiles: '14d' }),
+            new ColorConsole({ format: consoleFormatter() })
         ]
     });
 
-    clientLogger = winston.createLogger({
-        format: winston.format.combine(winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), winston.format.json()),
+    clientLogger = createLogger({
+        format: format.combine(format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), format.json()),
         transports: [
-            new winston.transports.DailyRotateFile({ filename: 'logs/client-error-%DATE%.log', level: 'error', maxFiles: '14d' }),
-            new winston.transports.DailyRotateFile({ filename: 'logs/client-combined-%DATE%.log', level: 'info', maxFiles: '14d' })
+            new transports.DailyRotateFile({ filename: 'logs/client-error-%DATE%.log', level: 'error', maxFiles: '14d' }),
+            new transports.DailyRotateFile({ filename: 'logs/client-combined-%DATE%.log', level: 'info', maxFiles: '14d' })
         ]
     });
 }
