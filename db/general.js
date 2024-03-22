@@ -2,11 +2,11 @@
                    GENERAL DB MODULE                  *
  *                                                    *
  * This module uses the core db module to expose APIs *
- * for the general unauthenticated tasks.             *
+ * for general unauthenticated tasks.                 *
  *                                                    *
  * This module exports the following functions:       *
  *   getAllIds, getAllLeaderData, getOpenQueues,      *
- *   getBadges                                        *
+ *   getBadges, getStats                              *
  ******************************************************/
 import config from '../config/config.js';
 import { fetch, tables } from './core.js';
@@ -108,4 +108,21 @@ export async function getBadges(id, callback) {
     }
 
     callback(resultCode.success, retval);
+}
+
+export async function getStats(callback) {
+    const result = await fetch(`SELECT l.leader_name, c.display_name, m.status, m.timestamp FROM ${tables.matches} m INNER JOIN ${tables.challengers} c ON c.id = m.challenger_id INNER JOIN ${tables.leaders} l ON l.id = m.leader_id`, []);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    callback(resultCode.success, result.rows.map(row => {
+        return {
+            leaderName: row.leader_name,
+            challengerName: row.display_name,
+            status: row.status,
+            timestamp: row.timestamp
+        }
+    }));
 }

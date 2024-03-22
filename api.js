@@ -21,7 +21,7 @@ import logger from './util/logger.js';
 import sanitize from 'sanitize-html';
 import { challengerErrors, leaderErrors } from './util/errors.js';
 import { getMetrics, trackRequest, trackResponse } from './util/metrics.js';
-import { httpStatus, platformType, pplEvent, requestType, resultCode } from './util/constants.js';
+import { httpStatus, matchStatus, platformType, pplEvent, requestType, resultCode } from './util/constants.js';
 import { notifyRefreshBingo, notifyRefreshData } from './ws-server.js';
 
 const api = express();
@@ -984,6 +984,63 @@ api.get('/logview', (req, res) => {
 api.get('/logview/:daysago', (req, res) => {
     const daysAgo = Number(req.params.daysago);
     generateLogviewResponse(res, daysAgo || 0);
+});
+
+api.get('/statsview', (req, res) => {
+    logger.api.debug('Rendering stats page');
+    db.getStats((error, result) => {
+        if (error) {
+            res.render('nostats', {
+                errorCode: error
+            });
+            return;
+        }
+
+        const data = {
+            matches: {
+                inQueue: result.filter(match => match.status === matchStatus.inQueue).length,
+                onHold: result.filter(match => match.status === matchStatus.onHold).length,
+                loss: result.filter(match => match.status === matchStatus.loss).length,
+                win: result.filter(match => match.status === matchStatus.win).length,
+                ash: result.filter(match => match.status === matchStatus.ash).length,
+                gary: result.filter(match => match.status === matchStatus.gary).length
+            },
+            challengers: [],
+            leaderBadges: [],
+            leaderMatches: []
+        };
+
+        const challengers = [...new Set(result.map(result => result.challengerName))];
+        const leaders = [...new Set(result.map(result => result.leaderName))];
+
+        for (const challengerName of challengers) {
+            const badges = result.filter(match => match.challengerName === challengerName && (match.status === matchStatus.win || match.Status === matchStatus.ash)).length;
+            if (badges > 0) {
+                data.challengers.push({
+                    name: challengerName,
+                    badges: badges
+                });
+            }
+        }
+
+        for (const leaderName of leaders) {
+            data.leaderBadges.push({
+                name: leaderName,
+                awarded: result.filter(match => match.leaderName === leaderName && (match.status === matchStatus.win || match.Status === matchStatus.ash)).length
+            });
+
+            data.leaderMatches.push({
+                name: leaderName,
+                matches: result.filter(match => match.leaderName === leaderName && !(match.status === matchStatus.inQueue || match.Status === matchStatus.onHold)).length
+            });
+        }
+
+        data.challengers.sort((a, b) => b.badges - a.badges);
+        data.leaderBadges.sort((a, b) => b.awarded - a.awarded);
+        data.leaderMatches.sort((a, b) => b.matches - a.matches);
+
+        res.render('stats', data);
+    });
 });
 
 api.post('/api/v2/loginfo', (req, res) => {
