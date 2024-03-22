@@ -1026,12 +1026,12 @@ api.get('/statsview', (req, res) => {
         for (const leaderName of leaders) {
             data.leaderBadges.push({
                 name: leaderName,
-                awarded: result.filter(match => match.leaderName === leaderName && (match.status === matchStatus.win || match.Status === matchStatus.ash)).length
+                awarded: result.filter(match => match.leaderName === leaderName && (match.status === matchStatus.win || match.status === matchStatus.ash)).length
             });
 
             data.leaderMatches.push({
                 name: leaderName,
-                matches: result.filter(match => match.leaderName === leaderName && !(match.status === matchStatus.inQueue || match.Status === matchStatus.onHold)).length
+                matches: result.filter(match => match.leaderName === leaderName && !(match.status === matchStatus.inQueue || match.status === matchStatus.onHold)).length
             });
         }
 
