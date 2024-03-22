@@ -1,0 +1,25 @@
+body {
+    font-family: Segoe UI;
+}
+
+div.header {
+    font-size: 24px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+div.container {
+    margin-left: 100px;
+    margin-right: 100px;
+    margin-bottom: 30px;
+}
+
+div.inner {
+    display: inline-block;
+    width: 33%;
+    vertical-align: top;
+}
+
+div.subheader {
+    font-weight: bold;
+}

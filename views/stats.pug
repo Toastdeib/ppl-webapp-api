@@ -1,0 +1,30 @@
+html
+    head
+        title Stats Viewer
+        style
+            include stats.css
+    body
+        div.header= 'Battle Statistics'
+        div.container
+            div.inner
+                div= 'In queue: ' + matches.inQueue
+                div= 'On hold: ' + matches.onHold
+            div.inner
+                div= 'Loss: ' + matches.loss
+                div= 'Win: ' + matches.win
+            div.inner
+                div= 'Ash: ' + matches.ash
+                div= 'Gary: ' + matches.gary
+        div.container
+            div.inner
+                div.subheader= 'Active challengers: ' + challengers.length
+                each challenger in challengers
+                    div= challenger.name + ': ' + challenger.badges
+            div.inner
+                div.subheader= 'Badges awarded: ' + leaderBadges.length
+                each leader in leaderBadges
+                    div= leader.name + ': ' + leader.awarded
+            div.inner
+                div.subheader= 'Matches recorded: ' + leaderMatches.length
+                each leader in leaderMatches
+                    div= leader.name + ': ' + leader.matches
