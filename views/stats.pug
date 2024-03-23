@@ -22,10 +22,10 @@ html
                 each challenger in challengers
                     div(class=challenger.classes)= challenger.name + ': ' + challenger.badges
             div.inner
-                div.subheader= 'Badges awarded: ' + leaderBadges.length
+                div.subheader= 'Badges awarded: ' + (matches.win + matches.ash)
                 each leader in leaderBadges
                     div(class=leader.classes)= leader.name + ': ' + leader.awarded
             div.inner
-                div.subheader= 'Matches recorded: ' + leaderMatches.length
+                div.subheader= 'Matches recorded: ' + (matches.loss + matches.win + matches.ash + matches.gary)
                 each leader in leaderMatches
                     div(class=leader.classes)= leader.name + ': ' + leader.matches
