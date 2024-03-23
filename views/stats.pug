@@ -18,7 +18,7 @@ html
         div.container
             div.inner
                 div.subheader= 'Active challengers: ' + challengers.length
-                div.subheader= 'Elite-eligible challengers: ' + challengers.filter(challenger => challenger.badges >= 8).length
+                div.subheader= 'Elite-eligible challengers: ' + challengers.filter(challenger => challenger.eliteEligible).length
                 each challenger in challengers
                     div(class=challenger.classes)= challenger.name + ': ' + challenger.badges
             div.inner

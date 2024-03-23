@@ -123,6 +123,6 @@ export async function getStats(callback) {
             challengerName: row.display_name,
             status: row.status,
             difficulty: row.battle_difficulty
-        }
+        };
     }));
 }

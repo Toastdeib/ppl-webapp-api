@@ -1024,6 +1024,7 @@ api.get('/statsview', (req, res) => {
                 data.challengers.push({
                     name: challengerName,
                     badges: badges.length,
+                    eliteEligible: config.requiredBadgesForElites > 0 && badges.length >= config.requiredBadgesForElites,
                     classes: classes
                 });
             }
