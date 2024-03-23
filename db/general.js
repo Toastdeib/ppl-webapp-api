@@ -111,7 +111,7 @@ export async function getBadges(id, callback) {
 }
 
 export async function getStats(callback) {
-    const result = await fetch(`SELECT l.leader_name, c.display_name, m.status, m.timestamp FROM ${tables.matches} m INNER JOIN ${tables.challengers} c ON c.id = m.challenger_id INNER JOIN ${tables.leaders} l ON l.id = m.leader_id`, []);
+    const result = await fetch(`SELECT l.leader_name, c.display_name, m.status, m.battle_difficulty FROM ${tables.matches} m INNER JOIN ${tables.challengers} c ON c.id = m.challenger_id INNER JOIN ${tables.leaders} l ON l.id = m.leader_id`, []);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -122,7 +122,7 @@ export async function getStats(callback) {
             leaderName: row.leader_name,
             challengerName: row.display_name,
             status: row.status,
-            timestamp: row.timestamp
+            difficulty: row.battle_difficulty
         }
     }));
 }

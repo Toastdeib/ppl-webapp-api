@@ -22,4 +22,17 @@ div.inner {
 
 div.subheader {
     font-weight: bold;
+    margin-bottom:8px;
+}
+
+.hof {
+    color: #D91E1E;
+}
+
+.elite {
+    font-style: italic;
+}
+
+.champion {
+    font-weight: 600;
 }

@@ -21,7 +21,7 @@ import logger from './util/logger.js';
 import sanitize from 'sanitize-html';
 import { challengerErrors, leaderErrors } from './util/errors.js';
 import { getMetrics, trackRequest, trackResponse } from './util/metrics.js';
-import { httpStatus, matchStatus, platformType, pplEvent, requestType, resultCode } from './util/constants.js';
+import { httpStatus, leaderType, matchStatus, platformType, pplEvent, requestType, resultCode } from './util/constants.js';
 import { notifyRefreshBingo, notifyRefreshData } from './ws-server.js';
 
 const api = express();
@@ -1014,24 +1014,41 @@ api.get('/statsview', (req, res) => {
         const leaders = [...new Set(result.map(result => result.leaderName))];
 
         for (const challengerName of challengers) {
-            const badges = result.filter(match => match.challengerName === challengerName && (match.status === matchStatus.win || match.Status === matchStatus.ash)).length;
-            if (badges > 0) {
+            const badges = result.filter(match => match.challengerName === challengerName && (match.status === matchStatus.win || match.Status === matchStatus.ash));
+            if (badges.length > 0) {
+                const classes = [];
+                if (badges.find(match => match.difficulty === leaderType.champion)) {
+                    classes.push('hof');
+                }
+
                 data.challengers.push({
                     name: challengerName,
-                    badges: badges
+                    badges: badges.length,
+                    classes: classes
                 });
             }
         }
 
         for (const leaderName of leaders) {
+            const classes = [];
+            if (result.find(match => match.leaderName === leaderName && match.difficulty === leaderType.elite)) {
+                classes.push('elite');
+            }
+
+            if (result.find(match => match.leaderName === leaderName && match.difficulty === leaderType.champion)) {
+                classes.push('champion');
+            }
+
             data.leaderBadges.push({
                 name: leaderName,
-                awarded: result.filter(match => match.leaderName === leaderName && (match.status === matchStatus.win || match.status === matchStatus.ash)).length
+                awarded: result.filter(match => match.leaderName === leaderName && (match.status === matchStatus.win || match.status === matchStatus.ash)).length,
+                classes: classes
             });
 
             data.leaderMatches.push({
                 name: leaderName,
-                matches: result.filter(match => match.leaderName === leaderName && !(match.status === matchStatus.inQueue || match.status === matchStatus.onHold)).length
+                matches: result.filter(match => match.leaderName === leaderName && !(match.status === matchStatus.inQueue || match.status === matchStatus.onHold)).length,
+                classes: classes
             });
         }
 

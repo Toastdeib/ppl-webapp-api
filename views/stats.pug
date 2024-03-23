@@ -18,13 +18,14 @@ html
         div.container
             div.inner
                 div.subheader= 'Active challengers: ' + challengers.length
+                div.subheader= 'Elite-eligible challengers: ' + challengers.filter(challenger => challenger.badges >= 8).length
                 each challenger in challengers
-                    div= challenger.name + ': ' + challenger.badges
+                    div(class=challenger.classes)= challenger.name + ': ' + challenger.badges
             div.inner
                 div.subheader= 'Badges awarded: ' + leaderBadges.length
                 each leader in leaderBadges
-                    div= leader.name + ': ' + leader.awarded
+                    div(class=leader.classes)= leader.name + ': ' + leader.awarded
             div.inner
                 div.subheader= 'Matches recorded: ' + leaderMatches.length
                 each leader in leaderMatches
-                    div= leader.name + ': ' + leader.matches
+                    div(class=leader.classes)= leader.name + ': ' + leader.matches
