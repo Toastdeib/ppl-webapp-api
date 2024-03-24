@@ -1014,7 +1014,7 @@ api.get('/statsview', (req, res) => {
         const leaders = [...new Set(result.map(result => result.leaderName))];
 
         for (const challengerName of challengers) {
-            const badges = result.filter(match => match.challengerName === challengerName && (match.status === matchStatus.win || match.Status === matchStatus.ash));
+            const badges = result.filter(match => match.challengerName === challengerName && (match.status === matchStatus.win || match.status === matchStatus.ash));
             if (badges.length > 0) {
                 const classes = [];
                 if (badges.find(match => match.difficulty === leaderType.champion)) {
