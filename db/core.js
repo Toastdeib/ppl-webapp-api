@@ -220,7 +220,7 @@ export function fetch(query, params) {
     return new Promise((resolve) => {
         sqlDb.query(query, params, (error, result) => {
             if (error) {
-                logger.api.error('Database read failed');
+                logger.api.error(`Database read failed; query=${query}`);
                 logger.api.error(error);
                 resolve({ resultCode: resultCode.dbFailure, rows: [], sqlError: error });
             } else {
@@ -234,7 +234,7 @@ export function save(query, params) {
     return new Promise((resolve) => {
         sqlDb.query(query, params, (error, result) => {
             if (error) {
-                logger.api.error('Database write failed');
+                logger.api.error(`Database write failed; query=${query}`);
                 logger.api.error(error);
                 resolve({ resultCode: resultCode.dbFailure, rowCount: 0, sqlError: error });
             } else {
