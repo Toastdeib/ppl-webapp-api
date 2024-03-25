@@ -28,7 +28,11 @@ const api = express();
 api.use(cors({ origin: config.corsOrigin }));
 api.use(bodyParser.json());
 api.set('view engine', 'pug');
-api.use('/static', express.static('static'));
+api.use('/static', express.static('static', {
+    setHeaders: (res) => {
+        res.set('Cache-Control', 'public, max-age=604800');
+    }
+}));
 
 // eslint-disable-next-line no-magic-numbers
 const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
@@ -929,6 +933,7 @@ api.get('/api/v2/metrics', (req, res) => {
 api.get('/api/v2/appsettings', (req, res) => {
     const correlationId = trackRequest('GET /api/v2/appsettings');
     logger.api.info('Returning app settings');
+    res.set('Cache-Control', 'public, max-age=600');
     sendJsonResponse(httpStatus.ok, {
         showTrainerCard: new Date() > new Date(config.trainerCardShowDate),
         eventIsOver: eventIsOver(),
