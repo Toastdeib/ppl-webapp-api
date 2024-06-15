@@ -5,8 +5,9 @@
  * for the leader-related tasks.                      *
  *                                                    *
  * This module exports the following functions:       *
- *   getLeaderInfo, updateQueueStatus, reportResult,  *
- *   getAllChallengers, getLeaderMetrics              *
+ *   getLeaderInfo, updateQueueStatus, setBattleCode, *
+ *   reportResult, getAllChallengers,                 *
+ *   getLeaderMetrics                                 *
  ******************************************************/
 import config from '../config/config.js';
 import { sendPush } from '../push/push.js';
@@ -17,7 +18,7 @@ import { clearLinkCode, fetch, getLinkCode, getPushTokens, save, shouldIncludeFe
  * Public APIs *
  ***************/
 export async function getLeaderInfo(id, callback) {
-    let result = await fetch(`SELECT leader_name, leader_type, battle_format, badge_name, queue_open, duo_mode, twitch_handle FROM ${tables.leaders} WHERE id = ?`, [id]);
+    let result = await fetch(`SELECT leader_name, leader_type, battle_format, badge_name, queue_open, duo_mode, battle_code, twitch_handle FROM ${tables.leaders} WHERE id = ?`, [id]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -35,6 +36,7 @@ export async function getLeaderInfo(id, callback) {
         badgeName: result.rows[0].badge_name,
         queueOpen: !!result.rows[0].queue_open,
         duoMode: !!result.rows[0].duo_mode,
+        battleCode: result.rows[0].battle_code,
         twitchEnabled: !!result.rows[0].twitch_handle,
         winCount: 0,
         lossCount: 0,
@@ -43,7 +45,7 @@ export async function getLeaderInfo(id, callback) {
         onHold: []
     };
 
-    result = await fetch(`SELECT m.challenger_id, c.display_name, m.status, m.battle_difficulty, m.battle_format FROM ${tables.matches} m INNER JOIN ${tables.challengers} c ON c.id = m.challenger_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.status, m.timestamp ASC`, [id, matchStatus.inQueue, matchStatus.onHold]);
+    result = await fetch(`SELECT m.challenger_id, c.display_name, m.status, m.battle_difficulty, m.battle_format, l.battle_code FROM ${tables.matches} m INNER JOIN ${tables.challengers} c ON c.id = m.challenger_id INNER JOIN ${tables.leaders} l ON l.id = m.leader_id WHERE m.leader_id = ? AND m.status IN (?, ?) ORDER BY m.status, m.timestamp ASC`, [id, matchStatus.inQueue, matchStatus.onHold]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -54,15 +56,15 @@ export async function getLeaderInfo(id, callback) {
         let linkCode;
         if (!retval.duoMode) {
             // The easy path; 1:1 challenger to code mapping
-            linkCode = getLinkCode(id, [row.challenger_id]);
+            linkCode = row.battle_code || getLinkCode(id, [row.challenger_id]);
         } else {
             // The hard path; 2:1 challenger to code mapping, so check the parity of i and if we have enough people for a code
             if (i % 2 === 1) {
                 // Second person in a pair will always have a partner
-                linkCode = getLinkCode(id, [result.rows[i - 1].challenger_id, row.challenger_id]);
+                linkCode = row.battle_code || getLinkCode(id, [result.rows[i - 1].challenger_id, row.challenger_id]);
             } else if (i < result.rows.length - 1) {
                 // First person in a pair has a partner if we aren't at the end of the list
-                linkCode = getLinkCode(id, [row.challenger_id, result.rows[i + 1].challenger_id]);
+                linkCode = row.battle_code || getLinkCode(id, [row.challenger_id, result.rows[i + 1].challenger_id]);
             } else {
                 // First person in a pair at the end of the list has no partner yet
                 linkCode = 'No doubles partner';
@@ -154,6 +156,21 @@ export async function updateQueueStatus(id, open, duoMode, callback) {
     result = await save(`UPDATE ${tables.leaders} SET queue_open = ?, duo_mode = ? WHERE id = ?`, [open ? queueStatus.open : queueStatus.closed, duoMode ? queueStatus.open : queueStatus.closed, id]);
     if (result.resultCode) {
         callback(result.resultCode);
+        return;
+    }
+
+    callback(resultCode.success, {});
+}
+
+export async function setBattleCode(id, battleCode, callback) {
+    const result = await save(`UPDATE ${tables.leaders} SET battle_code = ? WHERE id = ?`, [battleCode || null, id]);
+    if (result.resultCode) {
+        callback(result.resultCode);
+        return;
+    }
+
+    if (result.rowsCount === 0) {
+        callback(resultCode.notFound);
         return;
     }
 

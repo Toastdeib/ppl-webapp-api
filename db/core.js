@@ -76,6 +76,7 @@ let leaderIds, eliteIds;
  * - leader_tagline: VARCHAR(150)
  * - queue_open: TINYINT(1)
  * - duo_mode: TINYINT(1)
+ * - battle_code: VARCHAR(9)
  * - queue_open_text: VARCHAR(150)
  * - queue_close_text: VARCHAR(150)
  * - twitch_handle: VARCHAR(30)

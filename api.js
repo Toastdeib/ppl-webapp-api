@@ -40,6 +40,7 @@ const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
 const SESSION_EXPIRATION_MILLIS = 4 * ONE_DAY_MILLIS; // 4 days in ms
 const PRUNE_INTERVAL_MILLIS = ONE_DAY_MILLIS;
 const SESSION_TOKEN_HEX_LENGTH = 16;
+const BATTLE_CODE_SECTION_LENGTH = 4;
 const CACHE_FILE = 'cache.json';
 let sessionCache;
 let idCache;
@@ -678,6 +679,32 @@ api.use('/api/v2/leader/:id', (req, res, next) => {
 api.get('/api/v2/leader/:id', (req, res) => {
     const correlationId = trackRequest('GET /api/v2/leader/:id');
     getLeaderInfo(req, res, false, correlationId);
+});
+
+api.put('/api/v2/leader/:id', (req, res) => {
+    const correlationId = trackRequest('PUT /api/v2/leader/:id');
+    let code = req.body.battleCode;
+    if (code) {
+        if (!/^[0-9]{8}$/.test(code)) {
+            // Not an 8-digit number, reject it
+            sendJsonResponse(httpStatus.badRequest, { error: 'The \'battleCode\' property must be an 8-digit number with no spaces or other characters.' }, res, correlationId);
+            return;
+        }
+
+        // Insert a space between the first and last four digits before saving
+        code = `${code.substr(0, BATTLE_CODE_SECTION_LENGTH)} ${code.substr(BATTLE_CODE_SECTION_LENGTH)}`;
+        logger.api.info(`Setting battle code for loginId=${req.params.id}, leaderId=${req.leaderId} to ${code}`);
+    } else {
+        logger.api.info(`Clearing battle code for loginId=${req.params.id}, leaderId=${req.leaderId}`);
+    }
+
+    db.leader.setBattleCode(req.leaderId, code, (error) => {
+        if (error) {
+            handleDbError(leaderErrors, error, res, correlationId);
+        } else {
+            getLeaderInfo(req, res, true, correlationId);
+        }
+    });
 });
 
 api.post('/api/v2/leader/:id/openqueue', (req, res) => {

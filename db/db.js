@@ -11,7 +11,7 @@ import { dbReady, debugSave, tables } from './core.js';
 import { dequeue, enqueue, getIdsInQueue, hold, unhold } from './queue.js';
 import { disable, enable } from './push.js';
 import { generateHex, login, register } from './auth.js';
-import { getAllChallengers, getLeaderInfo, getLeaderMetrics, reportResult, updateQueueStatus } from './leader.js';
+import { getAllChallengers, getLeaderInfo, getLeaderMetrics, reportResult, setBattleCode, updateQueueStatus } from './leader.js';
 import { getAllIds, getAllLeaderData, getBadges, getOpenQueues, getStats } from './general.js';
 import { getBingoBoard, getChallengerInfo, setDisplayName } from './challenger.js';
 
@@ -24,6 +24,7 @@ const db = {
     leader: {
         getInfo: getLeaderInfo,
         updateQueueStatus: updateQueueStatus,
+        setBattleCode: setBattleCode,
         reportResult: reportResult,
         getAllChallengers: getAllChallengers,
         metrics: getLeaderMetrics

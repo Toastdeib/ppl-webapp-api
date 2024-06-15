@@ -38,7 +38,7 @@ export async function getChallengerInfo(id, callback) {
     };
 
     // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    result = await fetch(`SELECT m.leader_id, l.leader_name, m.challenger_id, m.battle_difficulty, m.battle_format, l.duo_mode FROM ${tables.matches} m INNER JOIN ${tables.leaders} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${tables.matches} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) ORDER BY m.leader_id, m.timestamp ASC`, [matchStatus.inQueue, id, matchStatus.inQueue]);
+    result = await fetch(`SELECT m.leader_id, l.leader_name, m.challenger_id, m.battle_difficulty, m.battle_format, l.duo_mode, l.battle_code FROM ${tables.matches} m INNER JOIN ${tables.leaders} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${tables.matches} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) ORDER BY m.leader_id, m.timestamp ASC`, [matchStatus.inQueue, id, matchStatus.inQueue]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;
@@ -52,7 +52,7 @@ export async function getChallengerInfo(id, callback) {
                 leaderId: row.leader_id,
                 leaderName: row.leader_name,
                 position: 0, // Start this at 0, increment if we have additional rows for the leader ID
-                linkCode: row.duo_mode ? 'No doubles partner' : getLinkCode(row.leader_id, [id]),
+                linkCode: row.duo_mode ? 'No doubles partner' : row.battle_code || getLinkCode(row.leader_id, [id]),
                 difficulty: row.battle_difficulty, // Default to the new row, clobber it if we get another one
                 format: row.battle_format, // Same logic here as with difficulty
                 positionFound: row.challenger_id === id // Temporary field that gets stripped off before returning the response
@@ -68,10 +68,10 @@ export async function getChallengerInfo(id, callback) {
                     // Only overwrite the link code if the leader is in duo mode
                     if (match.position % 2 === 1) {
                         // Second person in a pair will always have a partner
-                        match.linkCode = getLinkCode(row.leader_id, [result.rows[i - 1].challenger_id, id]);
+                        match.linkCode = row.battle_code || getLinkCode(row.leader_id, [result.rows[i - 1].challenger_id, id]);
                     } else if (i < result.rows.length - 1 && result.rows[i + 1].leader_id === row.leader_id) {
                         // First person in a pair has a partner if we aren't at the end of the list for the leader
-                        match.linkCode = getLinkCode(row.leader_id, [id, result.rows[i + 1].challenger_id]);
+                        match.linkCode = row.battle_code || getLinkCode(row.leader_id, [id, result.rows[i + 1].challenger_id]);
                     }
                 }
                 match.difficulty = row.battle_difficulty;
