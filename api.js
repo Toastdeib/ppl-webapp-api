@@ -683,11 +683,11 @@ api.get('/api/v2/leader/:id', (req, res) => {
 
 api.put('/api/v2/leader/:id', (req, res) => {
     const correlationId = trackRequest('PUT /api/v2/leader/:id');
-    let code = req.body.battleCode;
+    let code = req.body.linkCode;
     if (code) {
         if (!/^[0-9]{8}$/.test(code)) {
             // Not an 8-digit number, reject it
-            sendJsonResponse(httpStatus.badRequest, { error: 'The \'battleCode\' property must be an 8-digit number with no spaces or other characters.' }, res, correlationId);
+            sendJsonResponse(httpStatus.badRequest, { error: 'The \'linkCode\' property must be an 8-digit number with no spaces or other characters.' }, res, correlationId);
             return;
         }
 
@@ -698,7 +698,7 @@ api.put('/api/v2/leader/:id', (req, res) => {
         logger.api.info(`Clearing battle code for loginId=${req.params.id}, leaderId=${req.leaderId}`);
     }
 
-    db.leader.setBattleCode(req.leaderId, code, (error) => {
+    db.leader.setLinkCode(req.leaderId, code, (error) => {
         if (error) {
             handleDbError(leaderErrors, error, res, correlationId);
         } else {

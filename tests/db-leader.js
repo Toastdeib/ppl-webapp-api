@@ -70,6 +70,7 @@ const queueStats = {
         length: 3
     }
 };
+const customLinkCode = '1234 5678';
 
 /******************
  * TEST FUNCTIONS *
@@ -82,7 +83,7 @@ function verifyBaseline() {
             fail(`unable to verify baseline, aborting test run, error=${error}`);
             process.exit();
         } else {
-            // Data to verify: leaderName, leaderType, badgeName, winCount, lossCount, badgesAwarded, queue (length, IDs), hold (length, IDs)
+            // Data to verify: leaderName, leaderType, badgeName, winCount, lossCount, badgesAwarded, queue (length, IDs, that link codes aren't static), hold (length, IDs)
             if (result.leaderName !== baseline.leaderName) {
                 baselineValid = false;
             }
@@ -128,6 +129,10 @@ function verifyBaseline() {
                 if (queueKeys.indexOf(queue.challengerId) === -1 || baseline.queue[queue.challengerId] !== queue.position) {
                     baselineValid = false;
                 }
+            }
+
+            if (result.queue.every(match => match.linkCode === customLinkCode)) {
+                baselineValid = false;
             }
 
             if (result.onHold.length !== baseline.onHold.length) {
@@ -638,6 +643,62 @@ function addWithEnoughBadges() {
             pass('successfully added a new challenger to the queue');
         }
 
+        next(setCustomLinkCode);
+    });
+}
+
+function setCustomLinkCode() {
+    name(34, 'Set a custom link code');
+    db.leader.setLinkCode(leaderId, customLinkCode, (error) => {
+        if (error) {
+            fail(`error=${error}`);
+        } else {
+            pass('successfully set a custom link code');
+        }
+
+        next(verifyLinkCodes1);
+    });
+}
+
+function verifyLinkCodes1() {
+    name(35, 'Verify link codes in the queue (afer setting custom)');
+    db.leader.getInfo(leaderId, (error, result) => {
+        if (error) {
+            fail(`error=${error}`);
+        } else if (!result.queue.every(match => match.linkCode === customLinkCode)) {
+            fail('not all battles in queue had the custom link code set');
+        } else {
+            pass('all battles in queue had the custom link code set');
+        }
+
+        next(clearCustomLinkCode);
+    });
+}
+
+function clearCustomLinkCode() {
+    name(36, 'Clear the custom link code');
+    db.leader.setLinkCode(leaderId, null, (error) => {
+        if (error) {
+            fail(`error=${error}`);
+        } else {
+            pass('successfully cleared the custom link code');
+        }
+
+        next(verifyLinkCodes2);
+    });
+}
+
+function verifyLinkCodes2() {
+    name(37, 'Verify link codes in the queue (afer clearing custom)');
+    db.leader.getInfo(leaderId, (error, result) => {
+        if (error) {
+            fail(`error=${error}`);
+        } else if (result.queue.every(match => match.linkCode === customLinkCode)) {
+            fail('all battles in queue still had the custom link code set');
+        } else {
+            pass('battles in queue had varied link codes');
+        }
+
         next(cleanup);
     });
 }
@@ -668,6 +729,6 @@ function cleanup() {
  * TEST EXECUTION *
  ******************/
 db.dbReady.then(() => {
-    start(33);
+    start(37);
     verifyBaseline();
 });

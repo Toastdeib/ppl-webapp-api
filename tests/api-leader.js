@@ -37,6 +37,13 @@ const allChallengers = {
     id: '77959f8b9e892345'
 };
 
+const customLinkCode = {
+    validSet: '12345678',
+    invalidSetLetters: '1a2b3c4d',
+    invalidSetFormat: '1234 5678',
+    get: '1234 5678'
+};
+
 /******************
  * TEST FUNCTIONS *
  ******************/
@@ -110,12 +117,80 @@ function enqueueChallenger1() {
             }
         }
 
+        next(setInvalidCustomLinkCode1);
+    });
+}
+
+function setInvalidCustomLinkCode1() {
+    name(5, 'Attempt to set invalid custom link code (letters)');
+    sendRequest(basePath, 'PUT', { linkCode: customLinkCode.invalidSetLetters }, token, (result) => {
+        if (result.status !== httpStatus.badRequest) {
+            fail(`received HTTP status code ${result.status}`);
+        } else {
+            pass('received bad request HTTP status code');
+        }
+
+        next(setInvalidCustomLinkCode2);
+    });
+}
+
+function setInvalidCustomLinkCode2() {
+    name(6, 'Attempt to set invalid custom link code (format)');
+    sendRequest(basePath, 'PUT', { linkCode: customLinkCode.invalidSetFormat }, token, (result) => {
+        if (result.status !== httpStatus.badRequest) {
+            fail(`received HTTP status code ${result.status}`);
+        } else {
+            pass('received bad request HTTP status code');
+        }
+
+        next(setValidCustomLinkCode);
+    });
+}
+
+function setValidCustomLinkCode() {
+    name(7, 'Attempt to set valid custom link code');
+    sendRequest(basePath, 'PUT', { linkCode: customLinkCode.validSet }, token, (result) => {
+        if (result.status !== httpStatus.ok) {
+            fail(`received HTTP status code ${result.status}`);
+        } else {
+            const data = JSON.parse(result.body);
+            if (data.linkCode !== customLinkCode.get) {
+                fail(`API returned incorrect link code ${data.linkCode}`);
+            } else if (!data.queue.every(match => match.linkCode === customLinkCode.get)) {
+                fail('not all battles in queue had the custom link code set');
+            } else {
+                pass('successfully set a custom link code');
+            }
+        }
+
+        next(clearCustomLinkCode);
+    });
+}
+
+function clearCustomLinkCode() {
+    name(8, 'Attempt to clear custom link code');
+    sendRequest(basePath, 'PUT', {}, token, (result) => {
+        if (result.status !== httpStatus.ok) {
+            fail(`received HTTP status code ${result.status}`);
+        } else {
+            const data = JSON.parse(result.body);
+            if (data.linkCode) {
+                fail(`API returned unexpected link code ${data.linkCode}`);
+            } else if (data.queue.every(match => match.linkCode === customLinkCode.get)) {
+                // NOTE: There's a 1/10^8 chance that this fails because the randomly generated code
+                // winds up as 1234 5678. But I'm willing to play those odds.
+                fail('all battles in queue still had the custom link code set');
+            } else {
+                pass('successfully cleared the custom link code');
+            }
+        }
+
         next(holdChallenger);
     });
 }
 
 function holdChallenger() {
-    name(5, 'Place the challenger on hold');
+    name(9, 'Place the challenger on hold');
     sendRequest(`${basePath}/hold/${challengerId}`, 'POST', {}, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
@@ -134,7 +209,7 @@ function holdChallenger() {
 }
 
 function unholdChallenger() {
-    name(6, 'Return the challenger from being on hold');
+    name(10, 'Return the challenger from being on hold');
     sendRequest(`${basePath}/unhold/${challengerId}`, 'POST', { placeAtFront: false }, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
@@ -153,7 +228,7 @@ function unholdChallenger() {
 }
 
 function dequeueChallenger() {
-    name(7, 'Remove the challenger from queue');
+    name(11, 'Remove the challenger from queue');
     sendRequest(`${basePath}/dequeue/${challengerId}`, 'DELETE', {}, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
@@ -171,7 +246,7 @@ function dequeueChallenger() {
 }
 
 function enqueueChallenger2() {
-    name(8, 'Add a challenger to queue (again)');
+    name(12, 'Add a challenger to queue (again)');
     sendRequest(`${basePath}/enqueue/${challengerId}`, 'POST', { battleDifficulty: leaderType.intermediate, battleFormat: battleFormat.doubles }, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
@@ -190,7 +265,7 @@ function enqueueChallenger2() {
 }
 
 function reportResult() {
-    name(9, 'Report a match result');
+    name(13, 'Report a match result');
     sendRequest(`${basePath}/report/${challengerId}`, 'POST', { challengerWin: false, badgeAwarded: false }, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
@@ -210,7 +285,7 @@ function reportResult() {
 }
 
 function closeQueue() {
-    name(10, 'Close the queue');
+    name(14, 'Close the queue');
     sendRequest(`${basePath}/closequeue`, 'POST', {}, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
@@ -228,7 +303,7 @@ function closeQueue() {
 }
 
 function getAllChallengers() {
-    name(11, 'Fetch and validate the challenger list');
+    name(15, 'Fetch and validate the challenger list');
     sendRequest(`${basePath}/allchallengers`, 'GET', {}, { ...token, ...pplEvent }, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
@@ -248,7 +323,7 @@ function getAllChallengers() {
 }
 
 function logout() {
-    name(12, 'Log out and end the session');
+    name(16, 'Log out and end the session');
     sendRequest(logoutPath, 'POST', {}, token, (result) => {
         if (result.status !== httpStatus.ok) {
             fail(`received HTTP status code ${result.status}`);
@@ -261,7 +336,7 @@ function logout() {
 }
 
 function getLeaderInfo() {
-    name(13, 'Attempt to fetch leader info after logging out');
+    name(17, 'Attempt to fetch leader info after logging out');
     sendRequest(basePath, 'GET', {}, token, (result) => {
         if (result.status !== httpStatus.unauthorized) {
             fail(`received HTTP status code ${result.status}`);
@@ -281,6 +356,6 @@ function cleanup() {
 }
 
 init(() => {
-    start(13);
+    start(17);
     login();
 });

@@ -5,7 +5,7 @@
  * for the leader-related tasks.                      *
  *                                                    *
  * This module exports the following functions:       *
- *   getLeaderInfo, updateQueueStatus, setBattleCode, *
+ *   getLeaderInfo, updateQueueStatus, setLinkCode,   *
  *   reportResult, getAllChallengers,                 *
  *   getLeaderMetrics                                 *
  ******************************************************/
@@ -36,7 +36,7 @@ export async function getLeaderInfo(id, callback) {
         badgeName: result.rows[0].badge_name,
         queueOpen: !!result.rows[0].queue_open,
         duoMode: !!result.rows[0].duo_mode,
-        battleCode: result.rows[0].battle_code,
+        linkCode: result.rows[0].battle_code,
         twitchEnabled: !!result.rows[0].twitch_handle,
         winCount: 0,
         lossCount: 0,
@@ -162,8 +162,8 @@ export async function updateQueueStatus(id, open, duoMode, callback) {
     callback(resultCode.success, {});
 }
 
-export async function setBattleCode(id, battleCode, callback) {
-    const result = await save(`UPDATE ${tables.leaders} SET battle_code = ? WHERE id = ?`, [battleCode || null, id]);
+export async function setLinkCode(id, linkCode, callback) {
+    const result = await save(`UPDATE ${tables.leaders} SET battle_code = ? WHERE id = ?`, [linkCode || null, id]);
     if (result.resultCode) {
         callback(result.resultCode);
         return;

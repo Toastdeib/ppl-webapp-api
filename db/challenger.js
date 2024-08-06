@@ -12,6 +12,65 @@ import logger from '../util/logger.js';
 import { fetch, generateBingoBoard, getLinkCode, inflateBingoBoard, save, shouldIncludeFeedbackSurvey, tables } from './core.js';
 import { leaderType, matchStatus, resultCode } from '../util/constants.js';
 
+/******************
+ * Util functions *
+ ******************/
+function challengerHasBingo(board) {
+    // Check rows
+    let bingo;
+    for (let i = 0; i < config.bingoBoardWidth; i++) {
+        bingo = true;
+        for (let j = 0; j < config.bingoBoardWidth; j++) {
+            if (!board[i][j]) {
+                bingo = false;
+                break;
+            }
+        }
+
+        if (bingo) {
+            return true;
+        }
+    }
+
+    // Check columns
+    for (let i = 0; i < config.bingoBoardWidth; i++) {
+        bingo = true;
+        for (let j = 0; j < config.bingoBoardWidth; j++) {
+            if (!board[j][i]) {
+                bingo = false;
+                break;
+            }
+        }
+
+        if (bingo) {
+            return true;
+        }
+    }
+
+    // Check diagonals
+    bingo = true;
+    for (let i = 0; i < config.bingoBoardWidth; i++) {
+        if (!board[i][i]) {
+            bingo = false;
+            break;
+        }
+    }
+
+    if (bingo) {
+        return true;
+    }
+
+    bingo = true;
+    for (let i = 0; i < config.bingoBoardWidth; i++) {
+        if (!board[i][(config.bingoBoardWidth - 1) - i]) {
+            bingo = false;
+            break;
+        }
+    }
+
+    return bingo;
+}
+
 /***************
  * Public APIs *
  ***************/
@@ -36,6 +95,8 @@ export async function getChallengerInfo(id, callback) {
         queuesOnHold: [],
         badgesEarned: []
     };
+
+    let flatBoard = row.bingo_board;
 
     // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     result = await fetch(`SELECT m.leader_id, l.leader_name, m.challenger_id, m.battle_difficulty, m.battle_format, l.duo_mode, l.battle_code FROM ${tables.matches} m INNER JOIN ${tables.leaders} l ON l.id = m.leader_id WHERE status = ? AND EXISTS (SELECT 1 FROM ${tables.matches} WHERE leader_id = m.leader_id AND challenger_id = ? AND status = ?) ORDER BY m.leader_id, m.timestamp ASC`, [matchStatus.inQueue, id, matchStatus.inQueue]);
@@ -89,6 +150,7 @@ export async function getChallengerInfo(id, callback) {
     }
 
     let championDefeated = false;
+    const earnedIds = [];
     for (const row of result.rows) {
         if (row.status === matchStatus.onHold) {
             retval.queuesOnHold.push({
@@ -109,6 +171,8 @@ export async function getChallengerInfo(id, callback) {
             if (row.leader_type === leaderType.champion) {
                 championDefeated = true;
             }
+
+            earnedIds.push(row.leader_id);
         }
 
         if (row.status === matchStatus.win || row.status === matchStatus.gary) {
@@ -126,6 +190,23 @@ export async function getChallengerInfo(id, callback) {
     if (shouldIncludeFeedbackSurvey()) {
         retval.feedbackSurveyUrl = config.challengerSurveyUrl;
     }
+
+    // Note - this check is copied verbatim from the getBingoBoard() function because asyncs calling asyncs gets weird.
+    // The code duplication isn't great, but this block should realistically only get hit once per challenger, so it's
+    // not as bad as it could be.
+    if (!flatBoard) {
+        flatBoard = generateBingoBoard();
+        result = await save(`UPDATE ${tables.challengers} SET bingo_board = ? WHERE id = ?`, [flatBoard, id]);
+        if (result.resultCode) {
+            logger.api.error(`Error saving new bingo board for id=${id}`);
+            callback(result.resultCode);
+            return;
+        } else {
+            logger.api.info(`Saved new bingo board for id=${id}`);
+        }
+    }
+
+    retval.hasBingo = challengerHasBingo(inflateBingoBoard(flatBoard, earnedIds));
 
     callback(resultCode.success, retval);
 }
