@@ -25,6 +25,10 @@ const sqlDb = sql.createPool({
     connectionLimit: 5
 });
 
+const EXPECTED_ARG_COUNT = 5;
+const TSV_WIDTH = 6;
+const ID_HEX_SIZE = 6;
+
 function saveAsync(query, params) {
     return new Promise((resolve) => {
         sqlDb.query(query, params, (error, result) => {
@@ -52,7 +56,7 @@ function sanitizeStringValue(value) {
 }
 
 async function populateLeaderData() {
-    if (process.argv.length !== 5) {
+    if (process.argv.length !== EXPECTED_ARG_COUNT) {
         logger.api.error('Invalid invocation; expected three parameters');
         return;
     }
@@ -68,12 +72,12 @@ async function populateLeaderData() {
         logger.api.info(`Importing ${lines.length} leader(s)`);
         for (const line of lines) {
             const parts = line.split('\t');
-            if (parts.length !== 6) {
+            if (parts.length !== TSV_WIDTH) {
                 logger.api.error(`Failed to parse a line: ${line}`);
                 continue;
             }
 
-            const id = generateHex(6);
+            const id = generateHex(ID_HEX_SIZE);
             await saveAsync(`INSERT INTO ppl_webapp_leaders${suffix} (id, leader_name, leader_type, battle_format, badge_name, leader_bio, leader_tagline, queue_open) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [id, sanitizeStringValue(parts[0]), Number(parts[1]), Number(parts[2]), sanitizeStringValue(parts[3]), sanitizeStringValue(parts[4]), sanitizeStringValue(parts[5]), supportsQueueState ? 0 : 1]);
             logger.api.info(`Loaded data for ${sanitizeStringValue(parts[0])}, id=${id}`);
         }

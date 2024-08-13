@@ -25,6 +25,8 @@ const sqlDb = sql.createPool({
     connectionLimit: 5
 });
 
+const BAR_SEGMENTS = 50;
+
 function saveAsync(query, params) {
     return new Promise((resolve) => {
         sqlDb.query(query, params, (error, result) => {
@@ -46,7 +48,7 @@ async function repopulateDb() {
     console.log('0%                                            100%');
 
     const now = new Date();
-    const factor = lines.length / 50;
+    const factor = lines.length / BAR_SEGMENTS;
     let lastWhole = 0;
     let count = 0;
     for (const line of lines) {
