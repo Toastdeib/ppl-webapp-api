@@ -17,11 +17,16 @@ import { leaderType, matchStatus, resultCode } from '../util/constants.js';
  ******************/
 function challengerHasBingo(board) {
     // Check rows
+    const simpleBoard = [];
+    for (let i = 0; i < config.bingoBoardWidth; i++) {
+        simpleBoard.push(board[i].map(cell => Object.values(cell)[0]));
+    }
+
     let bingo;
     for (let i = 0; i < config.bingoBoardWidth; i++) {
         bingo = true;
         for (let j = 0; j < config.bingoBoardWidth; j++) {
-            if (!board[i][j]) {
+            if (!simpleBoard[i][j]) {
                 bingo = false;
                 break;
             }
@@ -36,7 +41,7 @@ function challengerHasBingo(board) {
     for (let i = 0; i < config.bingoBoardWidth; i++) {
         bingo = true;
         for (let j = 0; j < config.bingoBoardWidth; j++) {
-            if (!board[j][i]) {
+            if (!simpleBoard[j][i]) {
                 bingo = false;
                 break;
             }
@@ -50,7 +55,7 @@ function challengerHasBingo(board) {
     // Check diagonals
     bingo = true;
     for (let i = 0; i < config.bingoBoardWidth; i++) {
-        if (!board[i][i]) {
+        if (!simpleBoard[i][i]) {
             bingo = false;
             break;
         }
@@ -62,7 +67,7 @@ function challengerHasBingo(board) {
 
     bingo = true;
     for (let i = 0; i < config.bingoBoardWidth; i++) {
-        if (!board[i][(config.bingoBoardWidth - 1) - i]) {
+        if (!simpleBoard[i][(config.bingoBoardWidth - 1) - i]) {
             bingo = false;
             break;
         }
