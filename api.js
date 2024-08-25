@@ -509,6 +509,7 @@ api.post('/api/v2/logout/:id', (req, res) => {
 api.get('/api/v2/allleaderdata', (req, res) => {
     const correlationId = trackRequest('GET /api/v2/allleaderdata');
     logger.api.info('Fetching all leader data');
+    res.set('Cache-Control', 'public, max-age=604800');
     db.getAllLeaderData((error, result) => {
         if (error) {
             handleDbError(challengerErrors, error, res, correlationId);
@@ -961,7 +962,7 @@ api.get('/api/v2/appsettings', (req, res) => {
     const correlationId = trackRequest('GET /api/v2/appsettings');
     logger.api.info('Returning app settings');
     res.set('Cache-Control', 'public, max-age=600');
-    sendJsonResponse(httpStatus.ok, {
+    const result = {
         showTrainerCard: new Date() > new Date(config.trainerCardShowDate),
         eventIsOver: eventIsOver(),
         eventSupportsQueueState: config.supportsQueueState,
@@ -974,13 +975,32 @@ api.get('/api/v2/appsettings', (req, res) => {
             emblemWeight: config.emblemWeight
         },
         meetupTimes: config.meetupTimes,
-        howToChallenge: config.howToChallenge,
-        rules: config.rules,
-        prizePools: config.prizePools,
-        schedule: config.schedule,
         bingoBoard: config.bingoBoard,
-        map: config.map
-    }, res, correlationId);
+        assets: {}
+    };
+
+    // Check each asset individually so we omit any from the payload that aren't supposed to be included
+    if (config.howToChallenge) {
+        result.assets.howToChallenge = '/static/assets/how-to-challenge.png';
+    }
+
+    if (config.rules) {
+        result.assets.rules = '/static/assets/rules.png';
+    }
+
+    if (config.prizePools) {
+        result.assets.prizePools = '/static/assets/prize-pools.png';
+    }
+
+    if (config.schedule) {
+        result.assets.schedule = '/static/assets/schedule.png';
+    }
+
+    if (config.map) {
+        result.assets.map = '/static/assets/map.png';
+    }
+
+    sendJsonResponse(httpStatus.ok, result, res, correlationId);
 });
 
 api.get('/api/v2/openqueues', (req, res) => {

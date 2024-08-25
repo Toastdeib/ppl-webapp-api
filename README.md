@@ -46,6 +46,12 @@ This project is half of a system built to help manage events run by the [PAX Pok
     - The `supportsQueueState` field is a flag indicating whether the open/close queue functionality should be enabled for the PPL event. Typically, this should only be true for virtual events (i.e. PPL Online). If set to `false`, the `/openqueue`, `/closequeue`, and challenger-facing `/enqueue` paths will all be gated. **Note**: If this flag is set to `false`, *all leaders for the event* should have their `queue_open` field set to `1` in the database for normal functionality to work.
     - The `supportsBotNotifications` field is a flag indicating whether certain events should be forwarded to PPLBot for Discord notifications. Similar to the previous flag, this should typically only be true for virtual events.
     - The `meetupTimes` field is an array of JSON objects, each containing a `location`, a `startTime`, and a `duration` field. `location` should be a string describing the location (e.g. "Community Room" or "Handheld Lounge"),`startTime` should be a UTC timestamp, and `duration` should be a duration in minutes. Each entry in the array should describe a single meetup time.
+    - The `bingoBoard` field is a boolean flag indicating whether the bingo board should be shown on the webapp for the current event.
+    - The `howToChallenge` field is a boolean flag indicating whether a relative path for the "how to challenge" graphic will be included in the settings response payload.
+    - The `rules` field is a boolean flag indicating whether a relative path for the rules graphic will be included in the settings response payload.
+    - The `prizePools` field is a boolean flag indicating whether a relative path for the prizes graphic will be included in the settings response payload.
+    - The `schedule` field is a boolean flag indicating whether a relative path for the schedule graphic will be included in the settings response payload.
+    - The `map` field is a boolean flag indicating whether a relative path for the map graphic will be included in the settings response payload.
 5. Create a directory named `event` under the `config` directory and make additional copies of [config.js.example](config/config.js.example) for each PPL event listed in [config.js](config/config.js). These files only need to contain config values that need to be overridden from those in the general configs. **Note**: The *numerical* event config fields in `test.js` should match those in the example config for the tests to run successfully.
 6. Create a directory named `static` in the root of the project for serving up static image files for clients. The directory can be empty, but it should exist for the express middleware that sets up the virtual `/static` path.
 7. Run `node startup.js`, providing a `PPL_EVENT` environment variable if desired; if unspecified, it will pull from the `general.js` file you created in step 2. **Note**: This *may* require `sudo` to run, depending on the permissions on the cert path.
@@ -201,7 +207,8 @@ Retrieves information about the challenger with the given ID.
     ],
     "championDefeated": [boolean],
     "championSurveyUrl": [string, only present if championDefeated flag is true],
-    "feedbackSurveyUrl": [string, only present if appropriate based on configs]
+    "feedbackSurveyUrl": [string, only present if appropriate based on configs],
+    "hasBingo": [boolean]
 }
 ```
 
@@ -699,7 +706,7 @@ Retrieves battle and badge metrics for all leaders as a dictionary mapping leade
 
 #### /api/v2/appsettings (GET)
 
-Retrieves a collection of event-specific settings. The collection currently contains three settings, but more may be added in the future.
+Retrieves a collection of event-specific settings.
 
 ##### Response payload:
 
@@ -724,12 +731,14 @@ Retrieves a collection of event-specific settings. The collection currently cont
         },
         ...
     ],
-    "howToChallenge": [boolean, indicates whether the webapp should display the 'how to challenge' section],
-    "rules": [boolean, indicates whether the webapp should display the rules section],
-    "prizePools": [boolean, indicates whether the webapp should display the prize pool section],
-    "schedule": [boolean, indicates whether the webapp should display the schedule section],
     "bingoBoard": [boolean, indicates whether the webapp should display the bingo board to challengers],
-    "map": [boolean, indicates whether the webapp should display the venue map]
+    "assets": {
+        "howToChallenge": [string, URL for the how to challenge graphic],
+        "rules": [string, URL for the rules graphic],
+        "prizePools": [string, URL for the prizes graphic],
+        "schedule": [string, URL for the schedule graphic],
+        "map": [string, URL for the map graphic]
+    }
 }
 ```
 
