@@ -184,9 +184,9 @@ export function validateSession(token, id, type) {
     }
 
     const parts = token.split(' ');
-    if (parts[0] !== 'Bearer') {
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
         // Malformed token header
-        logger.api.warn(`loginId=${id} attempted to make an API request with with a malformed auth header`);
+        logger.api.warn(`loginId=${id} attempted to make an API request with with a malformed auth header, value=${token}`);
         return false;
     }
 
