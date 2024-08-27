@@ -50,6 +50,7 @@ This project is half of a system built to help manage events run by the [PAX Pok
     - The `howToChallenge` field is a boolean flag indicating whether a relative path for the "how to challenge" graphic will be included in the settings response payload.
     - The `rules` field is a boolean flag indicating whether a relative path for the rules graphic will be included in the settings response payload.
     - The `prizePools` field is a boolean flag indicating whether a relative path for the prizes graphic will be included in the settings response payload.
+    - The `sideActivities` field is a boolean flag indicating whether a relative path for the side activities graphic will be included in the settings response payload.
     - The `schedule` field is a boolean flag indicating whether a relative path for the schedule graphic will be included in the settings response payload.
     - The `map` field is a boolean flag indicating whether a relative path for the map graphic will be included in the settings response payload.
 5. Create a directory named `event` under the `config` directory and make additional copies of [config.js.example](config/config.js.example) for each PPL event listed in [config.js](config/config.js). These files only need to contain config values that need to be overridden from those in the general configs. **Note**: The *numerical* event config fields in `test.js` should match those in the example config for the tests to run successfully.
@@ -736,6 +737,7 @@ Retrieves a collection of event-specific settings.
         "howToChallenge": [string, URL for the how to challenge graphic],
         "rules": [string, URL for the rules graphic],
         "prizePools": [string, URL for the prizes graphic],
+        "sideActivities": [string, URL for the side activities graphic],
         "schedule": [string, URL for the schedule graphic],
         "map": [string, URL for the map graphic]
     }

@@ -82,6 +82,8 @@ function getAppSettings() {
                 fail('payload was missing rules property');
             } else if (data.assets.prizePools === undefined) {
                 fail('payload was missing prizePools property');
+            } else if (data.assets.sideActivities === undefined) {
+                fail('payload was missing sideActivities property');
             } else if (data.assets.schedule === undefined) {
                 fail('payload was missing schedule property');
             } else if (data.assets.map === undefined) {

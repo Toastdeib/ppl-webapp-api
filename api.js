@@ -992,6 +992,10 @@ api.get('/api/v2/appsettings', (req, res) => {
         result.assets.prizePools = '/static/assets/prize-pools.png';
     }
 
+    if (config.sideActivities) {
+        result.assets.sideActivities = '/static/assets/side-activities.png';
+    }
+
     if (config.schedule) {
         result.assets.schedule = '/static/assets/schedule.png';
     }

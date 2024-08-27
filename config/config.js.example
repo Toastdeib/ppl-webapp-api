@@ -32,11 +32,12 @@ const config = {
     sharedBingoIds: {},
     supportsQueueState: false,
     supportsBotNotifications: false,
-    meetupTimes: [ { startTime: '1970-01-01T00:00:00Z', duration: 120 } ],
+    meetupTimes: [ { location: 'Handheld Lounge', startTime: '1970-01-01T00:00:00Z', duration: 120 } ],
     bingoBoard: true,
     howToChallenge: true,
     rules: true,
     prizePools: true,
+    sideActivities: true,
     schedule: true,
     map: true
 };
