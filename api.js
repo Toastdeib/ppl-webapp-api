@@ -35,6 +35,8 @@ api.use('/static', express.static('static', {
 }));
 
 // eslint-disable-next-line no-magic-numbers
+const ONE_MINUTE_MILLIS = 60 * 1000;
+// eslint-disable-next-line no-magic-numbers
 const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
 // eslint-disable-next-line no-magic-numbers
 const SESSION_EXPIRATION_MILLIS = 4 * ONE_DAY_MILLIS; // 4 days in ms
@@ -306,7 +308,11 @@ function formatLogLine(line) {
 function generateLogviewResponse(res, daysAgo) {
     logger.api.debug('Rendering logs page');
     const date = new Date();
+    // Handle day offset if an older page waas requested
     date.setTime(date.getTime() - (daysAgo * ONE_DAY_MILLIS));
+
+    // Offset by the current time zone so it's "correct" when we create the ISO string (in UTC)
+    date.setTime(date.getTime() - (date.getTimezoneOffset() * ONE_MINUTE_MILLIS));
 
     // NOTE: This logic operates on the assumption that there's a file every day from the oldest one up to today
     const logFileCount = fs.readdirSync('logs').reduce((acc, filename) => { return acc + (filename.startsWith('api-combined') ? 1 : 0); }, 0);
