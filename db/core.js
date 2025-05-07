@@ -35,6 +35,7 @@ const BINGO_SPACE_COUNT = config.bingoBoardWidth * config.bingoBoardWidth;
 const BINGO_ID_COUNT = BINGO_SPACE_COUNT - (config.bingoBoardWidth >= MIN_WIDTH_FOR_FREE_SPACE ? (config.bingoBoardWidth % 2) : 0);
 const INCLUDE_FREE_SPACE = config.bingoBoardWidth >= MIN_WIDTH_FOR_FREE_SPACE && config.bingoBoardWidth % 2 === 1;
 
+// TODO - Remove these, since the logic is moving over to the settings payload
 // Challenger/leader survey dates
 const SURVEY_START_DATE = new Date(config.surveyStartDate);
 // eslint-disable-next-line no-magic-numbers

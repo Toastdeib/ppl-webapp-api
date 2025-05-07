@@ -51,6 +51,8 @@ const AUTH_HEADER = 'Authorization';
 const PPL_EVENT_HEADER = 'PPL-Event';
 const PLATFORM_HEADER = 'Platform';
 
+const SURVEY_START_DATE = new Date(config.surveyStartDate);
+const SURVEY_END_DATE = new Date(SURVEY_START_DATE.getTime() + (config.surveyDurationDays * ONE_DAY_MILLIS));
 const EVENT_END_DATE = new Date(config.eventEndDate);
 
 /******************
@@ -389,6 +391,11 @@ function sendHttpBotRequest(path, params) {
     req.end();
 }
 
+function shouldShowSurveyBanner() {
+    const now = new Date();
+    return now > SURVEY_START_DATE && now < SURVEY_END_DATE;
+}
+
 function eventIsOver(res, correlationId) {
     if (new Date() > EVENT_END_DATE) {
         if (res) {
@@ -535,6 +542,7 @@ api.use('/api/v2/challenger/:id', (req, res, next) => {
         return;
     }
 
+    res.set('Cache-Control', 'public, max-age=5');
     next();
 });
 
@@ -680,6 +688,7 @@ api.use('/api/v2/leader/:id', (req, res, next) => {
     }
 
     req.leaderId = session.leaderId;
+    res.set('Cache-Control', 'public, max-age=5');
     next();
 });
 
@@ -982,6 +991,9 @@ api.get('/api/v2/appsettings', (req, res) => {
         },
         meetupTimes: config.meetupTimes,
         bingoBoard: config.bingoBoard,
+        challengerFeedbackSurveyUrl: config.challengerSurveyUrl,
+        leaderFeedbackSurveyUrl: config.leaderSurveyUrl,
+        showSurveyBanner: shouldShowSurveyBanner(),
         assets: {}
     };
 

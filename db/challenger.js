@@ -193,7 +193,7 @@ export async function getChallengerInfo(id, callback) {
     }
 
     if (shouldIncludeFeedbackSurvey()) {
-        retval.feedbackSurveyUrl = config.challengerSurveyUrl;
+        retval.feedbackSurveyUrl = config.challengerSurveyUrl; // DEPRECATED
     }
 
     // Note - this check is copied verbatim from the getBingoBoard() function because asyncs calling asyncs gets weird.

@@ -124,7 +124,7 @@ export async function getLeaderInfo(id, callback) {
     }
 
     if (shouldIncludeFeedbackSurvey()) {
-        retval.feedbackSurveyUrl = config.leaderSurveyUrl;
+        retval.feedbackSurveyUrl = config.leaderSurveyUrl; // DEPRECATED
     }
 
     callback(resultCode.success, retval);
