@@ -305,13 +305,15 @@ export function generateBingoBoard() {
     return shuffled.join(',');
 }
 
-export function inflateBingoBoard(flatBoard, earnedBadges) {
+export function inflateBingoBoard(flatBoard, battledIds) {
     const board = [];
     const split = flatBoard.split(',');
     if (split.length !== BINGO_SPACE_COUNT) {
         logger.api.error(`Couldn't inflate bingo board; split array was length ${split.length}`);
         return board;
     }
+
+    const idsCopy = battledIds.map(id => config.sharedBingoIds[id] || id);
 
     for (let i = 0; i < config.bingoBoardWidth; i++) {
         board.push([]);
@@ -320,12 +322,12 @@ export function inflateBingoBoard(flatBoard, earnedBadges) {
             let realId = boardId;
             const index = realId.indexOf('-');
             if (index > -1) {
-                // Trim the '-1' or '-2' off if it's got one, for the earnedBadges check
+                // Trim the '-1' or '-2' off if it's got one, for the battledIds check
                 realId = realId.substr(0, index);
             }
 
             const blob = {};
-            blob[boardId] = realId === '' || earnedBadges.indexOf(config.sharedBingoIds[realId] || realId) > -1;
+            blob[boardId] = realId === '' || idsCopy.indexOf(realId) > -1;
             board[i].push(blob);
         }
     }

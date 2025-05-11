@@ -164,17 +164,19 @@ export async function getChallengerInfo(id, callback) {
                 difficulty: row.battle_difficulty,
                 format: row.battle_format
             });
-        } else if (row.status === matchStatus.win || row.status === matchStatus.ash) {
-            retval.badgesEarned.push({
-                leaderId: row.leader_id,
-                leaderName: row.leader_name,
-                badgeName: row.badge_name,
-                difficulty: row.battle_difficulty,
-                format: row.battle_format
-            });
+        } else {
+            if (row.status === matchStatus.win || row.status === matchStatus.ash) {
+                retval.badgesEarned.push({
+                    leaderId: row.leader_id,
+                    leaderName: row.leader_name,
+                    badgeName: row.badge_name,
+                    difficulty: row.battle_difficulty,
+                    format: row.battle_format
+                });
 
-            if (row.leader_type === leaderType.champion) {
-                championDefeated = true;
+                if (row.leader_type === leaderType.champion) {
+                    championDefeated = true;
+                }
             }
 
             earnedIds.push(row.leader_id);
