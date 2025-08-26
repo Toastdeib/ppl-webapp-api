@@ -299,7 +299,7 @@ export function generateBingoBoard() {
     }
 
     if (INCLUDE_FREE_SPACE) {
-        shuffled.splice(Math.floor(shuffled.length / 2), 0, '');
+        shuffled.splice(Math.floor(shuffled.length / 2), 0, 'free-space');
     }
 
     return shuffled.join(',');
@@ -327,7 +327,7 @@ export function inflateBingoBoard(flatBoard, battledIds) {
             }
 
             const blob = {};
-            blob[boardId] = realId === '' || idsCopy.indexOf(realId) > -1;
+            blob[boardId] = realId === 'free-space' || idsCopy.indexOf(realId) > -1;
             board[i].push(blob);
         }
     }
