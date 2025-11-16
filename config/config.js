@@ -16,6 +16,7 @@ import generalConfig from './general.js';
 import logger from '../util/logger.js';
 import onlineConfig from './event/online.js';
 import testConfig from './event/test.js';
+import unpluggedConfig from './event/unplugged.js';
 import westConfig from './event/west.js';
 
 const pplEvent = process.env.PPL_EVENT || 'general';
@@ -32,6 +33,9 @@ switch (pplEvent) {
         break;
     case 'aus':
         config = { ...generalConfig, ...ausConfig };
+        break;
+    case 'unplugged':
+        config = { ...generalConfig, ...unpluggedConfig };
         break;
     case 'online':
         config = { ...generalConfig, ...onlineConfig };

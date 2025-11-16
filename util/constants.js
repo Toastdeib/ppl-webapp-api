@@ -68,7 +68,8 @@ export const pplEvent = {
     east: 1,
     west: 2,
     aus: 4,
-    online: 8
+    online: 8,
+    unplugged: 16
 };
 
 export const httpStatus = {

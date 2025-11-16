@@ -271,6 +271,11 @@ export function shouldIncludeFeedbackSurvey() {
 }
 
 export function generateBingoBoard() {
+    if (!config.bingoBoard) {
+        // The event is configured to not use bingo, so just return an empty string
+        return '';
+    }
+
     const ids = [];
     const leaderCopy = filterBingoIds(leaderIds);
     const eliteCopy = filterBingoIds(eliteIds);
@@ -306,6 +311,11 @@ export function generateBingoBoard() {
 }
 
 export function inflateBingoBoard(flatBoard, battledIds) {
+    if (!config.bingoBoard) {
+        // The event is configured to not use bingo, so just return an empty array
+        return [];
+    }
+
     const board = [];
     const split = flatBoard.split(',');
     if (split.length !== BINGO_SPACE_COUNT) {

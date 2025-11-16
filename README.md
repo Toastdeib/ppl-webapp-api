@@ -79,6 +79,7 @@ Creates a new account with the provided username and password.
     - `west`
     - `aus`
     - `online`
+    - `unplugged`
 - `Platform` - A string indicating the platform this request is coming from. Can be one of:
     - `web`
     - `android`
@@ -116,6 +117,7 @@ Logs a user in with the provided username and password.
     - `west`
     - `aus`
     - `online`
+    - `unplugged`
 - `Platform` - A string indicating the platform this request is coming from. Can be one of:
     - `web`
     - `android`
@@ -609,6 +611,7 @@ Retrieves a list of all challengers for the PPL event indicated by the request h
     - `west`
     - `aus`
     - `online`
+    - `unplugged`
 
 ##### Response payload:
 
@@ -956,7 +959,8 @@ These are used to identify what PAX event(s) a login is associated with, and are
     "east": 1,
     "west": 2,
     "aus": 4,
-    "online": 8
+    "online": 8,
+    "unplugged": 16
 }
 ```
 

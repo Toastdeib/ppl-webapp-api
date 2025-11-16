@@ -16,6 +16,11 @@ import { leaderType, matchStatus, resultCode } from '../util/constants.js';
  * Util functions *
  ******************/
 function challengerHasBingo(board) {
+    if (!config.bingoBoard) {
+        // The event is configured to not use bingo, so just return false
+        return false;
+    }
+
     // Check rows
     const simpleBoard = [];
     for (let i = 0; i < config.bingoBoardWidth; i++) {
